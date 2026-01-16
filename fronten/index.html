@@ -1,0 +1,37 @@
+<input type="file" id="file" />
+<button id="loadBtn">Load CSV</button>
+<p id="info"></p>
+
+<script type="module">
+import init, { CsvLoader, LinearRegression } from "../wasm/pkg/wasm.js";
+
+async function run() {
+  await init();
+
+  const loader = new CsvLoader();
+  const model = new LinearRegression();
+
+  document.getElementById("loadBtn").onclick = () => {
+    const fileInput = document.getElementById("file");
+    if (fileInput.files.length === 0) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      loader.load_csv_async(reader.result)
+        .then(() => {
+          const headers = loader.get_headers();
+          const len = loader.len();
+          document.getElementById("info").textContent =
+            `CSV loaded: ${len} rows, headers: ${headers}`;
+          
+          model.fit([1.0, 2.0, 3.0], [2.0, 4.0, 6.0]);
+          console.log("Prediction for 5:", model.predict([5]));
+        })
+        .catch(console.error);
+    };
+    reader.readAsText(fileInput.files[0]);
+  };
+}
+
+run();
+</script>

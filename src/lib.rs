@@ -1,7 +1,11 @@
 use wasm_bindgen::prelude::*;
 
-mod csv_loader;
-mod model;
+mod data_loading;
 
-pub use csv_loader::CsvLoader;
-pub use model::LinearRegression;
+#[cfg(not(target_arch = "wasm32"))]
+mod models;
+
+pub use data_loading::csv_loader::CsvLoader;
+
+#[cfg(not(target_arch = "wasm32"))]
+pub use models::{IModel, LinRegWrapper, KnnWrapper, LogRegWrapper, TreeWrapper};

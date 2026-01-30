@@ -14,3 +14,8 @@ wasm-bindgen-futures = "0.4"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 ndarray = "0.15"
+smartcore = "0.3.2"
+statrs = "0.16.0"
+
+# Enable WebAssembly support for getrandom (used by rand and other crates)
+getrandom = { version = "0.2", features = ["js"] }

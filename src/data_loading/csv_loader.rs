@@ -55,6 +55,28 @@ impl CsvLoader {
         Ok(())
     }
 
+    pub fn get_training_data(&self, target_header: &str) -> Result<JsValue, JsValue> {
+        let mut x_data = Vec::new();
+        let mut y_data = Vec::new();
+
+        for record in &self.records {
+            let mut row = Vec::new();
+            for header in &self.headers {
+                let val_str = record.get(header).ok_or("Missing value")?;
+                let val_f64 = val_str.parse::<f64>().unwrap_or(0.0);
+                
+                if header == target_header {
+                    y_data.push(val_f64);
+                } else {
+                    row.push(val_f64);
+                }
+            }
+            x_data.push(row);
+        }
+        
+        Ok(to_value(&(x_data, y_data)).unwrap())
+    }
+
     pub fn get_headers(&self) -> JsValue {
         to_value(&self.headers).unwrap()
     }

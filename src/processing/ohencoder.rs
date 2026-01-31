@@ -1,4 +1,5 @@
-use smartcore::linalg::naive::dense_matrix::DenseMatrix;
+use smartcore::linalg::basic::matrix::DenseMatrix;
+use smartcore::linalg::basic::arrays::{Array, Array2, MutArray};
 use std::collections::HashMap;
 use super::DataProcessor;
 
@@ -25,7 +26,7 @@ impl DataProcessor for OneHotEncoder
             
             for i in 0..rows 
             {
-                let val_bits = data.get(i, j).to_bits();
+                let val_bits = data.get((i, j)).to_bits();
                 if !unique_vals.contains_key(&val_bits) 
                 {
                     unique_vals.insert(val_bits, count);
@@ -37,7 +38,7 @@ impl DataProcessor for OneHotEncoder
         }
 
         // 2. Vytvoríme novú, širšiu maticu
-        let mut new_matrix = DenseMatrix::zeros(rows, new_total_cols);
+        let mut new_matrix = DenseMatrix::from_2d_vec(&vec![vec![0.0; new_total_cols]; rows]).unwrap();
         let mut current_new_col = 0;
 
         for j in 0..cols 
@@ -47,9 +48,9 @@ impl DataProcessor for OneHotEncoder
 
             for i in 0..rows 
             {
-                let val_bits = data.get(i, j).to_bits();
+                let val_bits = data.get((i, j)).to_bits();
                 let offset = map[&val_bits];
-                new_matrix.set(i, current_new_col + offset, 1.0);
+                new_matrix.set((i, current_new_col + offset), 1.0);
             }
             current_new_col += num_unique;
         }

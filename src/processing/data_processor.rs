@@ -1,4 +1,4 @@
-use smartcore::linalg::naive::dense_matrix::DenseMatrix;
+use smartcore::linalg::basic::matrix::DenseMatrix;
 
 pub trait DataProcessor 
 {

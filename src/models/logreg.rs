@@ -1,9 +1,9 @@
 use smartcore::linear::logistic_regression::{LogisticRegression, LogisticRegressionParameters};
-use smartcore::linalg::naive::dense_matrix::DenseMatrix;
+use smartcore::linalg::basic::matrix::DenseMatrix;
 use super::IModel;
 
 pub struct LogRegWrapper {
-    model: Option<LogisticRegression<f64, DenseMatrix<f64>>>,
+    model: Option<LogisticRegression<f64, u32, DenseMatrix<f64>, Vec<u32>>>,
     alpha: f64,
 }
 
@@ -37,14 +37,18 @@ impl IModel for LogRegWrapper {
         let mut params = LogisticRegressionParameters::default();
         params.alpha = self.alpha;
         
-        // Smartcore v logistic regression predpokladá, že y obsahuje label-y
-        self.model = Some(LogisticRegression::fit(&x, &y, params).unwrap());
+        // Konverzia f64 na u32 pre klasifikáciu
+        let y_labels: Vec<u32> = y.iter().map(|&v| v.round() as u32).collect();
+        self.model = Some(LogisticRegression::fit(&x, &y_labels, params).unwrap());
     }
 
-    fn predict(&self, input: Vec<f64>) -> Vec<f64> {
-        let x = DenseMatrix::from_2d_vec(&vec![input]);
+    fn predict(&self, input: &[f64]) -> Vec<f64> {
+        let x = DenseMatrix::from_2d_vec(&vec![input.to_vec()]).unwrap();
         self.model.as_ref()
-            .map(|m| m.predict(&x).unwrap())
+            .map(|m| {
+                let predictions: Vec<u32> = m.predict(&x).unwrap();
+                predictions.iter().map(|&v| v as f64).collect()
+            })
             .unwrap_or_default()
     }
 }

@@ -1,4 +1,5 @@
-use smartcore::linalg::naive::dense_matrix::DenseMatrix;
+use smartcore::linalg::basic::matrix::DenseMatrix;
+use smartcore::linalg::basic::arrays::{Array, Array2};
 use std::collections::HashMap;
 use super::FeatureSelector;
 
@@ -76,14 +77,15 @@ impl FeatureSelector for InformationGainSelector
 
         for j in 0..cols 
         {
-            let col = x.get_col(j);
+            // Extrakcia stĺpca do Vec
+            let col: Vec<f64> = (0..x.shape().0).map(|i| *x.get((i, j))).collect();
             let mut conditional_entropy = 0.0;
             let mut map: HashMap<u64, Vec<f64>> = HashMap::new();
 
             // Rozdelenie targetov (y) podľa unikátnych hodnôt v príznaku (Xi)
             for (val, target) in col.iter().zip(y.iter()) 
             {
-                map.entry(val.to_bits()).or_default().push(*target);
+                map.entry((*val).to_bits()).or_default().push(*target);
             }
 
             // Výpočet podmienenej entropie H(Y|Xi)
@@ -107,6 +109,23 @@ impl FeatureSelector for InformationGainSelector
     fn select_features(&self, x: &DenseMatrix<f64>, y: &[f64]) -> DenseMatrix<f64> 
     {
         let indices = self.get_selected_indices(x, y);
-        x.get_columns(&indices)
+        self.extract_columns(x, &indices)
+    }
+}
+
+impl InformationGainSelector {
+    fn extract_columns(&self, x: &DenseMatrix<f64>, indices: &[usize]) -> DenseMatrix<f64> {
+        let shape = x.shape();
+        let rows = shape.0;
+        let cols = indices.len();
+        let mut data = vec![vec![0.0; cols]; rows];
+        
+        for (new_col, &old_col) in indices.iter().enumerate() {
+            for row in 0..rows {
+                data[row][new_col] = *x.get((row, old_col));
+            }
+        }
+        
+        DenseMatrix::from_2d_vec(&data).unwrap()
     }
 }

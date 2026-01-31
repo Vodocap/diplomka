@@ -1,10 +1,11 @@
-use smartcore::neighbors::knn_regressor::KNNRegressor;
-use smartcore::linalg::naive::dense_matrix::DenseMatrix;
-use super::Model;
+use smartcore::neighbors::knn_regressor::{KNNRegressor, KNNRegressorParameters};
+use smartcore::linalg::basic::matrix::DenseMatrix;
+use smartcore::metrics::distance::euclidian::Euclidian;
+use super::IModel;
 
 pub struct KnnWrapper 
 {
-    model: Option<KNNRegressor<f64, f64, DenseMatrix<f64>, Vec<f64>>>,
+    model: Option<KNNRegressor<f64, f64, DenseMatrix<f64>, Vec<f64>, Euclidian<f64>>>,
     k: usize,
 }
 
@@ -12,7 +13,7 @@ impl KnnWrapper
 {
     pub fn new() -> Self 
     {
-        Self { model: None }
+        Self { model: None, k: 5 }
     }
 }
 
@@ -27,11 +28,11 @@ impl IModel for KnnWrapper
         self.model = Some(KNNRegressor::fit(&x, &y, params).unwrap());
     }
 
-    fn predict(&self, input: Vec<f64>) -> Vec<f64> 
+    fn predict(&self, input: &[f64]) -> Vec<f64> 
     {
-        let x = DenseMatrix::from_2d_vec(&vec![input]);
+        let x = DenseMatrix::from_2d_vec(&vec![input.to_vec()]).unwrap();
         self.model.as_ref()
-            .map(|m| m.predict(&x).unwrap())
+            .map(|m: &KNNRegressor<f64, f64, DenseMatrix<f64>, Vec<f64>, Euclidian<f64>>| m.predict(&x).unwrap())
             .unwrap_or_default()
     }
 

@@ -1,5 +1,5 @@
-use smartcore::linalg::naive::dense_matrix::DenseMatrix;
-use ndarray::Array2;
+use smartcore::linalg::basic::matrix::DenseMatrix;
+use smartcore::linalg::basic::arrays::{Array, Array2};
 use super::FeatureSelector;
 
 pub struct VarianceSelector 
@@ -45,15 +45,17 @@ impl FeatureSelector for VarianceSelector
 
     fn get_selected_indices(&self, x: &DenseMatrix<f64>, _y: &[f64]) -> Vec<usize> 
     {
-        let (rows, cols) = x.shape();
+        let shape = x.shape();
         let mut selected = Vec::new();
-        let raw_data: Vec<f64> = x.all_elements().collect();
-        let nd_array = Array2::from_shape_vec((rows, cols), raw_data).unwrap();
 
-        for j in 0..cols 
+        for j in 0..shape.1 
         {
-            // var(0.0) počíta populačný rozptyl
-            if nd_array.column(j).var(0.0) > self.threshold 
+            // Extrakcia stĺpca do Vec
+            let col: Vec<f64> = (0..shape.0).map(|i| *x.get((i, j))).collect();
+            let mean: f64 = col.iter().sum::<f64>() / shape.0 as f64;
+            let variance: f64 = col.iter().map(|&v| (v - mean).powi(2)).sum::<f64>() / shape.0 as f64;
+            
+            if variance > self.threshold 
             {
                 selected.push(j);
             }
@@ -64,6 +66,23 @@ impl FeatureSelector for VarianceSelector
     fn select_features(&self, x: &DenseMatrix<f64>, y: &[f64]) -> DenseMatrix<f64> 
     {
         let indices = self.get_selected_indices(x, y);
-        x.get_columns(&indices)
+        self.extract_columns(x, &indices)
+    }
+}
+
+impl VarianceSelector {
+    fn extract_columns(&self, x: &DenseMatrix<f64>, indices: &[usize]) -> DenseMatrix<f64> {
+        let shape = x.shape();
+        let rows = shape.0;
+        let cols = indices.len();
+        let mut data = vec![vec![0.0; cols]; rows];
+        
+        for (new_col, &old_col) in indices.iter().enumerate() {
+            for row in 0..rows {
+                data[row][new_col] = *x.get((row, old_col));
+            }
+        }
+        
+        DenseMatrix::from_2d_vec(&data).unwrap()
     }
 }

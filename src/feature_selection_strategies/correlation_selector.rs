@@ -1,5 +1,5 @@
-use smartcore::linalg::naive::dense_matrix::DenseMatrix;
-use ndarray::{Array2, Array1};
+use smartcore::linalg::basic::matrix::DenseMatrix;
+use smartcore::linalg::basic::arrays::{Array, Array2};
 use super::FeatureSelector;
 use std::collections::HashSet;
 
@@ -18,10 +18,11 @@ impl CorrelationSelector
         }
     }
 
-    fn pearson_correlation(x: &Array1<f64>, y: &Array1<f64>) -> f64 
+    fn pearson_correlation_vec(x: &[f64], y: &[f64]) -> f64 
     {
-        let mean_x = x.mean().unwrap_or(0.0);
-        let mean_y = y.mean().unwrap_or(0.0);
+        let n = x.len() as f64;
+        let mean_x: f64 = x.iter().sum::<f64>() / n;
+        let mean_y: f64 = y.iter().sum::<f64>() / n;
         let mut num = 0.0;
         let mut den_x = 0.0;
         let mut den_y = 0.0;
@@ -71,9 +72,8 @@ impl FeatureSelector for CorrelationSelector
 
     fn get_selected_indices(&self, x: &DenseMatrix<f64>, _y: &[f64]) -> Vec<usize> 
     {
-        let (rows, cols) = x.shape();
-        let raw_data: Vec<f64> = x.all_elements().collect();
-        let nd_array = Array2::from_shape_vec((rows, cols), raw_data).unwrap();
+        let shape = x.shape();
+        let cols = shape.1;
         
         let mut dropped = HashSet::new();
         let mut selected = Vec::new();
@@ -87,6 +87,8 @@ impl FeatureSelector for CorrelationSelector
             
             selected.push(i);
 
+            // Extrakcia stĺpca i do Vec
+            let col_i: Vec<f64> = (0..shape.0).map(|row| *x.get((row, i))).collect();
             for j in (i + 1)..cols 
             {
                 if dropped.contains(&j) 
@@ -94,10 +96,9 @@ impl FeatureSelector for CorrelationSelector
                     continue; 
                 }
                 
-                let corr = Self::pearson_correlation(
-                    &nd_array.column(i).to_owned(), 
-                    &nd_array.column(j).to_owned()
-                );
+                // Extrakcia stĺpca j do Vec
+                let col_j: Vec<f64> = (0..shape.0).map(|row| *x.get((row, j))).collect();
+                let corr = Self::pearson_correlation_vec(&col_i, &col_j);
 
                 if corr > self.threshold 
                 {
@@ -111,6 +112,23 @@ impl FeatureSelector for CorrelationSelector
     fn select_features(&self, x: &DenseMatrix<f64>, y: &[f64]) -> DenseMatrix<f64> 
     {
         let indices = self.get_selected_indices(x, y);
-        x.get_columns(&indices)
+        self.extract_columns(x, &indices)
+    }
+}
+
+impl CorrelationSelector {
+    fn extract_columns(&self, x: &DenseMatrix<f64>, indices: &[usize]) -> DenseMatrix<f64> {
+        let shape = x.shape();
+        let rows = shape.0;
+        let cols = indices.len();
+        let mut data = vec![vec![0.0; cols]; rows];
+        
+        for (new_col, &old_col) in indices.iter().enumerate() {
+            for row in 0..rows {
+                data[row][new_col] = *x.get((row, old_col));
+            }
+        }
+        
+        DenseMatrix::from_2d_vec(&data).unwrap()
     }
 }

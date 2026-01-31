@@ -1,4 +1,5 @@
-use smartcore::linalg::naive::dense_matrix::DenseMatrix;
+use smartcore::linalg::basic::matrix::DenseMatrix;
+use smartcore::linalg::basic::arrays::{Array, Array2};
 use std::collections::HashMap;
 use super::FeatureSelector;
 
@@ -85,7 +86,8 @@ impl FeatureSelector for ChiSquareSelector
 
         for j in 0..cols 
         {
-            let col_data = x.get_col(j);
+            // Extrakcia stĺpca do Vec
+            let col_data: Vec<f64> = (0..x.shape().0).map(|i| *x.get((i, j))).collect();
             let score = Self::calculate_chi_square(col_data, y);
             scores.push((j, score));
         }
@@ -102,6 +104,23 @@ impl FeatureSelector for ChiSquareSelector
     fn select_features(&self, x: &DenseMatrix<f64>, y: &[f64]) -> DenseMatrix<f64> 
     {
         let indices = self.get_selected_indices(x, y);
-        x.get_columns(&indices)
+        self.extract_columns(x, &indices)
+    }
+}
+
+impl ChiSquareSelector {
+    fn extract_columns(&self, x: &DenseMatrix<f64>, indices: &[usize]) -> DenseMatrix<f64> {
+        let shape = x.shape();
+        let rows = shape.0;
+        let cols = indices.len();
+        let mut data = vec![vec![0.0; cols]; rows];
+        
+        for (new_col, &old_col) in indices.iter().enumerate() {
+            for row in 0..rows {
+                data[row][new_col] = *x.get((row, old_col));
+            }
+        }
+        
+        DenseMatrix::from_2d_vec(&data).unwrap()
     }
 }

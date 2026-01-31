@@ -1,4 +1,5 @@
-use smartcore::linalg::naive::dense_matrix::DenseMatrix;
+use smartcore::linalg::basic::matrix::DenseMatrix;
+use smartcore::linalg::basic::arrays::{Array, Array2, MutArray};
 use super::DataProcessor;
 
 pub struct StandardScaler;
@@ -17,7 +18,8 @@ impl DataProcessor for StandardScaler
 
         for j in 0..cols 
         {
-            let col = data.get_col(j);
+            // Extrakcia stĺpca do Vec
+            let col: Vec<f64> = (0..rows).map(|i| *data.get((i, j))).collect();
             let mean = col.iter().sum::<f64>() / rows as f64;
             let var = col.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / rows as f64;
             let std = var.sqrt();
@@ -26,8 +28,8 @@ impl DataProcessor for StandardScaler
             {
                 for i in 0..rows 
                 {
-                    let val = (data.get(i, j) - mean) / std;
-                    result.set(i, j, val);
+                    let val = (data.get((i, j)) - mean) / std;
+                    result.set((i, j), val);
                 }
             }
         }

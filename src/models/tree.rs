@@ -1,5 +1,5 @@
 use smartcore::tree::decision_tree_regressor::{DecisionTreeRegressor, DecisionTreeRegressorParameters};
-use smartcore::linalg::naive::dense_matrix::DenseMatrix;
+use smartcore::linalg::basic::matrix::DenseMatrix;
 use super::IModel;
 
 
@@ -62,11 +62,11 @@ impl IModel for TreeWrapper
         self.model = Some(DecisionTreeRegressor::fit(&x, &y, params).unwrap());
     }
 
-    fn predict(&self, input: Vec<f64>) -> Vec<f64> 
+    fn predict(&self, input: &[f64]) -> Vec<f64> 
     {
         if let Some(ref m) = self.model 
         {
-            let x = DenseMatrix::from_2d_vec(&vec![input]);
+            let x = DenseMatrix::from_2d_vec(&vec![input.to_vec()]).unwrap();
             m.predict(&x).unwrap_or_default()
         } 
         else 

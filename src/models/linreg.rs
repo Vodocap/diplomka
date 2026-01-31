@@ -1,17 +1,18 @@
-use smartcore::linear::linear_regression::LinearRegression;
-use smartcore::linalg::naive::dense_matrix::DenseMatrix;
+use smartcore::linear::linear_regression::{LinearRegression, LinearRegressionParameters, LinearRegressionSolverName};
+use smartcore::linalg::basic::matrix::DenseMatrix;
 use super::IModel; 
 
 pub struct LinRegWrapper 
 {
-    pub(crate) model: Option<LinearRegression<f64, DenseMatrix<f64>>>,
+    pub(crate) model: Option<LinearRegression<f64, f64, DenseMatrix<f64>, Vec<f64>>>,
+    solver: String,
 }
 
 impl LinRegWrapper 
 {
     pub fn new() -> Self 
     {
-        Self { model: None }
+        Self { model: None, solver: "qr".to_string() }
     }
 }
 
@@ -52,9 +53,9 @@ impl IModel for LinRegWrapper
         self.model = Some(LinearRegression::fit(&x, &y, params).unwrap());
     }
 
-    fn predict(&self, input: Vec<f64>) -> Vec<f64> 
+    fn predict(&self, input: &[f64]) -> Vec<f64> 
     {
-        let x = DenseMatrix::from_2d_vec(&vec![input]);
+        let x = DenseMatrix::from_2d_vec(&vec![input.to_vec()]).unwrap();
         self.model.as_ref()
             .map(|m| m.predict(&x).unwrap())
             .unwrap_or_default()

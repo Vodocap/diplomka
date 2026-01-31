@@ -1,37 +1,629 @@
-<input type="file" id="file" />
-<button id="loadBtn">Load CSV</button>
-<p id="info"></p>
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ML Pipeline - WASM App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-<script type="module">
-import init, { CsvLoader, LinearRegression } from "../wasm/pkg/wasm.js";
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
 
-async function run() {
-  await init();
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
 
-  const loader = new CsvLoader();
-  const model = new LinearRegression();
+        header {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
 
-  document.getElementById("loadBtn").onclick = () => {
-    const fileInput = document.getElementById("file");
-    if (fileInput.files.length === 0) return;
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      loader.load_csv_async(reader.result)
-        .then(() => {
-          const headers = loader.get_headers();
-          const len = loader.len();
-          document.getElementById("info").textContent =
-            `CSV loaded: ${len} rows, headers: ${headers}`;
-          
-          model.fit([1.0, 2.0, 3.0], [2.0, 4.0, 6.0]);
-          console.log("Prediction for 5:", model.predict([5]));
-        })
-        .catch(console.error);
-    };
-    reader.readAsText(fileInput.files[0]);
-  };
-}
+        header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
 
-run();
-</script>
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 30px;
+        }
+
+        .section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+        }
+
+        .section.full-width {
+            grid-column: 1 / -1;
+        }
+
+        h2 {
+            color: #3498db;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        select, input, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        select:focus, input:focus, textarea:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 150px;
+            font-family: 'Courier New', monospace;
+        }
+
+        button {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+
+        .info-box {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border-left: 4px solid #3498db;
+        }
+
+        .info-box h3 {
+            color: #3498db;
+            margin-bottom: 10px;
+        }
+
+        .info-box p {
+            margin: 5px 0;
+            color: #6c757d;
+        }
+
+        .status {
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .status.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            display: block;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            display: block;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+            display: block;
+        }
+
+        .options-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .option-badge {
+            background: #3498db;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+        }
+
+        #loadingOverlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #loadingOverlay.show {
+            display: flex;
+        }
+
+        .spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1>ML Pipeline Application</h1>
+            <p>Kompletná Machine Learning Pipeline s podporou viacerých modelov a formátov</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Výber Komponenty -->
+            <div class="section">
+                <h2>1. Výber Pipeline</h2>
+                
+                <div class="form-group">
+                    <label>Predpripravený Preset:</label>
+                    <select id="presetSelect">
+                        <option value="">-- Vlastná konfigurácia --</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Model:</label>
+                    <select id="modelSelect">
+                        <option value="">-- Vyberte model --</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Data Processor (voliteľné):</label>
+                    <select id="processorSelect">
+                        <option value="">-- Žiadny --</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Feature Selector (voliteľné):</label>
+                    <select id="selectorSelect">
+                        <option value="">-- Žiadny --</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Evaluation Mode:</label>
+                    <select id="evalModeSelect">
+                        <option value="">-- Auto --</option>
+                        <option value="classification">Classification</option>
+                        <option value="regression">Regression</option>
+                    </select>
+                </div>
+
+                <button id="buildPipelineBtn">Vytvoriť Pipeline</button>
+                
+                <div id="pipelineStatus" class="status"></div>
+            </div>
+
+            <!-- Načítanie Dát -->
+            <div class="section">
+                <h2>2. Načítanie Dát</h2>
+                
+                <div class="form-group">
+                    <label>Formát dát:</label>
+                    <select id="dataFormatSelect">
+                        <option value="csv">CSV</option>
+                        <option value="json">JSON</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Vložte dáta:</label>
+                    <textarea id="dataInput" placeholder="Vložte CSV alebo JSON dáta..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Target stĺpec:</label>
+                    <select id="targetColumnSelect">
+                        <option value="">-- Najprv načítajte dáta --</option>
+                    </select>
+                </div>
+
+                <button id="loadDataBtn">Načítať Dáta</button>
+                
+                <div id="dataStatus" class="status"></div>
+            </div>
+
+            <!-- Info -->
+            <div class="section full-width">
+                <h2>Dostupné Možnosti</h2>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+                    <div class="info-box">
+                        <h3>Dostupné Modely</h3>
+                        <div id="modelsInfo" class="options-list"></div>
+                    </div>
+                    
+                    <div class="info-box">
+                        <h3>Procesory</h3>
+                        <div id="processorsInfo" class="options-list"></div>
+                    </div>
+                    
+                    <div class="info-box">
+                        <h3>Selektory</h3>
+                        <div id="selectorsInfo" class="options-list"></div>
+                    </div>
+                </div>
+
+                <div class="info-box" id="currentPipelineInfo" style="display: none; margin-top: 20px;">
+                    <h3>Aktuálny Pipeline</h3>
+                    <p><strong>Model:</strong> <span id="currentModel">-</span></p>
+                    <p><strong>Processor:</strong> <span id="currentProcessor">-</span></p>
+                    <p><strong>Selector:</strong> <span id="currentSelector">-</span></p>
+                    <p><strong>Eval Mode:</strong> <span id="currentEvalMode">-</span></p>
+                </div>
+            </div>
+
+            <!-- Tréning -->
+            <div class="section">
+                <h2>3. Tréning</h2>
+                
+                <button id="trainBtn" disabled>Trénovať Model</button>
+                
+                <div id="trainingStatus" class="status"></div>
+                
+                <div class="info-box" id="trainingInfo" style="display: none;">
+                    <h3>Výsledky</h3>
+                    <p><strong>Vzorky:</strong> <span id="trainSamples">-</span></p>
+                </div>
+            </div>
+
+            <!-- Predikcia -->
+            <div class="section">
+                <h2>4. Predikcia</h2>
+                
+                <div class="form-group">
+                    <label>Vstup (JSON array):</label>
+                    <textarea id="predictionInput" placeholder='[1.0, 2.0, 3.0]' rows="3"></textarea>
+                </div>
+                
+                <button id="predictBtn" disabled>Predikcia</button>
+                
+                <div id="predictionStatus" class="status"></div>
+                
+                <div class="info-box" id="predictionResult" style="display: none;">
+                    <h3>Výsledok</h3>
+                    <p id="predictionValue" style="font-size: 2em; color: #3498db; font-weight: bold;"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import init, { WasmFactory, WasmMLPipeline, WasmDataLoader } from './pkg/wasm.js';
+
+        let factory, pipeline, dataLoader;
+        let availableOptions = null;
+
+        async function initApp() {
+            try {
+                showLoading(true);
+                await init();
+                
+                factory = new WasmFactory();
+                pipeline = new WasmMLPipeline();
+                
+                availableOptions = factory.getAvailableOptions();
+                console.log('Options:', availableOptions);
+                
+                populateOptions();
+                setupEventListeners();
+                
+                showStatus('info', 'Aplikácia pripravená!', 'dataStatus');
+            } catch (error) {
+                console.error('Init error:', error);
+                showStatus('error', `Chyba: ${error}`, 'dataStatus');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function populateOptions() {
+            if (!availableOptions) return;
+
+            const modelSelect = document.getElementById('modelSelect');
+            availableOptions.models.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m.name;
+                opt.textContent = `${m.name} - ${m.description}`;
+                modelSelect.appendChild(opt);
+            });
+
+            const processorSelect = document.getElementById('processorSelect');
+            availableOptions.processors.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.name;
+                opt.textContent = `${p.name} - ${p.description}`;
+                processorSelect.appendChild(opt);
+            });
+
+            const selectorSelect = document.getElementById('selectorSelect');
+            availableOptions.selectors.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.name;
+                opt.textContent = `${s.name} - ${s.description}`;
+                selectorSelect.appendChild(opt);
+            });
+
+            const presetSelect = document.getElementById('presetSelect');
+            availableOptions.presets.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.name;
+                opt.textContent = `${p.name} - ${p.description}`;
+                presetSelect.appendChild(opt);
+            });
+
+            displayInfo();
+        }
+
+        function displayInfo() {
+            const modelsDiv = document.getElementById('modelsInfo');
+            availableOptions.models.forEach(m => {
+                const badge = document.createElement('span');
+                badge.className = 'option-badge';
+                badge.textContent = m.name;
+                badge.title = m.description;
+                modelsDiv.appendChild(badge);
+            });
+
+            const processorsDiv = document.getElementById('processorsInfo');
+            availableOptions.processors.forEach(p => {
+                const badge = document.createElement('span');
+                badge.className = 'option-badge';
+                badge.textContent = p.name;
+                processorsDiv.appendChild(badge);
+            });
+
+            const selectorsDiv = document.getElementById('selectorsInfo');
+            availableOptions.selectors.forEach(s => {
+                const badge = document.createElement('span');
+                badge.className = 'option-badge';
+                badge.textContent = s.name;
+                selectorsDiv.appendChild(badge);
+            });
+        }
+
+        function setupEventListeners() {
+            document.getElementById('buildPipelineBtn').onclick = buildPipeline;
+            document.getElementById('loadDataBtn').onclick = loadData;
+            document.getElementById('trainBtn').onclick = trainModel;
+            document.getElementById('predictBtn').onclick = makePrediction;
+        }
+
+        async function buildPipeline() {
+            try {
+                showLoading(true);
+                
+                const model = document.getElementById('modelSelect').value;
+                const processor = document.getElementById('processorSelect').value;
+                const selector = document.getElementById('selectorSelect').value;
+                const evalMode = document.getElementById('evalModeSelect').value;
+
+                if (!model) throw new Error('Vyberte model');
+
+                const config = {
+                    model: model,
+                    processor: processor || null,
+                    selector: selector || null,
+                    evaluation_mode: evalMode || null,
+                    model_params: null,
+                    selector_params: null
+                };
+
+                const result = await pipeline.buildFromConfig(config);
+                
+                document.getElementById('currentPipelineInfo').style.display = 'block';
+                document.getElementById('currentModel').textContent = result.model_name;
+                document.getElementById('currentProcessor').textContent = result.processor || 'Žiadny';
+                document.getElementById('currentSelector').textContent = result.selector || 'Žiadny';
+                document.getElementById('currentEvalMode').textContent = result.evaluation_mode;
+                
+                showStatus('success', 'Pipeline vytvorený!', 'pipelineStatus');
+            } catch (error) {
+                showStatus('error', `Chyba: ${error}`, 'pipelineStatus');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function loadData() {
+            try {
+                showLoading(true);
+                
+                const format = document.getElementById('dataFormatSelect').value;
+                const data = document.getElementById('dataInput').value;
+                const targetColumn = document.getElementById('targetColumnSelect').value;
+
+                if (!data) throw new Error('Vložte dáta');
+
+                dataLoader = new WasmDataLoader(format);
+                const columns = await dataLoader.getAvailableColumns(data);
+                
+                const targetSelect = document.getElementById('targetColumnSelect');
+                targetSelect.innerHTML = '';
+                columns.forEach(col => {
+                    const opt = document.createElement('option');
+                    opt.value = col;
+                    opt.textContent = col;
+                    targetSelect.appendChild(opt);
+                });
+
+                if (!targetColumn) {
+                    showStatus('info', 'Vyberte target stĺpec', 'dataStatus');
+                    return;
+                }
+
+                const result = await pipeline.loadData(data, targetColumn, format);
+                showStatus('success', result.message, 'dataStatus');
+                document.getElementById('trainBtn').disabled = false;
+            } catch (error) {
+                showStatus('error', `Chyba: ${error}`, 'dataStatus');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function trainModel() {
+            try {
+                showLoading(true);
+                const result = await pipeline.train();
+                
+                document.getElementById('trainingInfo').style.display = 'block';
+                document.getElementById('trainSamples').textContent = result.samples_trained;
+                
+                showStatus('success', result.message, 'trainingStatus');
+                document.getElementById('predictBtn').disabled = false;
+            } catch (error) {
+                showStatus('error', `Chyba: ${error}`, 'trainingStatus');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function makePrediction() {
+            try {
+                showLoading(true);
+                const inputText = document.getElementById('predictionInput').value;
+                const input = JSON.parse(inputText);
+                
+                const result = await pipeline.predict(input);
+                
+                document.getElementById('predictionResult').style.display = 'block';
+                document.getElementById('predictionValue').textContent = JSON.stringify(result);
+                
+                showStatus('success', 'Predikcia dokončená!', 'predictionStatus');
+            } catch (error) {
+                showStatus('error', `Chyba: ${error}`, 'predictionStatus');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function loadExampleData() {
+            const format = document.getElementById('dataFormatSelect').value;
+            
+            if (format === 'csv') {
+                document.getElementById('dataInput').value = 
+`age,income,credit_score,approved
+25,50000,700,1
+35,75000,750,1
+45,60000,650,0
+22,30000,600,0
+50,90000,800,1`;
+            } else {
+                document.getElementById('dataInput').value = 
+`[
+  {"age": 25, "income": 50000, "credit_score": 700, "approved": 1},
+  {"age": 35, "income": 75000, "credit_score": 750, "approved": 1},
+  {"age": 45, "income": 60000, "credit_score": 650, "approved": 0}
+]`;
+            }
+        }
+
+        function showStatus(type, message, elementId) {
+            const statusDiv = document.getElementById(elementId);
+            statusDiv.className = `status ${type}`;
+            statusDiv.textContent = message;
+        }
+
+        function showLoading(show) {
+            document.getElementById('loadingOverlay').className = show ? 'show' : '';
+        }
+
+        initApp();
+    </script>
+</body>
+</html>

@@ -70,3 +70,19 @@ jobs:
         with:
           folder: deploy
           branch: gh-pages
+
+      - name: Fallback: force-push `deploy/` to gh-pages
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          echo "Fallback deploy: force-pushing deploy/ to gh-pages"
+          rm -rf gh-pages-temp || true
+          git clone --depth=1 --branch=gh-pages https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} gh-pages-temp || git clone https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} gh-pages-temp
+          rm -rf gh-pages-temp/*
+          cp -r deploy/* gh-pages-temp/ || true
+          cd gh-pages-temp
+          git add --all
+          git commit -m "Fallback deploy from Actions: $GITHUB_SHA" || echo "No changes to commit"
+          git push --force "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}" HEAD:gh-pages

@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="./">
     <title>ML Pipeline - WASM App</title>
     <style>
         * {
@@ -584,8 +585,6 @@
     </div>
 
     <script type="module">
-        import init, { WasmFactory, WasmMLPipeline, WasmDataLoader } from './pkg/wasm.js';
-
         let factory, pipeline, dataLoader;
         let availableOptions = null;
 
@@ -595,21 +594,32 @@
         async function initApp() {
             try {
                 showLoading(true);
+                const wasmModule = await import('./pkg/wasm.js');
+                const init = wasmModule.default || wasmModule.init;
+                const WasmFactory = wasmModule.WasmFactory;
+                const WasmMLPipeline = wasmModule.WasmMLPipeline;
+                const WasmDataLoader = wasmModule.WasmDataLoader;
+
+                if (!init || !WasmFactory) {
+                    throw new Error('WASM module exports not found (wasm.js or pkg missing)');
+                }
+
                 await init();
-                
+
                 factory = new WasmFactory();
                 pipeline = new WasmMLPipeline();
-                
+
                 availableOptions = factory.getAvailableOptions();
                 console.log('Options:', availableOptions);
-                
+
                 populateOptions();
                 setupEventListeners();
-                
+
                 showStatus('info', 'Aplikácia pripravená!', 'dataStatus');
             } catch (error) {
                 console.error('Init error:', error);
-                showStatus('error', `Chyba: ${error}`, 'dataStatus');
+                const message = (error && error.message) ? error.message : String(error);
+                showStatus('error', `Chyba pri načítaní WASM: ${message}`, 'dataStatus');
             } finally {
                 showLoading(false);
             }

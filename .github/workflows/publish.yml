@@ -33,6 +33,17 @@ jobs:
           ls -la
           wasm-pack build --release --target web --out-dir pkg
 
+      - name: Ensure pkg files are committed into repository (optional)
+        if: always()
+        run: |
+          # Optionally copy pkg into a committed folder so deploy action sees it
+          # This is only needed if you prefer committed artifacts; otherwise deploy uses build output.
+          mkdir -p committed_build
+          rm -rf committed_build/pkg || true
+          if [ -d pkg ]; then cp -r pkg committed_build/; fi
+          cp index.html committed_build/ || true
+          echo "Committed build staged in committed_build/ (not auto-committed)"
+
       - name: Show publishable files (diagnostic)
         run: |
           echo "-- root listing --"

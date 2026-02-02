@@ -25,9 +25,10 @@ jobs:
           source $HOME/.cargo/env
 
       - name: Build WebAssembly with wasm-pack
-        working-directory: wasm
         run: |
-          wasm-pack build --release --target web --out-dir pkg
+          # show repo layout for debugging
+          ls -la
+          wasm-pack build wasm --release --target web --out-dir wasm/pkg
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4

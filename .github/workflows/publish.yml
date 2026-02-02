@@ -33,6 +33,17 @@ jobs:
           ls -la
           wasm-pack build --release --target web --out-dir pkg
 
+      - name: Show publishable files (diagnostic)
+        run: |
+          echo "-- root listing --"
+          ls -la
+          echo "-- pkg listing --"
+          if [ -d pkg ]; then ls -la pkg; else echo "pkg missing"; fi
+          echo "-- check wasm.js --"
+          if [ -f pkg/wasm.js ]; then head -n 5 pkg/wasm.js || true; file --mime-type pkg/wasm.js || true; else echo "pkg/wasm.js missing"; fi
+          echo "-- check wasm_bg.wasm --"
+          if [ -f pkg/wasm_bg.wasm ]; then file --mime-type pkg/wasm_bg.wasm || true; else echo "pkg/wasm_bg.wasm missing"; fi
+
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:

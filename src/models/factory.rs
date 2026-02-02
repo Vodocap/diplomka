@@ -46,4 +46,14 @@ impl ModelFactory {
             _ => None,
         }
     }
+
+    /// Vráti podporované parametre pre model
+    pub fn get_supported_params(model_type: &str) -> Vec<&'static str> {
+        match model_type {
+            "knn" => vec!["k"],
+            "tree" => vec!["max_depth"],
+            "linreg" | "logreg" => vec![],
+            _ => vec![],
+        }
+    }
 }

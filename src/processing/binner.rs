@@ -56,4 +56,18 @@ impl DataProcessor for Binner
         }
         result
     }
+
+    fn set_param(&mut self, key: &str, value: &str) -> Result<(), String> {
+        match key {
+            "bins" => {
+                self.bins = value.parse().map_err(|_| format!("Invalid bins value: {}", value))?;
+                Ok(())
+            }
+            _ => Err(format!("Unknown parameter: {}", key))
+        }
+    }
+
+    fn get_supported_params(&self) -> Vec<&str> {
+        vec!["bins"]
+    }
 }

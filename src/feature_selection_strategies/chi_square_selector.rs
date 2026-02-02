@@ -66,17 +66,17 @@ impl FeatureSelector for ChiSquareSelector
 
     fn get_supported_params(&self) -> Vec<&str> 
     {
-        vec!["top_k"]
+        vec!["num_features"]
     }
 
     fn set_param(&mut self, key: &str, value: &str) -> Result<(), String> 
     {
-        if key == "top_k" 
+        if key == "num_features" || key == "top_k"
         {
-            self.top_k = value.parse().map_err(|_| "Invalid top_k".to_string())?;
+            self.top_k = value.parse().map_err(|_| "num_features musí byť celé číslo".to_string())?;
             return Ok(());
         }
-        Err("Unknown parameter".into())
+        Err(format!("Parameter nenájdený: {}. Podporované: num_features", key))
     }
 
     fn get_selected_indices(&self, x: &DenseMatrix<f64>, y: &[f64]) -> Vec<usize> 

@@ -98,16 +98,16 @@ impl FeatureSelector for MutualInformationSelector
 
     fn get_supported_params(&self) -> Vec<&str> 
     {
-        vec!["top_k", "k_neighbors"]
+        vec!["num_features", "k_neighbors"]
     }
 
     fn set_param(&mut self, key: &str, value: &str) -> Result<(), String> 
     {
         match key 
         {
-            "top_k" => self.top_k = value.parse().map_err(|_| "Invalid top_k".to_string())?,
-            "k_neighbors" => self.k_neighbors = value.parse().map_err(|_| "Invalid k".to_string())?,
-            _ => return Err("Param not found".into()),
+            "num_features" | "top_k" => self.top_k = value.parse().map_err(|_| "Invalid num_features".to_string())?,
+            "k_neighbors" => self.k_neighbors = value.parse().map_err(|_| "Invalid k_neighbors".to_string())?,
+            _ => return Err(format!("Param not found: {}. Supported: num_features, k_neighbors", key)),
         }
         Ok(())
     }

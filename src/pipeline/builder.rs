@@ -10,7 +10,7 @@ use std::collections::HashMap;
 pub struct MLPipelineBuilder {
     model_type: Option<String>,
     model_params: HashMap<String, String>,
-    processor_type: Option<String>,
+    processor_types: Vec<String>, // Zmenené na Vec pre viacero procesorov
     selector_type: Option<String>,
     selector_params: HashMap<String, String>,
     evaluation_mode: Option<String>, // "classification" alebo "regression"
@@ -21,7 +21,7 @@ impl MLPipelineBuilder {
         Self {
             model_type: None,
             model_params: HashMap::new(),
-            processor_type: None,
+            processor_types: Vec::new(), // Zmenené
             selector_type: None,
             selector_params: HashMap::new(),
             evaluation_mode: None,
@@ -40,9 +40,21 @@ impl MLPipelineBuilder {
         self
     }
 
-    /// Nastaví data processor
+    /// Nastaví data processor (jeden)
     pub fn processor(mut self, processor_type: &str) -> Self {
-        self.processor_type = Some(processor_type.to_string());
+        self.processor_types = vec![processor_type.to_string()];
+        self
+    }
+
+    /// Nastaví viacero data procesorov (chain)
+    pub fn processors(mut self, processor_types: Vec<String>) -> Self {
+        self.processor_types = processor_types;
+        self
+    }
+
+    /// Pridá data processor do chainu
+    pub fn add_processor(mut self, processor_type: &str) -> Self {
+        self.processor_types.push(processor_type.to_string());
         self
     }
 
@@ -71,10 +83,11 @@ impl MLPipelineBuilder {
         let model_type = self.model_type
             .ok_or("Model musí byť nastavený")?;
 
-        // Kontrola kompatibility
+        // Kontrola kompatibility (použijeme prvý procesor pre spätnú kompatibilitu)
+        let first_processor = self.processor_types.first().map(|s| s.as_str());
         CompatibilityRegistry::check_compatibility(
             &model_type,
-            self.processor_type.as_deref(),
+            first_processor,
             self.selector_type.as_deref()
         )?;
 
@@ -86,9 +99,10 @@ impl MLPipelineBuilder {
             model.set_param(key, value)?;
         }
 
-        // Vytvorenie procesora (optional)
-        let processor = if let Some(proc_type) = &self.processor_type {
-            Some(ProcessorFactory::create(proc_type)?)
+        // Vytvorenie processora/procesorov (optional)
+        let processor = if !self.processor_types.is_empty() {
+            let proc_refs: Vec<&str> = self.processor_types.iter().map(|s| s.as_str()).collect();
+            Some(ProcessorFactory::create_chain(proc_refs)?)
         } else {
             None
         };

@@ -1,5 +1,6 @@
 use super::builder::MLPipelineBuilder;
 use super::pipeline::MLPipeline;
+use serde::{Serialize, Deserialize};
 
 /// Director pre Builder pattern - obsahuje hotové "recepty" na vytváranie pipeline
 /// Zapuzdruje komplexnú logiku konštrukcie a ponúka predpripravené konfigurácie
@@ -131,50 +132,77 @@ impl MLPipelineDirector {
                 name: "basic_classification",
                 description: "Základný klasifikačný pipeline (LogReg + Scaler + Variance)",
                 model_type: "classification",
+                model: Some("logreg"),
+                processor: Some("scaler"),
+                selector: Some("variance"),
             },
             PresetInfo {
                 name: "basic_regression",
                 description: "Základný regresný pipeline (LinReg + Scaler + Correlation)",
                 model_type: "regression",
+                model: Some("linreg"),
+                processor: Some("scaler"),
+                selector: Some("correlation"),
             },
             PresetInfo {
                 name: "advanced_classification",
                 description: "Pokročilý klasifikačný pipeline (Model + Scaler + Chi-Square)",
                 model_type: "classification",
+                model: None,
+                processor: Some("scaler"),
+                selector: Some("chi_square"),
             },
             PresetInfo {
                 name: "advanced_regression",
                 description: "Pokročilý regresný pipeline (Model + Scaler + MI)",
                 model_type: "regression",
+                model: None,
+                processor: Some("scaler"),
+                selector: Some("mutual_information"),
             },
             PresetInfo {
                 name: "knn_classifier",
                 description: "KNN klasifikátor s optimálnymi nastaveniami",
                 model_type: "classification",
+                model: Some("knn"),
+                processor: Some("scaler"),
+                selector: Some("variance"),
             },
             PresetInfo {
                 name: "knn_regressor",
                 description: "KNN regressor s optimálnymi nastaveniami",
                 model_type: "regression",
+                model: Some("knn"),
+                processor: Some("scaler"),
+                selector: Some("correlation"),
             },
             PresetInfo {
                 name: "decision_tree",
                 description: "Decision Tree s Information Gain selection",
                 model_type: "classification",
+                model: Some("tree"),
+                processor: None,
+                selector: Some("information_gain"),
             },
             PresetInfo {
                 name: "minimal",
                 description: "Minimálny pipeline bez preprocessingu",
                 model_type: "both",
+                model: None,
+                processor: None,
+                selector: None,
             },
         ]
     }
 }
 
 /// Informácie o predpripravenej konfigurácii
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PresetInfo {
     pub name: &'static str,
     pub description: &'static str,
     pub model_type: &'static str,
+    pub model: Option<&'static str>,
+    pub processor: Option<&'static str>,
+    pub selector: Option<&'static str>,
 }

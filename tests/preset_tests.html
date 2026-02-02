@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automatizované Testy Presetov</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+        }
+        h1 {
+            text-align: center;
+            color: #3498db;
+        }
+        .test-container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+        .test-success {
+            background: rgba(46, 204, 113, 0.3);
+            border-left: 4px solid #2ecc71;
+        }
+        .test-fail {
+            background: rgba(231, 76, 60, 0.3);
+            border-left: 4px solid #e74c3c;
+        }
+        .test-running {
+            background: rgba(241, 196, 15, 0.3);
+            border-left: 4px solid #f1c40f;
+        }
+        .summary {
+            font-size: 1.2em;
+            font-weight: bold;
+            text-align: center;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+        }
+        .summary.pass {
+            background: rgba(46, 204, 113, 0.3);
+        }
+        .summary.fail {
+            background: rgba(231, 76, 60, 0.3);
+        }
+        button {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            display: block;
+            margin: 20px auto;
+        }
+        button:hover {
+            background: linear-gradient(135deg, #2980b9 0%, #3498db 100%);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <h1>Automatizované Testy ML Pipeline Presetov</h1>
+    
+    <button id="runTests" onclick="runAllTests()">Spustiť Testy</button>
+    
+    <div class="test-container">
+        <h2>Výsledky Testov</h2>
+        <div id="testResults"></div>
+    </div>
+    
+    <div id="summary"></div>
+
+    <script type="module">
+        import init, { WasmMLPipeline, WasmFactory } from '../pkg/wasm.js';
+
+        let pipeline;
+        let factory;
+
+        async function initWasm() {
+            await init();
+            pipeline = new WasmMLPipeline();
+            factory = new WasmFactory();
+            console.log('WASM initialized');
+        }
+
+        // Test data
+        const testData = `feature1,feature2,feature3,target
+1.0,2.0,3.0,0
+2.0,3.0,4.0,1
+3.0,4.0,5.0,0
+4.0,5.0,6.0,1
+5.0,6.0,7.0,0
+6.0,7.0,8.0,1
+7.0,8.0,9.0,0
+8.0,9.0,10.0,1`;
+
+        // Test konfigurácie pre každý preset
+        const presetTests = [
+            {
+                name: 'basic_classification',
+                description: 'Základný klasifikačný preset s logreg',
+                model: 'logreg',
+                expectedModel: 'Logistická Regresia (Klasifikácia)',
+                expectedSelector: 'Variance Threshold Selector',
+                expectedProcessor: 'Standard Scaler'
+            },
+            {
+                name: 'basic_regression',
+                description: 'Základný regresný preset s linreg',
+                model: 'linreg',
+                expectedModel: 'Lineárna Regresia',
+                expectedSelector: 'Correlation Filter',
+                expectedProcessor: 'Standard Scaler'
+            },
+            {
+                name: 'knn_classifier',
+                description: 'KNN klasifikátor s defaultnými parametrami',
+                model: 'knn',
+                params: {
+                    model: [['k', '3']],
+                    selector: [['threshold', '0.05']]
+                },
+                expectedModel: 'K-Nearest Neighbors',
+                expectedSelector: 'Variance Threshold Selector',
+                expectedProcessor: 'Standard Scaler'
+            },
+            {
+                name: 'knn_classifier',
+                description: 'KNN klasifikátor s vlastnými parametrami',
+                model: 'knn',
+                params: {
+                    model: [['k', '5']],
+                    selector: [['threshold', '0.01']]
+                },
+                expectedModel: 'K-Nearest Neighbors',
+                expectedSelector: 'Variance Threshold Selector',
+                expectedProcessor: 'Standard Scaler'
+            },
+            {
+                name: 'knn_regressor',
+                description: 'KNN regresor',
+                model: 'knn',
+                params: {
+                    model: [['k', '3']],
+                    selector: null
+                },
+                expectedModel: 'K-Nearest Neighbors',
+                expectedSelector: 'Correlation Filter',
+                expectedProcessor: 'Standard Scaler'
+            },
+            {
+                name: 'decision_tree',
+                description: 'Decision Tree s information gain',
+                model: 'tree',
+                params: {
+                    model: [['max_depth', '10']],
+                    selector: [['num_features', '5']]
+                },
+                expectedModel: 'Decision Tree',
+                expectedSelector: 'Information Gain (Diskrétny odhad)',
+                expectedProcessor: undefined
+            },
+            {
+                name: 'advanced_classification',
+                description: 'Pokročilá klasifikácia s chi-square',
+                model: 'logreg',
+                params: {
+                    model: null,
+                    selector: [['num_features', '2']]
+                },
+                expectedModel: 'Logistická Regresia (Klasifikácia)',
+                expectedSelector: 'Chi-Square Selector',
+                expectedProcessor: 'Standard Scaler'
+            },
+            {
+                name: 'advanced_regression',
+                description: 'Pokročilá regresia s mutual information',
+                model: 'linreg',
+                params: {
+                    model: null,
+                    selector: [['num_features', '2']]
+                },
+                expectedModel: 'Lineárna Regresia',
+                expectedSelector: 'Mutual Information (KSG Estimator)',
+                expectedProcessor: 'Standard Scaler'
+            },
+            {
+                name: 'minimal',
+                description: 'Minimálny preset bez processingu',
+                model: 'knn',
+                params: {
+                    model: [['k', '3']],
+                    selector: null
+                },
+                expectedModel: 'K-Nearest Neighbors',
+                expectedSelector: undefined,
+                expectedProcessor: undefined
+            }
+        ];
+
+        async function runTest(testConfig) {
+            const startTime = performance.now();
+            
+            try {
+                // Create new pipeline instance for each test to avoid borrowing issues
+                const testPipeline = new WasmMLPipeline();
+                
+                // Build pipeline
+                const result = await testPipeline.buildFromPreset(
+                    testConfig.name,
+                    testConfig.model,
+                    testConfig.params?.model || null,
+                    testConfig.params?.selector || null
+                );
+
+                // Validate result
+                const errors = [];
+                
+                if (result.model_name !== testConfig.expectedModel) {
+                    errors.push(`Model: očakávané '${testConfig.expectedModel}', dostané '${result.model_name}'`);
+                }
+                
+                if (result.selector !== testConfig.expectedSelector) {
+                    errors.push(`Selector: očakávané '${testConfig.expectedSelector}', dostané '${result.selector}'`);
+                }
+                
+                if (result.processor !== testConfig.expectedProcessor) {
+                    errors.push(`Processor: očakávané '${testConfig.expectedProcessor}', dostané '${result.processor}'`);
+                }
+
+                // Load and train with test data using train/test split
+                await testPipeline.loadData(testData, 'target', 'csv');
+                
+                // Test train/test split with 80% train ratio
+                const trainResult = await testPipeline.trainWithSplit(0.8);
+                
+                // Validate training result
+                if (!trainResult.success) {
+                    errors.push(`Training failed: ${trainResult.message}`);
+                }
+                
+                // Validate evaluation mode
+                let expectedEvalMode = 'classification'; // default
+                if (testConfig.model === 'linreg' || testConfig.name === 'knn_regressor' || testConfig.name === 'basic_regression' || testConfig.name === 'advanced_regression') {
+                    expectedEvalMode = 'regression';
+                }
+                if (trainResult.evaluation_mode !== expectedEvalMode) {
+                    errors.push(`Evaluation mode: očakávané '${expectedEvalMode}', dostané '${trainResult.evaluation_mode}'`);
+                }
+                
+                // Validate metrics
+                if (trainResult.evaluation_mode === 'classification') {
+                    if (trainResult.accuracy < 0 || trainResult.accuracy > 1) {
+                        errors.push(`Accuracy mimo rozsahu: ${trainResult.accuracy}`);
+                    }
+                    if (trainResult.f1_score < 0 || trainResult.f1_score > 1) {
+                        errors.push(`F1 score mimo rozsahu: ${trainResult.f1_score}`);
+                    }
+                    if (trainResult.precision < 0 || trainResult.precision > 1) {
+                        errors.push(`Precision mimo rozsahu: ${trainResult.precision}`);
+                    }
+                    if (trainResult.recall < 0 || trainResult.recall > 1) {
+                        errors.push(`Recall mimo rozsahu: ${trainResult.recall}`);
+                    }
+                } else {
+                    // Regression metrics
+                    if (isNaN(trainResult.mse) || trainResult.mse < 0) {
+                        errors.push(`Neplatné MSE: ${trainResult.mse}`);
+                    }
+                    if (isNaN(trainResult.rmse) || trainResult.rmse < 0) {
+                        errors.push(`Neplatné RMSE: ${trainResult.rmse}`);
+                    }
+                    if (isNaN(trainResult.mae) || trainResult.mae < 0) {
+                        errors.push(`Neplatné MAE: ${trainResult.mae}`);
+                    }
+                    if (isNaN(trainResult.r2_score)) {
+                        errors.push(`Neplatné R²: ${trainResult.r2_score}`);
+                    }
+                }
+
+                const endTime = performance.now();
+                const duration = (endTime - startTime).toFixed(2);
+
+                if (errors.length > 0) {
+                    return {
+                        success: false,
+                        message: errors.join('; '),
+                        duration
+                    };
+                }
+
+                // Format metrics for display
+                let metricsText = '';
+                if (trainResult.evaluation_mode === 'classification') {
+                    metricsText = `Accuracy: ${(trainResult.accuracy * 100).toFixed(1)}%, F1: ${trainResult.f1_score.toFixed(3)}`;
+                } else {
+                    metricsText = `R²: ${trainResult.r2_score.toFixed(3)}, RMSE: ${trainResult.rmse.toFixed(3)}`;
+                }
+
+                return {
+                    success: true,
+                    message: `OK (${duration}ms) - ${metricsText}`,
+                    duration,
+                    result,
+                    trainResult
+                };
+            } catch (error) {
+                const endTime = performance.now();
+                const duration = (endTime - startTime).toFixed(2);
+                return {
+                    success: false,
+                    message: `Error: ${error}`,
+                    duration
+                };
+            }
+        }
+
+        window.runAllTests = async function() {
+            const button = document.getElementById('runTests');
+            const resultsDiv = document.getElementById('testResults');
+            const summaryDiv = document.getElementById('summary');
+            
+            button.disabled = true;
+            resultsDiv.innerHTML = '<div class="test-running">Inicializácia WASM...</div>';
+            summaryDiv.innerHTML = '';
+
+            try {
+                await initWasm();
+                resultsDiv.innerHTML = '<div class="test-running">Spúšťam testy...</div>';
+
+                let passed = 0;
+                let failed = 0;
+                resultsDiv.innerHTML = '';
+
+                for (let i = 0; i < presetTests.length; i++) {
+                    const test = presetTests[i];
+                    
+                    // Show running status
+                    const testDiv = document.createElement('div');
+                    testDiv.className = 'test-result test-running';
+                    testDiv.id = `test-${i}`;
+                    testDiv.textContent = `[${i + 1}/${presetTests.length}] Testuje sa: ${test.description}...`;
+                    resultsDiv.appendChild(testDiv);
+
+                    // Run test
+                    const result = await runTest(test);
+
+                    // Update result
+                    testDiv.className = `test-result ${result.success ? 'test-success' : 'test-fail'}`;
+                    testDiv.innerHTML = `
+                        <strong>[${i + 1}/${presetTests.length}] ${test.description}</strong><br>
+                        Preset: ${test.name} | Model: ${test.model}<br>
+                        Status: ${result.success ? '✓ PASS' : '✗ FAIL'}<br>
+                        ${result.message}
+                    `;
+
+                    if (result.success) {
+                        passed++;
+                    } else {
+                        failed++;
+                    }
+                }
+
+                // Show summary
+                const total = presetTests.length;
+                const passRate = ((passed / total) * 100).toFixed(1);
+                summaryDiv.className = `summary ${failed === 0 ? 'pass' : 'fail'}`;
+                summaryDiv.innerHTML = `
+                    <div>Celkový Výsledok: ${passed}/${total} testov prešlo (${passRate}%)</div>
+                    ${failed > 0 ? `<div style="color: #e74c3c;">⚠ ${failed} testov zlyhalo</div>` : '<div style="color: #2ecc71;">✓ Všetky testy prešli!</div>'}
+                `;
+
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="test-fail">Chyba pri inicializácii: ${error}</div>`;
+            } finally {
+                button.disabled = false;
+            }
+        };
+    </script>
+</body>
+</html>

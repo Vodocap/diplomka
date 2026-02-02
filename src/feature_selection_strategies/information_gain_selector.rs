@@ -54,17 +54,17 @@ impl FeatureSelector for InformationGainSelector
 
     fn get_supported_params(&self) -> Vec<&str> 
     {
-        vec!["top_k"]
+        vec!["num_features"]
     }
 
     fn set_param(&mut self, key: &str, value: &str) -> Result<(), String> 
     {
-        if key == "top_k" 
+        if key == "num_features" || key == "top_k"
         {
-            self.top_k = value.parse().map_err(|_| "top_k musí byť celé číslo".to_string())?;
+            self.top_k = value.parse().map_err(|_| "num_features musí byť celé číslo".to_string())?;
             return Ok(());
         }
-        Err("Parameter nenájdený".into())
+        Err(format!("Parameter nenájdený: {}. Podporované parametre: num_features", key))
     }
 
     /// Hlavná logika výberu príznakov.

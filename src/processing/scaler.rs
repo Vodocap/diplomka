@@ -35,4 +35,12 @@ impl DataProcessor for StandardScaler
         }
         result
     }
+
+    fn set_param(&mut self, _key: &str, _value: &str) -> Result<(), String> {
+        Err("StandardScaler has no configurable parameters".to_string())
+    }
+
+    fn get_supported_params(&self) -> Vec<&str> {
+        vec![]
+    }
 }

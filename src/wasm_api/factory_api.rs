@@ -141,4 +141,35 @@ impl WasmFactory {
         let selectors = registry.get_compatible_selectors(_model_name);
         serde_wasm_bindgen::to_value(&selectors).unwrap()
     }
+
+    /// Získa podporované parametre pre model
+    #[wasm_bindgen(js_name = getModelParams)]
+    pub fn get_model_params(&self, model_name: &str) -> JsValue {
+        use crate::models::factory::ModelFactory;
+        let params = ModelFactory::get_supported_params(model_name);
+        serde_wasm_bindgen::to_value(&params).unwrap()
+    }
+
+    /// Získa podporované parametre pre selector
+    #[wasm_bindgen(js_name = getSelectorParams)]
+    pub fn get_selector_params(&self, selector_name: &str) -> JsValue {
+        use crate::feature_selection_strategies::factory::FeatureSelectorFactory;
+        let params = FeatureSelectorFactory::get_supported_params(selector_name);
+        serde_wasm_bindgen::to_value(&params).unwrap()
+    }
+
+    /// Získa detaily o presete (model, processor, selector)
+    #[wasm_bindgen(js_name = getPresetDetails)]
+    pub fn get_preset_details(&self, preset_name: &str) -> JsValue {
+        use crate::pipeline::director::MLPipelineDirector;
+        let presets = MLPipelineDirector::available_presets();
+        
+        for preset in presets {
+            if preset.name == preset_name {
+                return serde_wasm_bindgen::to_value(&preset).unwrap();
+            }
+        }
+        
+        JsValue::NULL
+    }
 }

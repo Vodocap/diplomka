@@ -22,7 +22,7 @@
             max-width: 1400px;
             margin: 0 auto;
             background: white;
-            border-radius: 15px;
+            border-radius: 0px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             overflow: hidden;
         }
@@ -54,7 +54,7 @@
         .section {
             background: #f8f9fa;
             padding: 25px;
-            border-radius: 10px;
+            border-radius: 0px;
             border: 2px solid #e9ecef;
         }
 
@@ -85,9 +85,20 @@
             width: 100%;
             padding: 12px;
             border: 2px solid #dee2e6;
-            border-radius: 8px;
+            border-radius: 0px;
             font-size: 1em;
             transition: border-color 0.3s;
+            background: white;
+        }
+
+        input[type="file"] {
+            padding: 10px;
+            cursor: pointer;
+        }
+
+        input[type="radio"] {
+            width: auto;
+            cursor: pointer;
         }
 
         select:focus, input:focus, textarea:focus {
@@ -106,7 +117,7 @@
             color: white;
             border: none;
             padding: 14px 28px;
-            border-radius: 8px;
+            border-radius: 0px;
             font-size: 1em;
             font-weight: 600;
             cursor: pointer;
@@ -140,7 +151,7 @@
         .info-box {
             background: white;
             padding: 15px;
-            border-radius: 8px;
+            border-radius: 0px;
             margin-top: 15px;
             border-left: 4px solid #3498db;
         }
@@ -157,7 +168,7 @@
 
         .status {
             padding: 12px;
-            border-radius: 8px;
+            border-radius: 0px;
             margin-top: 15px;
             display: none;
         }
@@ -194,8 +205,89 @@
             background: #3498db;
             color: white;
             padding: 8px 15px;
-            border-radius: 20px;
+            border-radius: 0px;
             font-size: 0.9em;
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 0px;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: auto;
+            cursor: pointer;
+        }
+
+        .checkbox-item label {
+            margin: 0;
+            cursor: pointer;
+            flex: 1;
+        }
+
+        .processors-order {
+            margin-top: 15px;
+            padding: 10px;
+            background: #e8f4f8;
+            border: 2px solid #3498db;
+            border-radius: 0px;
+            min-height: 50px;
+        }
+
+        .processors-order:empty::after {
+            content: 'Vyberte procesory...';
+            color: #666;
+            font-style: italic;
+        }
+
+        .processor-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #3498db;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 0px;
+            margin: 5px;
+        }
+
+        .processor-chip .move-btn {
+            background: rgba(255,255,255,0.3);
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 0px;
+            font-size: 12px;
+        }
+
+        .processor-chip .move-btn:hover {
+            background: rgba(255,255,255,0.5);
+        }
+
+        .processor-chip .remove-btn {
+            background: #e74c3c;
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 0px;
+            font-weight: bold;
+        }
+
+        .processor-chip .remove-btn:hover {
+            background: #c0392b;
         }
 
         #loadingOverlay {
@@ -218,7 +310,7 @@
         .spinner {
             border: 5px solid #f3f3f3;
             border-top: 5px solid #3498db;
-            border-radius: 50%;
+            border-radius: 0px;
             width: 60px;
             height: 60px;
             animation: spin 1s linear infinite;
@@ -227,6 +319,32 @@
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+        }
+
+        .metric-box {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            padding: 20px;
+            border-radius: 0px;
+            text-align: center;
+            color: white;
+        }
+
+        .metric-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-bottom: 8px;
+        }
+
+        .metric-value {
+            font-size: 2em;
+            font-weight: bold;
+        }
+
+        #metricsContainer h4 {
+            color: #495057;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #dee2e6;
         }
     </style>
 </head>
@@ -261,10 +379,9 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Data Processor (voliteľné):</label>
-                    <select id="processorSelect">
-                        <option value="">-- Žiadny --</option>
-                    </select>
+                    <label>Data Processors (voliteľné, v poradí):</label>
+                    <div id="processorCheckboxes" class="checkbox-group"></div>
+                    <div id="selectedProcessorsOrder" class="processors-order"></div>
                 </div>
 
                 <div class="form-group">
@@ -281,6 +398,32 @@
                         <option value="classification">Classification</option>
                         <option value="regression">Regression</option>
                     </select>
+                </div>
+
+                <div id="modelParamsContainer" style="display: none;">
+                    <h3 style="margin-top: 20px; font-size: 1.1em;">Parametre modelu</h3>
+                    <div class="form-group" id="knnKGroup" style="display: none;">
+                        <label>K (počet susedov):</label>
+                        <input type="number" id="knnK" placeholder="5" min="1" max="100" value="5">
+                    </div>
+
+                    <div class="form-group" id="treeMaxDepthGroup" style="display: none;">
+                        <label>Max Depth (maximálna hĺbka stromu):</label>
+                        <input type="number" id="treeMaxDepth" placeholder="10" min="1" max="50" value="10">
+                    </div>
+                </div>
+
+                <div id="selectorParamsContainer" style="display: none;">
+                    <h3 style="margin-top: 20px; font-size: 1.1em;">Parametre selectora</h3>
+                    <div class="form-group" id="selectorNumFeaturesGroup" style="display: none;">
+                        <label>Num Features (počet features):</label>
+                        <input type="number" id="selectorNumFeatures" placeholder="5" min="1" max="100" value="5">
+                    </div>
+
+                    <div class="form-group" id="selectorThresholdGroup" style="display: none;">
+                        <label>Threshold (prahová hodnota):</label>
+                        <input type="number" id="selectorThreshold" placeholder="0.01" min="0" max="1" step="0.01" value="0.01">
+                    </div>
                 </div>
 
                 <button id="buildPipelineBtn">Vytvoriť Pipeline</button>
@@ -301,8 +444,31 @@
                 </div>
 
                 <div class="form-group">
+                    <label>Spôsob zadania dát:</label>
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <label style="cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                            <input type="radio" name="dataInputMethod" value="text" id="dataInputText" checked>
+                            <span>Vložiť text</span>
+                        </label>
+                        <label style="cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                            <input type="radio" name="dataInputMethod" value="file" id="dataInputFile">
+                            <span>Nahrať súbor</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group" id="textInputContainer">
                     <label>Vložte dáta:</label>
                     <textarea id="dataInput" placeholder="Vložte CSV alebo JSON dáta..."></textarea>
+                </div>
+
+                <div class="form-group" id="fileInputContainer" style="display: none;">
+                    <label>Vyberte súbor:</label>
+                    <input type="file" id="fileInput" accept=".csv,.json,.txt">
+                    <div id="fileInfo" style="margin-top: 10px; font-size: 0.9em; color: #6c757d;"></div>
+                    <button type="button" onclick="downloadSampleCSV()" style="margin-top: 10px; padding: 8px 16px; font-size: 0.9em; background: linear-gradient(135deg, #27ae60 0%, #229954 100%);">
+                        ⬇ Stiahnuť vzorový CSV súbor
+                    </button>
                 </div>
 
                 <div class="form-group">
@@ -312,12 +478,80 @@
                     </select>
                 </div>
 
+                <div class="form-group">
+                    <label>Train/Test Split (% pre tréning):</label>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="range" id="trainTestSplit" min="50" max="95" value="80" step="5" style="flex: 1;">
+                        <span id="splitValue" style="min-width: 60px; font-weight: bold; color: #3498db;">80%</span>
+                    </div>
+                    <div style="font-size: 0.85em; color: #6c757d; margin-top: 5px;">
+                        Train: <span id="trainPercent">80%</span> | Test: <span id="testPercent">20%</span>
+                    </div>
+                </div>
+
                 <button id="loadDataBtn">Načítať Dáta</button>
                 
                 <div id="dataStatus" class="status"></div>
             </div>
 
-            <!-- Info -->
+            <!-- Trénovanie -->
+            <div class="section">
+                <h2>3. Trénovanie</h2>
+                <button id="trainBtn" disabled>Trénovať Model</button>
+                <div id="trainStatus" class="status"></div>
+                
+                <div id="trainingInfo" class="info-box" style="display: none; margin-top: 20px;">
+                    <h3>Výsledky Tréningu</h3>
+                    <p><strong>Stav:</strong> <span id="trainingStatus">-</span></p>
+                    
+                    <div id="metricsContainer" style="margin-top: 20px;">
+                        <h4>Evaluačné Metriky (Test Set)</h4>
+                        <div id="classificationMetrics" style="display: none;">
+                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 10px;">
+                                <div class="metric-box">
+                                    <div class="metric-label">Accuracy</div>
+                                    <div class="metric-value" id="metricAccuracy">-</div>
+                                </div>
+                                <div class="metric-box">
+                                    <div class="metric-label">F1 Score</div>
+                                    <div class="metric-value" id="metricF1">-</div>
+                                </div>
+                                <div class="metric-box">
+                                    <div class="metric-label">Precision</div>
+                                    <div class="metric-value" id="metricPrecision">-</div>
+                                </div>
+                                <div class="metric-box">
+                                    <div class="metric-label">Recall</div>
+                                    <div class="metric-value" id="metricRecall">-</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="regressionMetrics" style="display: none;">
+                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 10px;">
+                                <div class="metric-box">
+                                    <div class="metric-label">R² Score</div>
+                                    <div class="metric-value" id="metricR2">-</div>
+                                </div>
+                                <div class="metric-box">
+                                    <div class="metric-label">RMSE</div>
+                                    <div class="metric-value" id="metricRMSE">-</div>
+                                </div>
+                                <div class="metric-box">
+                                    <div class="metric-label">MSE</div>
+                                    <div class="metric-value" id="metricMSE">-</div>
+                                </div>
+                                <div class="metric-box">
+                                    <div class="metric-label">MAE</div>
+                                    <div class="metric-value" id="metricMAE">-</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Predikcia -->
             <div class="section full-width">
                 <h2>Dostupné Možnosti</h2>
                 
@@ -341,42 +575,9 @@
                 <div class="info-box" id="currentPipelineInfo" style="display: none; margin-top: 20px;">
                     <h3>Aktuálny Pipeline</h3>
                     <p><strong>Model:</strong> <span id="currentModel">-</span></p>
-                    <p><strong>Processor:</strong> <span id="currentProcessor">-</span></p>
+                    <p><strong>Processors:</strong> <span id="currentProcessor">-</span></p>
                     <p><strong>Selector:</strong> <span id="currentSelector">-</span></p>
                     <p><strong>Eval Mode:</strong> <span id="currentEvalMode">-</span></p>
-                </div>
-            </div>
-
-            <!-- Tréning -->
-            <div class="section">
-                <h2>3. Tréning</h2>
-                
-                <button id="trainBtn" disabled>Trénovať Model</button>
-                
-                <div id="trainingStatus" class="status"></div>
-                
-                <div class="info-box" id="trainingInfo" style="display: none;">
-                    <h3>Výsledky</h3>
-                    <p><strong>Vzorky:</strong> <span id="trainSamples">-</span></p>
-                </div>
-            </div>
-
-            <!-- Predikcia -->
-            <div class="section">
-                <h2>4. Predikcia</h2>
-                
-                <div class="form-group">
-                    <label>Vstup (JSON array):</label>
-                    <textarea id="predictionInput" placeholder='[1.0, 2.0, 3.0]' rows="3"></textarea>
-                </div>
-                
-                <button id="predictBtn" disabled>Predikcia</button>
-                
-                <div id="predictionStatus" class="status"></div>
-                
-                <div class="info-box" id="predictionResult" style="display: none;">
-                    <h3>Výsledok</h3>
-                    <p id="predictionValue" style="font-size: 2em; color: #3498db; font-weight: bold;"></p>
                 </div>
             </div>
         </div>
@@ -387,6 +588,9 @@
 
         let factory, pipeline, dataLoader;
         let availableOptions = null;
+
+        // Make functions globally available for inline handlers
+        window.downloadSampleCSV = downloadSampleCSV;
 
         async function initApp() {
             try {
@@ -422,12 +626,25 @@
                 modelSelect.appendChild(opt);
             });
 
-            const processorSelect = document.getElementById('processorSelect');
+            // Vytvoríme checkboxy pre procesory
+            const processorCheckboxes = document.getElementById('processorCheckboxes');
             availableOptions.processors.forEach(p => {
-                const opt = document.createElement('option');
-                opt.value = p.name;
-                opt.textContent = `${p.name} - ${p.description}`;
-                processorSelect.appendChild(opt);
+                const item = document.createElement('div');
+                item.className = 'checkbox-item';
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = `proc_${p.name}`;
+                checkbox.value = p.name;
+                checkbox.addEventListener('change', updateProcessorOrder);
+                
+                const label = document.createElement('label');
+                label.htmlFor = `proc_${p.name}`;
+                label.textContent = `${p.name} - ${p.description}`;
+                
+                item.appendChild(checkbox);
+                item.appendChild(label);
+                processorCheckboxes.appendChild(item);
             });
 
             const selectorSelect = document.getElementById('selectorSelect');
@@ -476,47 +693,410 @@
             });
         }
 
+        // Zoznam vybraných procesorov v poradí
+        let selectedProcessors = [];
+
+        function updateProcessorOrder() {
+            const checkboxes = document.querySelectorAll('#processorCheckboxes input[type="checkbox"]');
+            const orderDiv = document.getElementById('selectedProcessorsOrder');
+            
+            // Aktualizuj selectedProcessors podľa checkboxov
+            const currentChecked = Array.from(checkboxes)
+                .filter(cb => cb.checked)
+                .map(cb => cb.value);
+            
+            // Pridaj nové procesory na koniec
+            currentChecked.forEach(proc => {
+                if (!selectedProcessors.includes(proc)) {
+                    selectedProcessors.push(proc);
+                }
+            });
+            
+            // Odstráň odškrtnuté procesory
+            selectedProcessors = selectedProcessors.filter(proc => currentChecked.includes(proc));
+            
+            // Vyrenderuj chips
+            orderDiv.innerHTML = '';
+            selectedProcessors.forEach((proc, idx) => {
+                const chip = document.createElement('div');
+                chip.className = 'processor-chip';
+                
+                if (idx > 0) {
+                    const moveUpBtn = document.createElement('button');
+                    moveUpBtn.className = 'move-btn';
+                    moveUpBtn.textContent = '↑';
+                    moveUpBtn.onclick = () => moveProcessor(idx, idx - 1);
+                    chip.appendChild(moveUpBtn);
+                }
+                
+                if (idx < selectedProcessors.length - 1) {
+                    const moveDownBtn = document.createElement('button');
+                    moveDownBtn.className = 'move-btn';
+                    moveDownBtn.textContent = '↓';
+                    moveDownBtn.onclick = () => moveProcessor(idx, idx + 1);
+                    chip.appendChild(moveDownBtn);
+                }
+                
+                const label = document.createElement('span');
+                label.textContent = proc;
+                chip.appendChild(label);
+                
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'remove-btn';
+                removeBtn.textContent = '×';
+                removeBtn.onclick = () => {
+                    document.getElementById(`proc_${proc}`).checked = false;
+                    updateProcessorOrder();
+                };
+                chip.appendChild(removeBtn);
+                
+                orderDiv.appendChild(chip);
+            });
+        }
+
+        function moveProcessor(fromIdx, toIdx) {
+            const temp = selectedProcessors[fromIdx];
+            selectedProcessors[fromIdx] = selectedProcessors[toIdx];
+            selectedProcessors[toIdx] = temp;
+            updateProcessorOrder();
+        }
+
         function setupEventListeners() {
             document.getElementById('buildPipelineBtn').onclick = buildPipeline;
             document.getElementById('loadDataBtn').onclick = loadData;
             document.getElementById('trainBtn').onclick = trainModel;
-            document.getElementById('predictBtn').onclick = makePrediction;
+            
+            // Data input method radio buttons
+            document.getElementById('dataInputText').onchange = toggleDataInputMethod;
+            document.getElementById('dataInputFile').onchange = toggleDataInputMethod;
+            
+            // Train/Test split slider
+            document.getElementById('trainTestSplit').oninput = function(e) {
+                const trainPercent = parseInt(e.target.value);
+                const testPercent = 100 - trainPercent;
+                document.getElementById('splitValue').textContent = `${trainPercent}%`;
+                document.getElementById('trainPercent').textContent = `${trainPercent}%`;
+                document.getElementById('testPercent').textContent = `${testPercent}%`;
+            };
+            
+            // File input change listener
+            document.getElementById('fileInput').onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const fileInfo = document.getElementById('fileInfo');
+                    fileInfo.textContent = `Vybraný súbor: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+                    
+                    // Auto-detect format from file extension
+                    const ext = file.name.split('.').pop().toLowerCase();
+                    if (ext === 'csv') {
+                        document.getElementById('dataFormatSelect').value = 'csv';
+                    } else if (ext === 'json') {
+                        document.getElementById('dataFormatSelect').value = 'json';
+                    }
+                }
+            };
+            
+            document.getElementById('presetSelect').onchange = function() {
+                const preset = this.value;
+                const isCustom = !preset;
+                
+                document.getElementById('modelSelect').disabled = !isCustom;
+                // Processor checkboxy ostanú vždy enabled
+                document.getElementById('selectorSelect').disabled = !isCustom;
+                document.getElementById('evalModeSelect').disabled = !isCustom;
+                
+                if (preset) {
+                    // Získaj detaily presetu a zobraz relevantné parametre
+                    const presetDetails = factory.getPresetDetails(preset);
+                    if (presetDetails) {
+                        // Zobraz polia pre model ak je definovaný
+                        if (presetDetails.model) {
+                            updateModelParams(presetDetails.model);
+                        } else {
+                            hideAllParamFields();
+                        }
+                        // Zobraz polia pre selector ak je definovaný
+                        if (presetDetails.selector) {
+                            updateSelectorParams(presetDetails.selector);
+                        }
+                    }
+                } else {
+                    hideAllParamFields();
+                }
+            };
+
+            document.getElementById('modelSelect').onchange = function() {
+                updateModelParams(this.value);
+            };
+
+            document.getElementById('selectorSelect').onchange = function() {
+                updateSelectorParams(this.value);
+            };
+        }
+
+        function hideAllParamFields() {
+            document.getElementById('modelParamsContainer').style.display = 'none';
+            document.getElementById('selectorParamsContainer').style.display = 'none';
+            document.getElementById('knnKGroup').style.display = 'none';
+            document.getElementById('treeMaxDepthGroup').style.display = 'none';
+            document.getElementById('selectorNumFeaturesGroup').style.display = 'none';
+            document.getElementById('selectorThresholdGroup').style.display = 'none';
+        }
+
+        function updateModelParams(modelName) {
+            hideAllParamFields();
+            
+            if (!modelName) return;
+
+            const params = factory.getModelParams(modelName);
+            
+            if (params.length > 0) {
+                document.getElementById('modelParamsContainer').style.display = 'block';
+                
+                params.forEach(param => {
+                    if (param === 'k') {
+                        document.getElementById('knnKGroup').style.display = 'block';
+                    } else if (param === 'max_depth') {
+                        document.getElementById('treeMaxDepthGroup').style.display = 'block';
+                    }
+                });
+            }
+        }
+
+        function updateSelectorParams(selectorName) {
+            document.getElementById('selectorParamsContainer').style.display = 'none';
+            document.getElementById('selectorNumFeaturesGroup').style.display = 'none';
+            document.getElementById('selectorThresholdGroup').style.display = 'none';
+            
+            if (!selectorName) return;
+
+            const params = factory.getSelectorParams(selectorName);
+            
+            if (params.length > 0) {
+                document.getElementById('selectorParamsContainer').style.display = 'block';
+                
+                params.forEach(param => {
+                    if (param === 'num_features') {
+                        document.getElementById('selectorNumFeaturesGroup').style.display = 'block';
+                    } else if (param === 'threshold') {
+                        document.getElementById('selectorThresholdGroup').style.display = 'block';
+                    }
+                });
+            }
         }
 
         async function buildPipeline() {
             try {
                 showLoading(true);
                 
+                const preset = document.getElementById('presetSelect').value;
                 const model = document.getElementById('modelSelect').value;
-                const processor = document.getElementById('processorSelect').value;
+                const processors = selectedProcessors; // Použijeme selectedProcessors namiesto jedného
                 const selector = document.getElementById('selectorSelect').value;
                 const evalMode = document.getElementById('evalModeSelect').value;
 
-                if (!model) throw new Error('Vyberte model');
+                console.log('=== BUILD PIPELINE START ===');
+                console.log('Preset:', preset);
+                console.log('Model:', model);
+                console.log('Processors:', processors);
+                console.log('Selector:', selector);
+                console.log('EvalMode:', evalMode);
 
-                const config = {
-                    model: model,
-                    processor: processor || null,
-                    selector: selector || null,
-                    evaluation_mode: evalMode || null,
-                    model_params: null,
-                    selector_params: null
-                };
+                let result;
 
-                const result = await pipeline.buildFromConfig(config);
+                if (preset) {
+                    // Použiť preset - zozbierať parametre
+                    const presetDetails = factory.getPresetDetails(preset);
+                    console.log('Preset Details:', presetDetails);
+                    
+                    const modelParams = [];
+                    const selectorParams = [];
+
+                    // Zozbierať model parametre ak sú viditeľné
+                    const knnK = document.getElementById('knnK').value;
+                    console.log('KNN K value:', knnK);
+                    if (knnK && presetDetails.model === 'knn') {
+                        modelParams.push(['k', knnK]);
+                        console.log('Added K parameter:', knnK);
+                    }
+
+                    const treeMaxDepth = document.getElementById('treeMaxDepth').value;
+                    console.log('Tree max_depth value:', treeMaxDepth);
+                    if (treeMaxDepth && presetDetails.model === 'tree') {
+                        modelParams.push(['max_depth', treeMaxDepth]);
+                        console.log('Added max_depth parameter:', treeMaxDepth);
+                    }
+
+                    // Zozbierať selector parametre - len tie, ktoré daný selector podporuje
+                    if (presetDetails.selector) {
+                        const supportedParams = factory.getSelectorParams(presetDetails.selector);
+                        console.log('Selector supported params:', supportedParams);
+                        
+                        const selectorNumFeatures = document.getElementById('selectorNumFeatures').value;
+                        console.log('Selector num_features value:', selectorNumFeatures);
+                        if (selectorNumFeatures && supportedParams.includes('num_features')) {
+                            selectorParams.push(['num_features', selectorNumFeatures]);
+                            console.log('Added num_features parameter:', selectorNumFeatures);
+                        }
+
+                        const selectorThreshold = document.getElementById('selectorThreshold').value;
+                        console.log('Selector threshold value:', selectorThreshold);
+                        if (selectorThreshold && supportedParams.includes('threshold')) {
+                            selectorParams.push(['threshold', selectorThreshold]);
+                            console.log('Added threshold parameter:', selectorThreshold);
+                        }
+                    }
+
+                    console.log('Final modelParams:', modelParams);
+                    console.log('Final selectorParams:', selectorParams);
+                    
+                    // Pre preset používame model z preset details, nie z dropdownu
+                    const presetModel = presetDetails.model || model || 'knn';
+                    console.log('Using model:', presetModel);
+                    
+                    console.log('Calling buildFromPreset with:', {
+                        preset: preset,
+                        model: presetModel,
+                        modelParams: modelParams.length > 0 ? modelParams : null,
+                        selectorParams: selectorParams.length > 0 ? selectorParams : null
+                    });
+
+                    result = await pipeline.buildFromPreset(
+                        preset, 
+                        presetModel,
+                        modelParams.length > 0 ? modelParams : null,
+                        selectorParams.length > 0 ? selectorParams : null
+                    );
+                    console.log('buildFromPreset result:', result);
+                } else {
+                    // Vlastná konfigurácia
+                    if (!model) throw new Error('Vyberte model');
+
+                    // Validácia evaluation_mode vs model
+                    if (evalMode) {
+                        if (model === 'linreg' && evalMode === 'classification') {
+                            showStatus('error', '⚠️ Upozornenie: Lineárna regresia (linreg) vyžaduje evaluation_mode = "regression", nie "classification". Metriky môžu byť nesprávne!', 'buildStatus');
+                            if (!confirm('Vybrali ste nekompatibilný evaluation_mode.\n\nModel: Lineárna Regresia (linreg)\nEvaluation Mode: classification\n\nMal by byť: regression\n\nChcete pokračovať aj tak? (Metriky budú nesprávne)')) {
+                                return;
+                            }
+                        }
+                        if (model === 'logreg' && evalMode === 'regression') {
+                            showStatus('error', '⚠️ Upozornenie: Logistická regresia (logreg) vyžaduje evaluation_mode = "classification", nie "regression". Metriky môžu byť nesprávne!', 'buildStatus');
+                            if (!confirm('Vybrali ste nekompatibilný evaluation_mode.\n\nModel: Logistická Regresia (logreg)\nEvaluation Mode: regression\n\nMal by byť: classification\n\nChcete pokračovať aj tak? (Metriky budú nesprávne)')) {
+                                return;
+                            }
+                        }
+                    }
+
+                    // Zozbierať parametre
+                    const modelParams = [];
+                    const selectorParams = [];
+
+                    const knnK = document.getElementById('knnK').value;
+                    console.log('Custom config - KNN K value:', knnK);
+                    if (knnK && model === 'knn') {
+                        modelParams.push(['k', knnK]);
+                    }
+
+                    const treeMaxDepth = document.getElementById('treeMaxDepth').value;
+                    console.log('Custom config - Tree max_depth value:', treeMaxDepth);
+                    if (treeMaxDepth && model === 'tree') {
+                        modelParams.push(['max_depth', treeMaxDepth]);
+                    }
+
+                    const selectorNumFeatures = document.getElementById('selectorNumFeatures').value;
+                    console.log('Custom config - Selector num_features value:', selectorNumFeatures);
+                    // num_features je pre: information_gain, chi_square, mutual_information
+                    if (selectorNumFeatures && selector && ['information_gain', 'chi_square', 'mutual_information'].includes(selector)) {
+                        selectorParams.push(['num_features', selectorNumFeatures]);
+                    }
+
+                    const selectorThreshold = document.getElementById('selectorThreshold').value;
+                    console.log('Custom config - Selector threshold value:', selectorThreshold);
+                    // threshold je len pre: variance, correlation
+                    if (selectorThreshold && selector && ['variance', 'correlation'].includes(selector)) {
+                        selectorParams.push(['threshold', selectorThreshold]);
+                    }
+
+                    const config = {
+                        model: model,
+                        processors: processors.length > 0 ? processors : [],
+                        processor: null, // Späť kompatibilita
+                        selector: selector || null,
+                        evaluation_mode: evalMode || null,
+                        model_params: modelParams.length > 0 ? modelParams : null,
+                        selector_params: selectorParams.length > 0 ? selectorParams : null,
+                        processor_params: null // TODO: pridať UI pre processor params
+                    };
+
+                    console.log('Custom config:', config);
+                    result = await pipeline.buildFromConfig(config);
+                    console.log('buildFromConfig result:', result);
+                }
                 
+                console.log('Pipeline built successfully!');
                 document.getElementById('currentPipelineInfo').style.display = 'block';
                 document.getElementById('currentModel').textContent = result.model_name;
-                document.getElementById('currentProcessor').textContent = result.processor || 'Žiadny';
+                
+                // Zobraz processors ako zoznam
+                const processorText = result.processors && result.processors.length > 0 
+                    ? result.processors.join(' → ') 
+                    : 'Žiadny';
+                document.getElementById('currentProcessor').textContent = processorText;
+                
                 document.getElementById('currentSelector').textContent = result.selector || 'Žiadny';
                 document.getElementById('currentEvalMode').textContent = result.evaluation_mode;
                 
                 showStatus('success', 'Pipeline vytvorený!', 'pipelineStatus');
             } catch (error) {
+                console.error('=== BUILD PIPELINE ERROR ===');
+                console.error('Error message:', error.message);
+                console.error('Error stack:', error.stack);
+                console.error('Full error:', error);
                 showStatus('error', `Chyba: ${error}`, 'pipelineStatus');
             } finally {
                 showLoading(false);
             }
+        }
+
+        function toggleDataInputMethod() {
+            const method = document.querySelector('input[name="dataInputMethod"]:checked').value;
+            const textContainer = document.getElementById('textInputContainer');
+            const fileContainer = document.getElementById('fileInputContainer');
+            
+            if (method === 'text') {
+                textContainer.style.display = 'block';
+                fileContainer.style.display = 'none';
+            } else {
+                textContainer.style.display = 'none';
+                fileContainer.style.display = 'block';
+            }
+        }
+
+        function downloadSampleCSV() {
+            const csvContent = `age,income,credit_score,approved
+25,50000,700,1
+35,75000,750,1
+45,60000,650,0
+22,30000,600,0
+50,90000,800,1
+30,55000,680,1
+40,80000,720,1
+28,45000,640,0
+55,95000,790,1
+32,62000,710,1`;
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'sample_data.csv');
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
 
         async function loadData() {
@@ -524,10 +1104,31 @@
                 showLoading(true);
                 
                 const format = document.getElementById('dataFormatSelect').value;
-                const data = document.getElementById('dataInput').value;
-                const targetColumn = document.getElementById('targetColumnSelect').value;
+                const method = document.querySelector('input[name="dataInputMethod"]:checked').value;
+                let data;
 
-                if (!data) throw new Error('Vložte dáta');
+                if (method === 'text') {
+                    data = document.getElementById('dataInput').value;
+                    if (!data) throw new Error('Vložte dáta');
+                } else {
+                    const fileInput = document.getElementById('fileInput');
+                    const file = fileInput.files[0];
+                    if (!file) throw new Error('Vyberte súbor');
+                    
+                    // Prečítať súbor
+                    data = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = (e) => resolve(e.target.result);
+                        reader.onerror = (e) => reject(new Error('Chyba pri čítaní súboru'));
+                        reader.readAsText(file);
+                    });
+
+                    // Aktualizovať info o súbore
+                    const fileInfo = document.getElementById('fileInfo');
+                    fileInfo.textContent = `Načítaný súbor: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+                }
+
+                const targetColumn = document.getElementById('targetColumnSelect').value;
 
                 dataLoader = new WasmDataLoader(format);
                 const columns = await dataLoader.getAvailableColumns(data);
@@ -547,7 +1148,12 @@
                 }
 
                 const result = await pipeline.loadData(data, targetColumn, format);
-                showStatus('success', result.message, 'dataStatus');
+                
+                // Get train/test split ratio
+                const trainPercent = parseInt(document.getElementById('trainTestSplit').value) / 100;
+                window.trainTestRatio = trainPercent;
+                
+                showStatus('success', `${result.message} (Train: ${Math.round(trainPercent * 100)}%, Test: ${Math.round((1 - trainPercent) * 100)}%)`, 'dataStatus');
                 document.getElementById('trainBtn').disabled = false;
             } catch (error) {
                 showStatus('error', `Chyba: ${error}`, 'dataStatus');
@@ -559,57 +1165,44 @@
         async function trainModel() {
             try {
                 showLoading(true);
-                const result = await pipeline.train();
+                
+                // Get train/test ratio
+                const trainRatio = window.trainTestRatio || 0.8;
+                
+                const result = await pipeline.trainWithSplit(trainRatio);
+                
+                console.log('Training result:', result);
                 
                 document.getElementById('trainingInfo').style.display = 'block';
-                document.getElementById('trainSamples').textContent = result.samples_trained;
+                document.getElementById('trainingStatus').textContent = 'Dokončené';
                 
-                showStatus('success', result.message, 'trainingStatus');
-                document.getElementById('predictBtn').disabled = false;
+                // Determine evaluation mode and show appropriate metrics
+                const isClassification = result.evaluation_mode === 'classification';
+                
+                if (isClassification) {
+                    document.getElementById('classificationMetrics').style.display = 'block';
+                    document.getElementById('regressionMetrics').style.display = 'none';
+                    
+                    document.getElementById('metricAccuracy').textContent = (result.accuracy * 100).toFixed(2) + '%';
+                    document.getElementById('metricF1').textContent = result.f1_score.toFixed(4);
+                    document.getElementById('metricPrecision').textContent = result.precision.toFixed(4);
+                    document.getElementById('metricRecall').textContent = result.recall.toFixed(4);
+                } else {
+                    document.getElementById('classificationMetrics').style.display = 'none';
+                    document.getElementById('regressionMetrics').style.display = 'block';
+                    
+                    document.getElementById('metricR2').textContent = result.r2_score.toFixed(4);
+                    document.getElementById('metricRMSE').textContent = result.rmse.toFixed(4);
+                    document.getElementById('metricMSE').textContent = result.mse.toFixed(4);
+                    document.getElementById('metricMAE').textContent = result.mae.toFixed(4);
+                }
+                
+                showStatus('success', 'Model natrénovaný a vyhodnotený na test sete!', 'trainStatus');
             } catch (error) {
-                showStatus('error', `Chyba: ${error}`, 'trainingStatus');
+                console.error('Training error:', error);
+                showStatus('error', `Chyba: ${error}`, 'trainStatus');
             } finally {
                 showLoading(false);
-            }
-        }
-
-        async function makePrediction() {
-            try {
-                showLoading(true);
-                const inputText = document.getElementById('predictionInput').value;
-                const input = JSON.parse(inputText);
-                
-                const result = await pipeline.predict(input);
-                
-                document.getElementById('predictionResult').style.display = 'block';
-                document.getElementById('predictionValue').textContent = JSON.stringify(result);
-                
-                showStatus('success', 'Predikcia dokončená!', 'predictionStatus');
-            } catch (error) {
-                showStatus('error', `Chyba: ${error}`, 'predictionStatus');
-            } finally {
-                showLoading(false);
-            }
-        }
-
-        function loadExampleData() {
-            const format = document.getElementById('dataFormatSelect').value;
-            
-            if (format === 'csv') {
-                document.getElementById('dataInput').value = 
-`age,income,credit_score,approved
-25,50000,700,1
-35,75000,750,1
-45,60000,650,0
-22,30000,600,0
-50,90000,800,1`;
-            } else {
-                document.getElementById('dataInput').value = 
-`[
-  {"age": 25, "income": 50000, "credit_score": 700, "approved": 1},
-  {"age": 35, "income": 75000, "credit_score": 750, "approved": 1},
-  {"age": 45, "income": 60000, "credit_score": 650, "approved": 0}
-]`;
             }
         }
 

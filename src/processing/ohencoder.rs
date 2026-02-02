@@ -57,4 +57,12 @@ impl DataProcessor for OneHotEncoder
 
         new_matrix
     }
+
+    fn set_param(&mut self, _key: &str, _value: &str) -> Result<(), String> {
+        Err("OneHotEncoder has no configurable parameters".to_string())
+    }
+
+    fn get_supported_params(&self) -> Vec<&str> {
+        vec![]
+    }
 }

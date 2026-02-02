@@ -57,4 +57,14 @@ impl FeatureSelectorFactory {
             _ => vec![],
         }
     }
+
+    /// Vráti podporované parametre pre selector
+    pub fn get_supported_params(selector_type: &str) -> Vec<&'static str> {
+        match selector_type {
+            "variance" => vec!["threshold"],
+            "correlation" => vec!["threshold"],
+            "chi_square" | "information_gain" | "mutual_information" => vec!["num_features"],
+            _ => vec![],
+        }
+    }
 }

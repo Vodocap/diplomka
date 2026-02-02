@@ -594,32 +594,101 @@
         async function initApp() {
             try {
                 showLoading(true);
-                const wasmModule = await import('./pkg/wasm.js');
+                
+                // Diagnostika pre GitHub Pages
+                console.log('=== WASM INITIALIZATION DEBUG ===');
+                console.log('Current URL:', window.location.href);
+                console.log('Base URI:', document.baseURI);
+                console.log('Origin:', window.location.origin);
+                console.log('Pathname:', window.location.pathname);
+                
+                // Auto-detect base path for GitHub Pages
+                const basePath = document.baseURI.endsWith('/') ? document.baseURI : document.baseURI + '/';
+                const wasmPath = new URL('./pkg/wasm.js', basePath).href;
+                console.log('Trying to load WASM from:', wasmPath);
+                
+                let wasmModule;
+                try {
+                    wasmModule = await import('./pkg/wasm.js');
+                    console.log('✓ WASM module loaded successfully');
+                } catch (importError) {
+                    console.error('✗ Failed to import WASM module:', importError);
+                    console.error('Import error details:', {
+                        message: importError.message,
+                        name: importError.name,
+                        stack: importError.stack
+                    });
+                    throw new Error(`Nepodarilo sa načítať WASM modul z ./pkg/wasm.js\n\nChyba: ${importError.message}\n\nSkontrolujte:\n1. Či existuje súbor pkg/wasm.js\n2. Či je GitHub Pages správne nasadený\n3. Konzolu prehliadača pre ďalšie chyby`);
+                }
+                
                 const init = wasmModule.default || wasmModule.init;
                 const WasmFactory = wasmModule.WasmFactory;
                 const WasmMLPipeline = wasmModule.WasmMLPipeline;
                 const WasmDataLoader = wasmModule.WasmDataLoader;
 
+                console.log('WASM exports:', {
+                    init: typeof init,
+                    WasmFactory: typeof WasmFactory,
+                    WasmMLPipeline: typeof WasmMLPipeline,
+                    WasmDataLoader: typeof WasmDataLoader,
+                    allExports: Object.keys(wasmModule)
+                });
+
                 if (!init || !WasmFactory) {
                     throw new Error('WASM module exports not found (wasm.js or pkg missing)');
                 }
 
+                console.log('Initializing WASM...');
                 await init();
+                console.log('✓ WASM initialized');
 
                 factory = new WasmFactory();
                 pipeline = new WasmMLPipeline();
+                console.log('✓ Factory and Pipeline created');
 
+                console.log('Fetching available options...');
                 availableOptions = factory.getAvailableOptions();
-                console.log('Options:', availableOptions);
+                console.log('✓ Available options:', availableOptions);
+                
+                if (!availableOptions || !availableOptions.models || availableOptions.models.length === 0) {
+                    throw new Error('Žiadne modely/selektory neboli načítané z WASM Factory. WASM modul môže byť nesprávne skompilovaný.');
+                }
 
+                console.log('Populating UI options...');
                 populateOptions();
+                console.log('✓ UI populated');
+                
+                console.log('Setting up event listeners...');
                 setupEventListeners();
+                console.log('✓ Event listeners ready');
 
+                console.log('=== INITIALIZATION COMPLETE ===');
                 showStatus('info', 'Aplikácia pripravená!', 'dataStatus');
             } catch (error) {
+                console.error('=== INIT ERROR ===');
                 console.error('Init error:', error);
+                console.error('Error stack:', error.stack);
                 const message = (error && error.message) ? error.message : String(error);
-                showStatus('error', `Chyba pri načítaní WASM: ${message}`, 'dataStatus');
+                showStatus('error', `Chyba pri načítaní WASM: ${message}\n\nOtvorte Developer Console (F12) pre viac detailov.`, 'dataStatus');
+                
+                // Zobrazenie viditeľného erroru na stránke
+                document.body.innerHTML += `
+                    <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+                                background: #f8d7da; border: 3px solid #f5c6cb; padding: 30px; 
+                                border-radius: 10px; max-width: 600px; z-index: 9999; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+                        <h2 style="color: #721c24; margin-bottom: 15px;">⚠️ Chyba inicializácie WASM</h2>
+                        <p style="color: #721c24; margin-bottom: 10px;"><strong>Chyba:</strong> ${message}</p>
+                        <p style="color: #721c24; font-size: 0.9em;">Otvorte Developer Console (F12) pre viac informácií.</p>
+                        <hr style="margin: 15px 0; border-color: #f5c6cb;">
+                        <p style="color: #721c24; font-size: 0.85em;">
+                            <strong>Možné príčiny:</strong><br>
+                            • WASM súbory neboli správne nasadené na GitHub Pages<br>
+                            • Nesprávne MIME typy pre .wasm súbory<br>
+                            • CORS problémy pri načítaní modulov<br>
+                            • Cesta k pkg/wasm.js je nesprávna
+                        </p>
+                    </div>
+                `;
             } finally {
                 showLoading(false);
             }

@@ -26,12 +26,11 @@ jobs:
 
       - name: Build WebAssembly with wasm-pack
         run: |
-          # show repo layout for debugging
           ls -la
-          wasm-pack build wasm --release --target web --out-dir wasm/pkg
+          wasm-pack build --release --target web --out-dir pkg
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          folder: ./wasm
+          folder: .
           branch: gh-pages

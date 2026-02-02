@@ -44,8 +44,18 @@ jobs:
           echo "-- check wasm_bg.wasm --"
           if [ -f pkg/wasm_bg.wasm ]; then file --mime-type pkg/wasm_bg.wasm || true; else echo "pkg/wasm_bg.wasm missing"; fi
 
+      - name: Prepare deploy directory
+        run: |
+          rm -rf deploy
+          mkdir -p deploy
+          # copy index and pkg into deploy dir
+          cp -r index.html deploy/ || true
+          if [ -d pkg ]; then cp -r pkg deploy/; fi
+          # ensure nojekyll so GitHub Pages serves files as-is
+          touch deploy/.nojekyll
+
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          folder: .
+          folder: deploy
           branch: gh-pages

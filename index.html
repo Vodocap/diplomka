@@ -587,6 +587,7 @@
     <script type="module">
         let factory, pipeline, dataLoader;
         let availableOptions = null;
+        let WasmDataLoaderClass = null; // Uložíme triedu pre neskoršie použitie
 
         // Make functions globally available for inline handlers
         window.downloadSampleCSV = downloadSampleCSV;
@@ -624,13 +625,13 @@
                 const init = wasmModule.default || wasmModule.init;
                 const WasmFactory = wasmModule.WasmFactory;
                 const WasmMLPipeline = wasmModule.WasmMLPipeline;
-                const WasmDataLoader = wasmModule.WasmDataLoader;
+                WasmDataLoaderClass = wasmModule.WasmDataLoader; // Uložíme do globálnej premennej
 
                 console.log('WASM exports:', {
                     init: typeof init,
                     WasmFactory: typeof WasmFactory,
                     WasmMLPipeline: typeof WasmMLPipeline,
-                    WasmDataLoader: typeof WasmDataLoader,
+                    WasmDataLoader: typeof WasmDataLoaderClass,
                     allExports: Object.keys(wasmModule)
                 });
 
@@ -1209,7 +1210,7 @@
 
                 const targetColumn = document.getElementById('targetColumnSelect').value;
 
-                dataLoader = new WasmDataLoader(format);
+                dataLoader = new WasmDataLoaderClass(format);
                 const columns = await dataLoader.getAvailableColumns(data);
                 
                 const targetSelect = document.getElementById('targetColumnSelect');

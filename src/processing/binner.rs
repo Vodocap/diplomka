@@ -25,6 +25,14 @@ impl DataProcessor for Binner
         "Equal-width Binner"
     }
 
+    fn fit(&mut self, _data: &DenseMatrix<f64>) {
+        // Binner doesn't need fitting
+    }
+
+    fn transform(&self, data: &DenseMatrix<f64>) -> DenseMatrix<f64> {
+        self.process(data)
+    }
+
     fn process(&self, data: &DenseMatrix<f64>) -> DenseMatrix<f64> 
     {
         let (rows, cols) = data.shape();

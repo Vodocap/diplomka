@@ -82,6 +82,10 @@ impl FeatureSelector for ChiSquareSelector
     fn get_selected_indices(&self, x: &DenseMatrix<f64>, y: &[f64]) -> Vec<usize> 
     {
         let (_, cols) = x.shape();
+        
+        // Limituj top_k na maximum dostupných features
+        let effective_k = self.top_k.min(cols);
+        
         let mut scores: Vec<(usize, f64)> = Vec::new();
 
         for j in 0..cols 
@@ -96,7 +100,7 @@ impl FeatureSelector for ChiSquareSelector
         scores.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
         scores.into_iter()
-            .take(self.top_k)
+            .take(effective_k)
             .map(|(idx, _)| idx)
             .collect()
     }
@@ -105,6 +109,22 @@ impl FeatureSelector for ChiSquareSelector
     {
         let indices = self.get_selected_indices(x, y);
         self.extract_columns(x, &indices)
+    }
+    
+    fn get_feature_scores(&self, x: &DenseMatrix<f64>, y: &[f64]) -> Option<Vec<(usize, f64)>> {
+        let (_, cols) = x.shape();
+        let mut scores: Vec<(usize, f64)> = Vec::new();
+
+        for j in 0..cols {
+            let col_data: Vec<f64> = (0..x.shape().0).map(|i| *x.get((i, j))).collect();
+            let score = Self::calculate_chi_square(col_data, y);
+            scores.push((j, score));
+        }
+        Some(scores)
+    }
+    
+    fn get_metric_name(&self) -> &str {
+        "Chi-Square"
     }
 }
 

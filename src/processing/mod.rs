@@ -2,6 +2,8 @@ pub trait DataProcessor
 {
     fn get_name(&self) -> &str;
     fn process(&self, data: &smartcore::linalg::basic::matrix::DenseMatrix<f64>) -> smartcore::linalg::basic::matrix::DenseMatrix<f64>;
+    fn fit(&mut self, data: &smartcore::linalg::basic::matrix::DenseMatrix<f64>);
+    fn transform(&self, data: &smartcore::linalg::basic::matrix::DenseMatrix<f64>) -> smartcore::linalg::basic::matrix::DenseMatrix<f64>;
     fn set_param(&mut self, key: &str, value: &str) -> Result<(), String>;
     fn get_supported_params(&self) -> Vec<&str>;
 }

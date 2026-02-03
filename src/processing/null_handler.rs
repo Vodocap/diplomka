@@ -84,6 +84,14 @@ impl NullValueHandler {
 }
 
 impl DataProcessor for NullValueHandler {
+    fn fit(&mut self, _data: &DenseMatrix<f64>) {
+        // NullHandler doesn't need fitting
+    }
+
+    fn transform(&self, data: &DenseMatrix<f64>) -> DenseMatrix<f64> {
+        self.process(data)
+    }
+
     fn process(&self, data: &DenseMatrix<f64>) -> DenseMatrix<f64> {
         let shape = data.shape();
         let mut result_data = vec![vec![0.0; shape.1]; shape.0];

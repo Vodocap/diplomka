@@ -68,6 +68,7 @@ pub struct EvaluationResult {
 pub struct WasmMLPipeline {
     pipeline: Option<MLPipeline>,
     data_cache: Option<(DenseMatrix<f64>, Vec<f64>)>,
+    feature_names: Vec<String>,
 }
 
 #[wasm_bindgen]
@@ -78,6 +79,7 @@ impl WasmMLPipeline {
         WasmMLPipeline {
             pipeline: None,
             data_cache: None,
+            feature_names: Vec::new(),
         }
     }
 
@@ -158,33 +160,22 @@ impl WasmMLPipeline {
         model_params: JsValue,
         selector_params: JsValue
     ) -> Result<JsValue, JsValue> {
-        web_sys::console::log_1(&format!("=== RUST buildFromPreset START ===").into());
-        web_sys::console::log_1(&format!("Preset: {}", preset_name).into());
-        web_sys::console::log_1(&format!("Model: {}", model).into());
-        web_sys::console::log_1(&format!("Model params JsValue: {:?}", model_params).into());
-        web_sys::console::log_1(&format!("Selector params JsValue: {:?}", selector_params).into());
         
         // Parsovať parametre
         let model_params_vec: Option<Vec<(String, String)>> = if !model_params.is_null() && !model_params.is_undefined() {
             let parsed = serde_wasm_bindgen::from_value(model_params);
-            web_sys::console::log_1(&format!("Model params parsed: {:?}", parsed).into());
             parsed.ok()
         } else {
-            web_sys::console::log_1(&"Model params is null/undefined".into());
             None
         };
 
         let selector_params_vec: Option<Vec<(String, String)>> = if !selector_params.is_null() && !selector_params.is_undefined() {
             let parsed = serde_wasm_bindgen::from_value(selector_params);
-            web_sys::console::log_1(&format!("Selector params parsed: {:?}", parsed).into());
             parsed.ok()
         } else {
-            web_sys::console::log_1(&"Selector params is null/undefined".into());
             None
         };
 
-        web_sys::console::log_1(&format!("Model params vec: {:?}", model_params_vec).into());
-        web_sys::console::log_1(&format!("Selector params vec: {:?}", selector_params_vec).into());
 
         // Získať defaultné hodnoty z presetu a vytvoriť builder
         let mut builder = MLPipelineBuilder::new();
@@ -254,32 +245,25 @@ impl WasmMLPipeline {
         }
 
         // Užívateľské parametre prepíšu defaulty
-        web_sys::console::log_1(&"Applying user parameters...".into());
         if let Some(params) = model_params_vec {
-            web_sys::console::log_1(&format!("Applying model params: {:?}", params).into());
             for (key, value) in params {
-                web_sys::console::log_1(&format!("Setting model param: {} = {}", key, value).into());
                 builder = builder.model_param(&key, &value);
             }
         }
 
         if let Some(params) = selector_params_vec {
-            web_sys::console::log_1(&format!("Applying selector params: {:?}", params).into());
             for (key, value) in params {
-                web_sys::console::log_1(&format!("Setting selector param: {} = {}", key, value).into());
                 builder = builder.selector_param(&key, &value);
             }
         }
 
         // Postaviť pipeline
-        web_sys::console::log_1(&"Building pipeline...".into());
         let pipeline = builder.build()
             .map_err(|e| {
                 web_sys::console::error_1(&format!("Build error: {}", e).into());
                 JsValue::from_str(&e)
             })?;
 
-        web_sys::console::log_1(&"Pipeline built successfully!".into());
         let info = pipeline.info();
         
         // Získať processors zo buildera
@@ -318,13 +302,29 @@ impl WasmMLPipeline {
             .map_err(|e| JsValue::from_str(&e))?;
 
         let num_samples = loaded.num_samples();
+        let num_features = loaded.x_data.shape().1;
+        
+        // Extract feature names from the first line if CSV
+        self.feature_names = if format == "csv" {
+            let first_line = data.lines().next().unwrap_or("");
+            let headers: Vec<&str> = first_line.split(',').collect();
+            headers.iter()
+                .filter(|h| h.trim() != target_column)
+                .map(|h| h.trim().to_string())
+                .collect()
+        } else {
+            // Default feature names
+            (0..num_features).map(|i| format!("feature{}", i + 1)).collect()
+        };
         
         self.data_cache = Some((loaded.x_data, loaded.y_data));
 
         let result = serde_json::json!({
             "success": true,
             "samples": num_samples,
-            "message": format!("Načítaných {} vzoriek", num_samples)
+            "features": num_features,
+            "feature_names": self.feature_names,
+            "message": format!("Načítaných {} vzoriek s {} features", num_samples, num_features)
         });
 
         Ok(serde_wasm_bindgen::to_value(&result).unwrap())
@@ -360,6 +360,7 @@ impl WasmMLPipeline {
     /// Trénuje model s train/test splitom a vracia evaluačné metriky
     #[wasm_bindgen(js_name = trainWithSplit)]
     pub fn train_with_split(&mut self, train_ratio: f64) -> Result<JsValue, JsValue> {
+        
         if self.pipeline.is_none() {
             return Err(JsValue::from_str("Pipeline nie je vytvorený"));
         }
@@ -395,32 +396,34 @@ impl WasmMLPipeline {
         let x_test = DenseMatrix::from_2d_vec(&x_test_data)
             .map_err(|e| JsValue::from_str(&format!("Chyba pri vytváraní test matice: {:?}", e)))?;
 
-        // Získať informácie o feature selection PRED tréningom (keď ešte máme x_train)
-        let (selected_indices, features_before, features_after) = if let Some(ref selector) = self.pipeline.as_ref().unwrap().selector {
-            // Spracujeme train data aby sme získali indexy po preprocessingu
-            let x_train_processed = self.pipeline.as_ref().unwrap().preprocess(&x_train);
-            let indices = selector.get_selected_indices(&x_train_processed, &y_train);
-            (Some(indices.clone()), x_train_processed.shape().1, indices.len())
-        } else {
-            (None, x_data.shape().1, x_data.shape().1)
-        };
-
-        // Train model (teraz môžeme posunúť x_train)
+        // Train model - train() sa postará o preprocessing a feature selection
         self.pipeline.as_mut().unwrap()
             .train(x_train, y_train.clone())
             .map_err(|e| JsValue::from_str(&e))?;
+        
+        // Get feature selection info AFTER training (keď už sú indexy cached)
+        let (features_before, features_after) = if let Some(ref indices) = self.pipeline.as_ref().unwrap().selected_indices {
+            (x_data.shape().1, indices.len())
+        } else {
+            (x_data.shape().1, x_data.shape().1)
+        };
 
         // Predict on test set (preprocessing sa aplikuje automaticky v predict())
+        
         let mut predictions = Vec::new();
         for row_idx in 0..x_test.shape().0 {
             let row: Vec<f64> = (0..x_test.shape().1)
                 .map(|col_idx| *x_test.get((row_idx, col_idx)))
                 .collect();
             
+            
             // predict() už interné volá prepare_data
             let pred_result = self.pipeline.as_mut().unwrap()
                 .predict(row)
-                .map_err(|e| JsValue::from_str(&format!("Prediction error on row {}: {}", row_idx, e)))?;
+                .map_err(|e| {
+                    JsValue::from_str(&format!("Prediction error on row {}: {}", row_idx, e))
+                })?;
+            
             
             // Predikcia vracia Vec, zoberieme prvý prvok
             let pred: f64 = pred_result.first().copied().unwrap_or(0.0);
@@ -429,6 +432,9 @@ impl WasmMLPipeline {
 
         // Calculate metrics based on evaluation mode
         let eval_mode = self.pipeline.as_ref().unwrap().info().evaluation_mode;
+        
+        // Get selected indices for result (if any were cached during training)
+        let selected_indices_for_result = self.pipeline.as_ref().unwrap().selected_indices.clone();
         
         let mut result = TrainingWithEvaluationResult {
             success: true,
@@ -443,14 +449,11 @@ impl WasmMLPipeline {
             rmse: 0.0,
             mae: 0.0,
             r2_score: 0.0,
-            selected_features_indices: selected_indices,
+            selected_features_indices: selected_indices_for_result,
             total_features_before: features_before,
             total_features_after: features_after,
         };
 
-        web_sys::console::log_1(&format!("Predictions: {:?}", predictions).into());
-        web_sys::console::log_1(&format!("Y_test: {:?}", y_test).into());
-        web_sys::console::log_1(&format!("Eval mode: {}", eval_mode).into());
 
         if eval_mode == "classification" {
             // Classification metrics
@@ -590,5 +593,203 @@ impl WasmMLPipeline {
         use crate::processing::ProcessorFactory;
         let params = ProcessorFactory::get_processor_params(processor_type);
         serde_wasm_bindgen::to_value(&params).unwrap()
+    }
+
+    /// Inspect uploaded data - returns first N rows with feature names
+    #[wasm_bindgen(js_name = inspectData)]
+    pub fn inspect_data(&self, max_rows: usize) -> Result<JsValue, JsValue> {
+        if let Some((ref x, ref y)) = self.data_cache {
+            let (rows, cols) = x.shape();
+            let rows_to_show = rows.min(max_rows);
+            
+            let mut data = Vec::new();
+            for row in 0..rows_to_show {
+                let mut row_data = Vec::new();
+                for col in 0..cols {
+                    row_data.push(*x.get((row, col)));
+                }
+                row_data.push(y[row]); // Add target
+                data.push(row_data);
+            }
+            
+            let feature_names = if self.feature_names.is_empty() {
+                (0..cols).map(|i| format!("feature{}", i + 1)).collect::<Vec<_>>()
+            } else {
+                self.feature_names.clone()
+            };
+            
+            let result = serde_json::json!({
+                "rows": data,
+                "total_rows": rows,
+                "total_cols": cols,
+                "shown_rows": rows_to_show,
+                "feature_names": feature_names,
+                "target_name": "target"
+            });
+            
+            Ok(serde_wasm_bindgen::to_value(&result).unwrap())
+        } else {
+            Err(JsValue::from_str("No data loaded"))
+        }
+    }
+
+    /// Inspect processed data - returns first N rows after preprocessing
+    #[wasm_bindgen(js_name = inspectProcessedData)]
+    pub fn inspect_processed_data(&self, max_rows: usize) -> Result<JsValue, JsValue> {
+        if let Some(ref pipeline) = self.pipeline {
+            if let Some((ref x, ref y)) = self.data_cache {
+                // Apply feature selection first
+                let selected_x = if pipeline.selector.is_some() && pipeline.selected_indices.is_some() {
+                    let indices = pipeline.selected_indices.as_ref().unwrap();
+                    let (rows, _) = x.shape();
+                    let cols = indices.len();
+                    let mut data = vec![vec![0.0; cols]; rows];
+                    
+                    for (new_col, &old_col) in indices.iter().enumerate() {
+                        for row in 0..rows {
+                            data[row][new_col] = *x.get((row, old_col));
+                        }
+                    }
+                    DenseMatrix::from_2d_vec(&data).unwrap()
+                } else {
+                    x.clone()
+                };
+
+                // Apply preprocessing
+                let processed = pipeline.preprocess(&selected_x);
+                
+                let (rows, cols) = processed.shape();
+                let rows_to_show = rows.min(max_rows);
+                
+                let mut data = Vec::new();
+                for row in 0..rows_to_show {
+                    let mut row_data = Vec::new();
+                    for col in 0..cols {
+                        row_data.push(*processed.get((row, col)));
+                    }
+                    row_data.push(y[row]); // Add target
+                    data.push(row_data);
+                }
+                
+                // Build feature names based on selection
+                let feature_names: Vec<String> = if let Some(ref indices) = pipeline.selected_indices {
+                    if self.feature_names.is_empty() {
+                        indices.iter().map(|&i| format!("feature{}", i + 1)).collect()
+                    } else {
+                        indices.iter().map(|&i| self.feature_names.get(i).cloned()
+                            .unwrap_or_else(|| format!("feature{}", i + 1))).collect()
+                    }
+                } else {
+                    if self.feature_names.is_empty() {
+                        (0..cols).map(|i| format!("feature{}", i + 1)).collect()
+                    } else {
+                        self.feature_names.clone()
+                    }
+                };
+                
+                let result = serde_json::json!({
+                    "rows": data,
+                    "total_rows": rows,
+                    "total_cols": cols,
+                    "shown_rows": rows_to_show,
+                    "feature_names": feature_names,
+                    "target_name": "target",
+                    "selected_indices": pipeline.selected_indices,
+                    "preprocessing_applied": pipeline.processor.is_some()
+                });
+                
+                Ok(serde_wasm_bindgen::to_value(&result).unwrap())
+            } else {
+                Err(JsValue::from_str("No data loaded"))
+            }
+        } else {
+            Err(JsValue::from_str("Pipeline not built"))
+        }
+    }
+
+    /// Get feature selection details with names and scores
+    #[wasm_bindgen(js_name = getFeatureSelectionInfo)]
+    pub fn get_feature_selection_info(&self) -> Result<JsValue, JsValue> {
+        if let Some(ref pipeline) = self.pipeline {
+            if let Some(ref selector) = pipeline.selector {
+                if let Some(ref indices) = pipeline.selected_indices {
+                    let total_features = if let Some((ref x, _)) = self.data_cache {
+                        x.shape().1
+                    } else {
+                        self.feature_names.len()
+                    };
+                    
+                    // Get feature scores if available
+                    let mut feature_scores_map = std::collections::HashMap::new();
+                    let metric_name = selector.get_metric_name();
+                    
+                    if let Some((ref x, ref y)) = self.data_cache {
+                        if let Some(scores) = selector.get_feature_scores(x, y) {
+                            for (idx, score) in scores {
+                                feature_scores_map.insert(idx, score);
+                            }
+                        }
+                    }
+                    
+                    let kept_features: Vec<_> = indices.iter()
+                        .map(|&i| {
+                            if self.feature_names.is_empty() {
+                                format!("feature{}", i + 1)
+                            } else {
+                                self.feature_names.get(i).cloned()
+                                    .unwrap_or_else(|| format!("feature{}", i + 1))
+                            }
+                        })
+                        .collect();
+                    
+                    let kept_scores: Vec<Option<f64>> = indices.iter()
+                        .map(|&i| feature_scores_map.get(&i).copied())
+                        .collect();
+                    
+                    let dropped_indices: Vec<usize> = (0..total_features)
+                        .filter(|i| !indices.contains(i))
+                        .collect();
+                    
+                    let dropped_features: Vec<_> = dropped_indices.iter()
+                        .map(|&i| {
+                            if self.feature_names.is_empty() {
+                                format!("feature{}", i + 1)
+                            } else {
+                                self.feature_names.get(i).cloned()
+                                    .unwrap_or_else(|| format!("feature{}", i + 1))
+                            }
+                        })
+                        .collect();
+                    
+                    let dropped_scores: Vec<Option<f64>> = dropped_indices.iter()
+                        .map(|&i| feature_scores_map.get(&i).copied())
+                        .collect();
+                    
+                    let result = serde_json::json!({
+                        "selector_name": selector.get_name(),
+                        "metric_name": metric_name,
+                        "total_features_before": total_features,
+                        "total_features_after": indices.len(),
+                        "kept_indices": indices,
+                        "kept_features": kept_features,
+                        "kept_scores": kept_scores,
+                        "dropped_indices": dropped_indices,
+                        "dropped_features": dropped_features,
+                        "dropped_scores": dropped_scores
+                    });
+                    
+                    Ok(serde_wasm_bindgen::to_value(&result).unwrap())
+                } else {
+                    Err(JsValue::from_str("Feature selection not performed yet (train first)"))
+                }
+            } else {
+                Ok(serde_wasm_bindgen::to_value(&serde_json::json!({
+                    "selector_name": "None",
+                    "message": "No feature selector configured"
+                })).unwrap())
+            }
+        } else {
+            Err(JsValue::from_str("Pipeline not built"))
+        }
     }
 }

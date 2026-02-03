@@ -68,6 +68,23 @@ impl FeatureSelector for VarianceSelector
         let indices = self.get_selected_indices(x, y);
         self.extract_columns(x, &indices)
     }
+    
+    fn get_feature_scores(&self, x: &DenseMatrix<f64>, _y: &[f64]) -> Option<Vec<(usize, f64)>> {
+        let shape = x.shape();
+        let mut scores = Vec::new();
+
+        for j in 0..shape.1 {
+            let col: Vec<f64> = (0..shape.0).map(|i| *x.get((i, j))).collect();
+            let mean: f64 = col.iter().sum::<f64>() / shape.0 as f64;
+            let variance: f64 = col.iter().map(|&v| (v - mean).powi(2)).sum::<f64>() / shape.0 as f64;
+            scores.push((j, variance));
+        }
+        Some(scores)
+    }
+    
+    fn get_metric_name(&self) -> &str {
+        "Variance"
+    }
 }
 
 impl VarianceSelector {

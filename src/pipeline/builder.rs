@@ -143,6 +143,8 @@ impl MLPipelineBuilder {
             selector,
             model_name: model_type.clone(),
             evaluation_mode: eval_mode,
+            selected_indices: None,
+            expected_features: None,
         })
     }
 }

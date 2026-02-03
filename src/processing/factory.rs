@@ -7,7 +7,7 @@ impl ProcessorFactory {
     /// Vytvorí procesor na základe názvu
     pub fn create(processor_type: &str) -> Result<Box<dyn DataProcessor>, String> {
         match processor_type {
-            "scaler" | "standard_scaler" => Ok(Box::new(StandardScaler)),
+            "scaler" | "standard_scaler" => Ok(Box::new(StandardScaler::new())),
             "binner" => Ok(Box::new(Binner::new(10))), // default 10 bins
             "onehot" | "one_hot_encoder" => Ok(Box::new(OneHotEncoder)),
             "null_handler" => Ok(Box::new(NullValueHandler::with_params("NA,null,NaN", "mean", None))),

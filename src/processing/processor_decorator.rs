@@ -32,6 +32,23 @@ impl ProcessorChain {
 }
 
 impl DataProcessor for ProcessorChain {
+    fn fit(&mut self, data: &DenseMatrix<f64>) {
+        // Fit each processor on the transformed output of previous processors
+        let mut current_data = data.clone();
+        for processor in self.processors.iter_mut() {
+            processor.fit(&current_data);
+            current_data = processor.transform(&current_data);
+        }
+    }
+
+    fn transform(&self, data: &DenseMatrix<f64>) -> DenseMatrix<f64> {
+        let mut result = data.clone();
+        for processor in &self.processors {
+            result = processor.transform(&result);
+        }
+        result
+    }
+
     fn process(&self, data: &DenseMatrix<f64>) -> DenseMatrix<f64> {
         let mut result = data.clone();
         

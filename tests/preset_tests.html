@@ -88,13 +88,21 @@
     <div id="summary"></div>
 
     <script type="module">
-        import init, { WasmMLPipeline, WasmFactory } from '../pkg/wasm.js';
-
         let pipeline;
         let factory;
+        let WasmMLPipeline;
+        let WasmFactory;
 
         async function initWasm() {
-            await init();
+            // Cache busting with dynamic import
+            const timestamp = new Date().getTime();
+            const module = await import(`../pkg/wasm.js?v=${timestamp}`);
+            await module.default();
+            
+            // Store classes for later use
+            WasmMLPipeline = module.WasmMLPipeline;
+            WasmFactory = module.WasmFactory;
+            
             pipeline = new WasmMLPipeline();
             factory = new WasmFactory();
             console.log('WASM initialized');
@@ -174,7 +182,7 @@
                     selector: [['num_features', '5']]
                 },
                 expectedModel: 'Decision Tree',
-                expectedSelector: 'Information Gain (Diskrétny odhad)',
+                expectedSelector: 'Information Gain (vyžaduje diskrétne/binned dáta)',
                 expectedProcessor: undefined
             },
             {
@@ -248,8 +256,13 @@
                 // Load and train with test data using train/test split
                 await testPipeline.loadData(testData, 'target', 'csv');
                 
+                console.log(`🟦 FRONTEND: About to call trainWithSplit for preset: ${testConfig.name}`);
+                console.log(`🟦 FRONTEND: Pipeline has selector: ${result.selector !== 'None'}, selector type: ${result.selector}`);
+                
                 // Test train/test split with 80% train ratio
+                console.log(`🟦 FRONTEND: Calling trainWithSplit(0.8)...`);
                 const trainResult = await testPipeline.trainWithSplit(0.8);
+                console.log(`🟦 FRONTEND: trainWithSplit returned:`, trainResult);
                 
                 // Validate training result
                 if (!trainResult.success) {
@@ -294,6 +307,29 @@
                         errors.push(`Neplatné R²: ${trainResult.r2_score}`);
                     }
                 }
+                
+                // Validate feature selection if expected
+                if (testConfig.validateFeatureSelection) {
+                    if (!trainResult.selected_features_indices || trainResult.selected_features_indices.length === 0) {
+                        errors.push('Feature selection: očakávané vybrané indexy, ale neboli nájdené');
+                    } else {
+                        if (trainResult.total_features_after !== testConfig.expectedFeaturesAfter) {
+                            errors.push(`Feature selection: očakávané ${testConfig.expectedFeaturesAfter} features, dostané ${trainResult.total_features_after}`);
+                        }
+                        if (trainResult.selected_features_indices.length !== testConfig.expectedFeaturesAfter) {
+                            errors.push(`Feature selection indexy: očakávaný počet ${testConfig.expectedFeaturesAfter}, dostané ${trainResult.selected_features_indices.length}`);
+                        }
+                        if (trainResult.total_features_before <= trainResult.total_features_after) {
+                            errors.push(`Feature selection: počet features by sa mal znížiť (${trainResult.total_features_before} → ${trainResult.total_features_after})`);
+                        }
+                    }
+                } else {
+                    // If no feature selection, these fields should be undefined or equal
+                    if (trainResult.selected_features_indices && trainResult.selected_features_indices.length > 0) {
+                        // Feature selection was used but not expected - this is OK, just log it
+                        console.log(`Test ${testConfig.name}: Neočakávaná feature selection, ale ignorujeme`);
+                    }
+                }
 
                 const endTime = performance.now();
                 const duration = (endTime - startTime).toFixed(2);
@@ -312,6 +348,12 @@
                     metricsText = `Accuracy: ${(trainResult.accuracy * 100).toFixed(1)}%, F1: ${trainResult.f1_score.toFixed(3)}`;
                 } else {
                     metricsText = `R²: ${trainResult.r2_score.toFixed(3)}, RMSE: ${trainResult.rmse.toFixed(3)}`;
+                }
+                
+                // Add feature selection info if available
+                if (trainResult.selected_features_indices && trainResult.selected_features_indices.length > 0) {
+                    const reduction = ((1 - trainResult.total_features_after / trainResult.total_features_before) * 100).toFixed(1);
+                    metricsText += ` | Features: ${trainResult.total_features_before}→${trainResult.total_features_after} (-${reduction}%)`;
                 }
 
                 return {

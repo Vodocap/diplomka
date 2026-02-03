@@ -7,7 +7,7 @@ $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";"
 $env:Path += ";$env:USERPROFILE\.cargo\bin"
 
 # Build WASM
-wasm-pack build --target web
+wasm-pack build --target web --out-dir pkg
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "Build successful!" -ForegroundColor Green

@@ -12,6 +12,14 @@ impl DataProcessor for OneHotEncoder
         "One-Hot Encoder"
     }
 
+    fn fit(&mut self, _data: &DenseMatrix<f64>) {
+        // OneHotEncoder doesn't need fitting in current implementation
+    }
+
+    fn transform(&self, data: &DenseMatrix<f64>) -> DenseMatrix<f64> {
+        self.process(data)
+    }
+
     fn process(&self, data: &DenseMatrix<f64>) -> DenseMatrix<f64> 
     {
         let (rows, cols) = data.shape();

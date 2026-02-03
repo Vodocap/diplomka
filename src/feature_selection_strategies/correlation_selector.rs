@@ -114,6 +114,32 @@ impl FeatureSelector for CorrelationSelector
         let indices = self.get_selected_indices(x, y);
         self.extract_columns(x, &indices)
     }
+    
+    fn get_feature_scores(&self, x: &DenseMatrix<f64>, _y: &[f64]) -> Option<Vec<(usize, f64)>> {
+        let shape = x.shape();
+        let cols = shape.1;
+        let mut scores = Vec::new();
+
+        for i in 0..cols {
+            let col_i: Vec<f64> = (0..shape.0).map(|row| *x.get((row, i))).collect();
+            let mut max_corr = 0.0;
+            
+            for j in 0..cols {
+                if i == j { continue; }
+                let col_j: Vec<f64> = (0..shape.0).map(|row| *x.get((row, j))).collect();
+                let corr = Self::pearson_correlation_vec(&col_i, &col_j).abs();
+                if corr > max_corr {
+                    max_corr = corr;
+                }
+            }
+            scores.push((i, max_corr));
+        }
+        Some(scores)
+    }
+    
+    fn get_metric_name(&self) -> &str {
+        "Max Correlation"
+    }
 }
 
 impl CorrelationSelector {

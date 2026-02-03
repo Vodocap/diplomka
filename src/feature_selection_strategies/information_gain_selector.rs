@@ -86,6 +86,10 @@ impl FeatureSelector for InformationGainSelector
     fn get_selected_indices(&self, x: &DenseMatrix<f64>, y: &[f64]) -> Vec<usize> 
     {
         let (_, cols) = x.shape();
+        
+        // Limituj top_k na maximum dostupných features
+        let effective_k = self.top_k.min(cols);
+        
         let mut ig_scores = Vec::new();
         
         // Kontrola či target má rozumnú diskrétnosť
@@ -125,13 +129,41 @@ impl FeatureSelector for InformationGainSelector
         ig_scores.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
         
         // Vrátime top_k indexov
-        ig_scores.into_iter().take(self.top_k).map(|(i, _)| i).collect()
+        ig_scores.into_iter().take(effective_k).map(|(i, _)| i).collect()
     }
 
     fn select_features(&self, x: &DenseMatrix<f64>, y: &[f64]) -> DenseMatrix<f64> 
     {
         let indices = self.get_selected_indices(x, y);
         self.extract_columns(x, &indices)
+    }
+    
+    fn get_feature_scores(&self, x: &DenseMatrix<f64>, y: &[f64]) -> Option<Vec<(usize, f64)>> {
+        let (_, cols) = x.shape();
+        let mut ig_scores = Vec::new();
+        let base_entropy = Self::entropy(y);
+
+        for j in 0..cols {
+            let col: Vec<f64> = (0..x.shape().0).map(|i| *x.get((i, j))).collect();
+            let mut conditional_entropy = 0.0;
+            let mut map: HashMap<u64, Vec<f64>> = HashMap::new();
+
+            for (val, target) in col.iter().zip(y.iter()) {
+                map.entry((*val).to_bits()).or_default().push(*target);
+            }
+
+            for subset in map.values() {
+                let weight = subset.len() as f64 / y.len() as f64;
+                conditional_entropy += weight * Self::entropy(subset);
+            }
+
+            ig_scores.push((j, base_entropy - conditional_entropy));
+        }
+        Some(ig_scores)
+    }
+    
+    fn get_metric_name(&self) -> &str {
+        "Information Gain"
     }
 }
 

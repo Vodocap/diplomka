@@ -115,6 +115,10 @@ impl FeatureSelector for MutualInformationSelector
     fn get_selected_indices(&self, x: &DenseMatrix<f64>, y: &[f64]) -> Vec<usize> 
     {
         let (_, cols) = x.shape();
+        
+        // Limituj top_k na maximum dostupných features
+        let effective_k = self.top_k.min(cols);
+        
         let mut scores = Vec::new();
 
         for j in 0..cols 
@@ -129,7 +133,7 @@ impl FeatureSelector for MutualInformationSelector
         scores.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
         scores.into_iter()
-            .take(self.top_k)
+            .take(effective_k)
             .map(|(idx, _)| idx)
             .collect()
     }
@@ -138,6 +142,22 @@ impl FeatureSelector for MutualInformationSelector
     {
         let indices = self.get_selected_indices(x, y);
         self.extract_columns(x, &indices)
+    }
+    
+    fn get_feature_scores(&self, x: &DenseMatrix<f64>, y: &[f64]) -> Option<Vec<(usize, f64)>> {
+        let (_, cols) = x.shape();
+        let mut scores = Vec::new();
+
+        for j in 0..cols {
+            let col_vec: Vec<f64> = (0..x.shape().0).map(|i| *x.get((i, j))).collect();
+            let score = Self::estimate_mi_ksg(&col_vec, y, self.k_neighbors);
+            scores.push((j, score));
+        }
+        Some(scores)
+    }
+    
+    fn get_metric_name(&self) -> &str {
+        "MI Score"
     }
 }
 

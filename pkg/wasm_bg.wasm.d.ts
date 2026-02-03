@@ -1,19 +1,6 @@
 /* tslint:disable */
 /* eslint-disable */
 export const memory: WebAssembly.Memory;
-export const __wbg_csvloader_free: (a: number, b: number) => void;
-export const csvloader_get_headers: (a: number) => any;
-export const csvloader_get_training_data: (a: number, b: number, c: number) => [number, number, number];
-export const csvloader_len: (a: number) => number;
-export const csvloader_load_csv: (a: number, b: number, c: number) => [number, number];
-export const csvloader_load_csv_async: (a: number, b: number, c: number) => any;
-export const csvloader_new: () => number;
-export const __wbg_wasmdataloader_free: (a: number, b: number) => void;
-export const wasmdataloader_createAuto: (a: number, b: number) => [number, number, number];
-export const wasmdataloader_getAvailableColumns: (a: number, b: number, c: number) => [number, number, number];
-export const wasmdataloader_loadData: (a: number, b: number, c: number, d: number, e: number) => [number, number, number];
-export const wasmdataloader_new: (a: number, b: number) => [number, number, number];
-export const wasmdataloader_validateFormat: (a: number, b: number, c: number) => [number, number];
 export const __wbg_wasmfactory_free: (a: number, b: number) => void;
 export const wasmfactory_getAvailableOptions: (a: number) => any;
 export const wasmfactory_getCompatibleProcessors: (a: number, b: number, c: number) => any;
@@ -22,6 +9,19 @@ export const wasmfactory_getModelParams: (a: number, b: number, c: number) => an
 export const wasmfactory_getPresetDetails: (a: number, b: number, c: number) => any;
 export const wasmfactory_getSelectorParams: (a: number, b: number, c: number) => any;
 export const wasmfactory_new: () => number;
+export const __wbg_csvloader_free: (a: number, b: number) => void;
+export const __wbg_wasmdataloader_free: (a: number, b: number) => void;
+export const csvloader_get_headers: (a: number) => any;
+export const csvloader_get_training_data: (a: number, b: number, c: number) => [number, number, number];
+export const csvloader_len: (a: number) => number;
+export const csvloader_load_csv: (a: number, b: number, c: number) => [number, number];
+export const csvloader_load_csv_async: (a: number, b: number, c: number) => any;
+export const csvloader_new: () => number;
+export const wasmdataloader_createAuto: (a: number, b: number) => [number, number, number];
+export const wasmdataloader_getAvailableColumns: (a: number, b: number, c: number) => [number, number, number];
+export const wasmdataloader_loadData: (a: number, b: number, c: number, d: number, e: number) => [number, number, number];
+export const wasmdataloader_new: (a: number, b: number) => [number, number, number];
+export const wasmdataloader_validateFormat: (a: number, b: number, c: number) => [number, number];
 export const __wbg_wasmmlpipeline_free: (a: number, b: number) => void;
 export const wasmmlpipeline_buildFromConfig: (a: number, b: any) => [number, number, number];
 export const wasmmlpipeline_buildFromPreset: (a: number, b: number, c: number, d: number, e: number, f: any, g: any) => [number, number, number];

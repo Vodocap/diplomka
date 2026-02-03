@@ -114,19 +114,6 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 
 export interface InitOutput {
     readonly memory: WebAssembly.Memory;
-    readonly __wbg_csvloader_free: (a: number, b: number) => void;
-    readonly csvloader_get_headers: (a: number) => any;
-    readonly csvloader_get_training_data: (a: number, b: number, c: number) => [number, number, number];
-    readonly csvloader_len: (a: number) => number;
-    readonly csvloader_load_csv: (a: number, b: number, c: number) => [number, number];
-    readonly csvloader_load_csv_async: (a: number, b: number, c: number) => any;
-    readonly csvloader_new: () => number;
-    readonly __wbg_wasmdataloader_free: (a: number, b: number) => void;
-    readonly wasmdataloader_createAuto: (a: number, b: number) => [number, number, number];
-    readonly wasmdataloader_getAvailableColumns: (a: number, b: number, c: number) => [number, number, number];
-    readonly wasmdataloader_loadData: (a: number, b: number, c: number, d: number, e: number) => [number, number, number];
-    readonly wasmdataloader_new: (a: number, b: number) => [number, number, number];
-    readonly wasmdataloader_validateFormat: (a: number, b: number, c: number) => [number, number];
     readonly __wbg_wasmfactory_free: (a: number, b: number) => void;
     readonly wasmfactory_getAvailableOptions: (a: number) => any;
     readonly wasmfactory_getCompatibleProcessors: (a: number, b: number, c: number) => any;
@@ -135,6 +122,19 @@ export interface InitOutput {
     readonly wasmfactory_getPresetDetails: (a: number, b: number, c: number) => any;
     readonly wasmfactory_getSelectorParams: (a: number, b: number, c: number) => any;
     readonly wasmfactory_new: () => number;
+    readonly __wbg_csvloader_free: (a: number, b: number) => void;
+    readonly __wbg_wasmdataloader_free: (a: number, b: number) => void;
+    readonly csvloader_get_headers: (a: number) => any;
+    readonly csvloader_get_training_data: (a: number, b: number, c: number) => [number, number, number];
+    readonly csvloader_len: (a: number) => number;
+    readonly csvloader_load_csv: (a: number, b: number, c: number) => [number, number];
+    readonly csvloader_load_csv_async: (a: number, b: number, c: number) => any;
+    readonly csvloader_new: () => number;
+    readonly wasmdataloader_createAuto: (a: number, b: number) => [number, number, number];
+    readonly wasmdataloader_getAvailableColumns: (a: number, b: number, c: number) => [number, number, number];
+    readonly wasmdataloader_loadData: (a: number, b: number, c: number, d: number, e: number) => [number, number, number];
+    readonly wasmdataloader_new: (a: number, b: number) => [number, number, number];
+    readonly wasmdataloader_validateFormat: (a: number, b: number, c: number) => [number, number];
     readonly __wbg_wasmmlpipeline_free: (a: number, b: number) => void;
     readonly wasmmlpipeline_buildFromConfig: (a: number, b: any) => [number, number, number];
     readonly wasmmlpipeline_buildFromPreset: (a: number, b: number, c: number, d: number, e: number, f: any, g: any) => [number, number, number];

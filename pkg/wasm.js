@@ -641,6 +641,9 @@ function __wbg_get_imports() {
             const ret = arg0.value;
             return ret;
         },
+        __wbg_warn_f7ae1b2e66ccb930: function(arg0) {
+            console.warn(arg0);
+        },
         __wbindgen_cast_0000000000000001: function(arg0, arg1) {
             // Cast intrinsic for `Closure(Closure { dtor_idx: 261, function: Function { arguments: [Externref], shim_idx: 262, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
             const ret = makeMutClosure(arg0, arg1, wasm.wasm_bindgen__closure__destroy__h062d55d9c7b8c652, wasm_bindgen__convert__closures_____invoke__h8f27a5fbd1cc09f3);

@@ -549,6 +549,14 @@
                             </div>
                         </div>
                     </div>
+                    
+                    <div id="featureSelectionInfo" style="display: none; margin-top: 20px;">
+                        <h4>Feature Selection</h4>
+                        <p><strong>Počet features pred selekciou:</strong> <span id="featuresBefore">-</span></p>
+                        <p><strong>Počet vybraných features:</strong> <span id="featuresAfter">-</span></p>
+                        <p><strong>Vybrané indexy features:</strong></p>
+                        <div id="selectedIndices" style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 0px; font-family: monospace;"></div>
+                    </div>
                 </div>
             </div>
 
@@ -911,7 +919,26 @@
 
             document.getElementById('selectorSelect').onchange = function() {
                 updateSelectorParams(this.value);
+                checkBinningRequirement(this.value);
             };
+        }
+        
+        function checkBinningRequirement(selectorName) {
+            if (!selectorName || !availableOptions) return;
+            
+            const selectorInfo = availableOptions.selectors.find(s => s.name === selectorName);
+            if (selectorInfo && selectorInfo.requires_binning) {
+                // Skontroluj či je binner v selectedProcessors
+                if (!selectedProcessors.includes('binner')) {
+                    const binnerCheckbox = document.getElementById('proc_binner');
+                    if (binnerCheckbox && !binnerCheckbox.checked) {
+                        binnerCheckbox.checked = true;
+                        updateProcessorOrder();
+                        
+                        alert('ℹ️ Information Gain vyžaduje diskrétne dáta.\n\nAutomaticky bol pridaný Binner processor do pipeline.\n\nAk chcete použiť vlastné binning nastavenie, upravte poradie procesorov.');
+                    }
+                }
+            }
         }
 
         function hideAllParamFields() {
@@ -1098,6 +1125,18 @@
                         selectorParams.push(['threshold', selectorThreshold]);
                     }
 
+                    // Validácia: Information Gain vyžaduje Binner
+                    if (selector === 'information_gain' && !processors.includes('binner')) {
+                        showStatus('error', '⚠️ Information Gain vyžaduje diskrétne dáta. Pridajte Binner processor!', 'pipelineStatus');
+                        if (!confirm('Information Gain vyžaduje diskrétne dáta.\n\nChcete automaticky pridať Binner processor?\n\n(Odporúčaný počet binov: 10)')) {
+                            return;
+                        }
+                        // Automaticky pridaj binner na začiatok
+                        processors.unshift('binner');
+                        selectedProcessors.unshift('binner');
+                        updateProcessorOrder();
+                    }
+
                     const config = {
                         model: model,
                         processors: processors.length > 0 ? processors : [],
@@ -1275,6 +1314,29 @@
                     document.getElementById('metricRMSE').textContent = result.rmse.toFixed(4);
                     document.getElementById('metricMSE').textContent = result.mse.toFixed(4);
                     document.getElementById('metricMAE').textContent = result.mae.toFixed(4);
+                }
+                
+                // Zobraziť feature selection info ak bola použitá
+                if (result.selected_features_indices && result.selected_features_indices.length > 0) {
+                    document.getElementById('featureSelectionInfo').style.display = 'block';
+                    document.getElementById('featuresBefore').textContent = result.total_features_before;
+                    document.getElementById('featuresAfter').textContent = result.total_features_after;
+                    
+                    const indicesDiv = document.getElementById('selectedIndices');
+                    const indices = result.selected_features_indices;
+                    
+                    // Zobrazíme max 50 indexov aby to nebolo príliš dlhé
+                    const displayIndices = indices.length > 50 
+                        ? indices.slice(0, 50).join(', ') + `, ... (${indices.length - 50} ďalších)`
+                        : indices.join(', ');
+                    
+                    indicesDiv.textContent = `[${displayIndices}]`;
+                    
+                    // Percentuálna redukcia
+                    const reduction = ((1 - result.total_features_after / result.total_features_before) * 100).toFixed(1);
+                    indicesDiv.innerHTML += `<br><br><strong>Redukcia:</strong> ${reduction}% features odstránených (${result.total_features_before} → ${result.total_features_after})`;
+                } else {
+                    document.getElementById('featureSelectionInfo').style.display = 'none';
                 }
                 
                 showStatus('success', 'Model natrénovaný a vyhodnotený na test sete!', 'trainStatus');

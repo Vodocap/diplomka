@@ -306,6 +306,17 @@ export class WasmMLPipeline {
         return ret;
     }
     /**
+     * Get feature selection details with names and scores
+     * @returns {any}
+     */
+    getFeatureSelectionInfo() {
+        const ret = wasm.wasmmlpipeline_getFeatureSelectionInfo(this.__wbg_ptr);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return takeFromExternrefTable0(ret[0]);
+    }
+    /**
      * Info o pipeline
      * @returns {any}
      */
@@ -326,6 +337,30 @@ export class WasmMLPipeline {
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmmlpipeline_getProcessorParams(ptr0, len0);
         return ret;
+    }
+    /**
+     * Inspect uploaded data - returns first N rows with feature names
+     * @param {number} max_rows
+     * @returns {any}
+     */
+    inspectData(max_rows) {
+        const ret = wasm.wasmmlpipeline_inspectData(this.__wbg_ptr, max_rows);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return takeFromExternrefTable0(ret[0]);
+    }
+    /**
+     * Inspect processed data - returns first N rows after preprocessing
+     * @param {number} max_rows
+     * @returns {any}
+     */
+    inspectProcessedData(max_rows) {
+        const ret = wasm.wasmmlpipeline_inspectProcessedData(this.__wbg_ptr, max_rows);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return takeFromExternrefTable0(ret[0]);
     }
     /**
      * Načíta a pripraví dáta
@@ -645,7 +680,7 @@ function __wbg_get_imports() {
             console.warn(arg0);
         },
         __wbindgen_cast_0000000000000001: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { dtor_idx: 261, function: Function { arguments: [Externref], shim_idx: 262, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
+            // Cast intrinsic for `Closure(Closure { dtor_idx: 287, function: Function { arguments: [Externref], shim_idx: 288, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
             const ret = makeMutClosure(arg0, arg1, wasm.wasm_bindgen__closure__destroy__h062d55d9c7b8c652, wasm_bindgen__convert__closures_____invoke__h8f27a5fbd1cc09f3);
             return ret;
         },

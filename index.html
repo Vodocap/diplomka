@@ -347,6 +347,136 @@
             padding-bottom: 10px;
             border-bottom: 2px solid #dee2e6;
         }
+
+        /* Data Inspection Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            animation: fadeIn 0.3s;
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 0px;
+            max-width: 90%;
+            max-height: 90%;
+            overflow: auto;
+            position: relative;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 30px;
+            font-weight: bold;
+            color: #aaa;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .modal-close:hover {
+            color: #000;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 0.9em;
+        }
+
+        .data-table th,
+        .data-table td {
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            text-align: left;
+        }
+
+        .data-table th {
+            background: #3498db;
+            color: white;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .data-table tbody tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .data-table tbody tr:hover {
+            background: #e9ecef;
+        }
+
+        .feature-info {
+            background: #ffffff;
+            padding: 15px;
+            border-radius: 0px;
+            margin: 10px 0;
+            border: 1px solid #dee2e6;
+            border-left: 3px solid #495057;
+        }
+
+        .feature-info h4 {
+            color: #495057;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .feature-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .feature-badge {
+            background: #f8f9fa;
+            color: #495057;
+            padding: 6px 12px;
+            border-radius: 0px;
+            font-size: 0.85em;
+            border: 1px solid #dee2e6;
+        }
+
+        .feature-badge.kept {
+            border-left: 3px solid #495057;
+        }
+
+        .feature-badge.dropped {
+            border-left: 3px solid #adb5bd;
+            opacity: 0.7;
+        }
+
+        .feature-idx {
+            font-size: 0.9em;
+            color: #6c757d;
+            font-family: 'Courier New', monospace;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
     </style>
 </head>
 <body>
@@ -493,6 +623,19 @@
                 <button id="loadDataBtn">Načítať Dáta</button>
                 
                 <div id="dataStatus" class="status"></div>
+                
+                <!-- Data Inspection Buttons -->
+                <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button id="inspectDataBtn" disabled style="flex: 1; min-width: 150px; background: #3498db;">
+                        Zobraziť dáta
+                    </button>
+                    <button id="inspectProcessedBtn" disabled style="flex: 1; min-width: 150px; background: #3498db;">
+                        Zobraziť spracované dáta
+                    </button>
+                    <button id="featureSelectionInfoBtn" disabled style="flex: 1; min-width: 150px; background: #3498db;">
+                        Informácie o výbere príznakov
+                    </button>
+                </div>
             </div>
 
             <!-- Trénovanie -->
@@ -599,6 +742,7 @@
 
         // Make functions globally available for inline handlers
         window.downloadSampleCSV = downloadSampleCSV;
+        window.closeModal = closeModal;
 
         async function initApp() {
             try {
@@ -853,6 +997,9 @@
             document.getElementById('buildPipelineBtn').onclick = buildPipeline;
             document.getElementById('loadDataBtn').onclick = loadData;
             document.getElementById('trainBtn').onclick = trainModel;
+            document.getElementById('inspectDataBtn').onclick = inspectData;
+            document.getElementById('inspectProcessedBtn').onclick = inspectProcessedData;
+            document.getElementById('featureSelectionInfoBtn').onclick = showFeatureSelectionInfo;
             
             // Data input method radio buttons
             document.getElementById('dataInputText').onchange = toggleDataInputMethod;
@@ -998,7 +1145,7 @@
                 
                 const preset = document.getElementById('presetSelect').value;
                 const model = document.getElementById('modelSelect').value;
-                const processors = selectedProcessors; // Použijeme selectedProcessors namiesto jedného
+                const processors = selectedProcessors;
                 const selector = document.getElementById('selectorSelect').value;
                 const evalMode = document.getElementById('evalModeSelect').value;
 
@@ -1272,6 +1419,9 @@
                 const trainPercent = parseInt(document.getElementById('trainTestSplit').value) / 100;
                 window.trainTestRatio = trainPercent;
                 
+                // Enable data inspection buttons
+                document.getElementById('inspectDataBtn').disabled = false;
+                
                 showStatus('success', `${result.message} (Train: ${Math.round(trainPercent * 100)}%, Test: ${Math.round((1 - trainPercent) * 100)}%)`, 'dataStatus');
                 document.getElementById('trainBtn').disabled = false;
             } catch (error) {
@@ -1339,6 +1489,10 @@
                     document.getElementById('featureSelectionInfo').style.display = 'none';
                 }
                 
+                // Enable post-training inspection buttons
+                document.getElementById('inspectProcessedBtn').disabled = false;
+                document.getElementById('featureSelectionInfoBtn').disabled = false;
+                
                 showStatus('success', 'Model natrénovaný a vyhodnotený na test sete!', 'trainStatus');
             } catch (error) {
                 console.error('Training error:', error);
@@ -1358,7 +1512,149 @@
             document.getElementById('loadingOverlay').className = show ? 'show' : '';
         }
 
+        // Data Inspection Functions
+        async function inspectData() {
+            try {
+                const result = await pipeline.inspectData(10);
+                // Convert Map to plain object
+                const data = result instanceof Map ? Object.fromEntries(result) : result;
+                showDataModal('Nahraté dáta', data);
+            } catch (error) {
+                console.error('inspectData error:', error);
+                alert('Error: ' + error);
+            }
+        }
+
+        async function inspectProcessedData() {
+            try {
+                const result = await pipeline.inspectProcessedData(10);
+                const data = result instanceof Map ? Object.fromEntries(result) : result;
+                showDataModal('Spracované dáta (po výbere a preprocessingu)', data);
+            } catch (error) {
+                alert('Error: ' + error);
+            }
+        }
+
+        async function showFeatureSelectionInfo() {
+            try {
+                const result = await pipeline.getFeatureSelectionInfo();
+                const data = result instanceof Map ? Object.fromEntries(result) : result;
+                
+                if (data.selector_name === 'None') {
+                    alert(data.message);
+                    return;
+                }
+
+                let html = `
+                    <div class="feature-info">
+                        <h4>Selector: ${data.selector_name}</h4>
+                        <p><strong>Metrika:</strong> ${data.metric_name}</p>
+                        <p><strong>Počet príznakov pred:</strong> ${data.total_features_before}</p>
+                        <p><strong>Počet príznakov po:</strong> ${data.total_features_after}</p>
+                        <p><strong>Redukcia:</strong> ${((1 - data.total_features_after / data.total_features_before) * 100).toFixed(1)}%</p>
+                    </div>
+
+                    <div class="feature-info">
+                        <h4>Ponechané príznaky (${data.kept_features.length})</h4>
+                        <div class="feature-list">
+                            ${data.kept_features.map((name, idx) => {
+                                const score = data.kept_scores[idx];
+                                const scoreText = score !== null && score !== undefined ? ` = ${score.toFixed(4)}` : '';
+                                return `<span class="feature-badge kept">${name} <span class="feature-idx">[${data.kept_indices[idx]}]${scoreText}</span></span>`;
+                            }).join('')}
+                        </div>
+                    </div>
+
+                    <div class="feature-info">
+                        <h4>Odstránené príznaky (${data.dropped_features.length})</h4>
+                        <div class="feature-list">
+                            ${data.dropped_features.map((name, idx) => {
+                                const score = data.dropped_scores[idx];
+                                const scoreText = score !== null && score !== undefined ? ` = ${score.toFixed(4)}` : '';
+                                return `<span class="feature-badge dropped">${name} <span class="feature-idx">[${data.dropped_indices[idx]}]${scoreText}</span></span>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+
+                const modal = document.getElementById('dataModal');
+                document.getElementById('modalTitle').textContent = 'Detaily výberu príznakov';
+                document.getElementById('modalBody').innerHTML = html;
+                modal.classList.add('show');
+            } catch (error) {
+                alert('Error: ' + error);
+            }
+        }
+
+        function showDataModal(title, data) {
+            if (!data || !data.feature_names || !data.rows) {
+                alert('Chyba: Neplatný formát dát z WASM. Skontrolujte konzolu pre detaily.');
+                console.error('Invalid data:', data);
+                return;
+            }
+            
+            const modal = document.getElementById('dataModal');
+            document.getElementById('modalTitle').textContent = title;
+            
+            let html = `
+                <div class="feature-info">
+                    <p><strong>Počet riadkov:</strong> ${data.total_rows} (zobrazených prvých ${data.shown_rows})</p>
+                    <p><strong>Počet stĺpcov:</strong> ${data.total_cols}</p>
+                    ${data.selected_indices ? `<p><strong>Vybrané indexy:</strong> ${JSON.stringify(data.selected_indices)}</p>` : ''}
+                    ${data.preprocessing_applied ? `<p><strong>Preprocessing:</strong> Aplikovaný</p>` : ''}
+                </div>
+
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            ${data.feature_names.map(name => `<th>${name}</th>`).join('')}
+                            <th>${data.target_name}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.rows.map((row, idx) => `
+                            <tr>
+                                <td><strong>${idx + 1}</strong></td>
+                                ${row.map(val => `<td>${typeof val === 'number' ? val.toFixed(4) : val}</td>`).join('')}
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+
+                ${data.shown_rows < data.total_rows ? 
+                    `<p style="margin-top: 15px; color: #6c757d; font-style: italic;">
+                        ... a ďalších ${data.total_rows - data.shown_rows} riadkov
+                    </p>` : ''}
+            `;
+
+            document.getElementById('modalBody').innerHTML = html;
+            modal.classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('dataModal').classList.remove('show');
+        }
+
+        // Close modal on outside click
+        window.onclick = function(event) {
+            const modal = document.getElementById('dataModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+
         initApp();
     </script>
+
+    <!-- Data Inspection Modal -->
+    <div id="dataModal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+            <h2 id="modalTitle" style="color: #3498db; margin-bottom: 20px;"></h2>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
 </body>
 </html>

@@ -396,20 +396,20 @@ impl WasmMLPipeline {
             .train(x_train, y_train.clone())
             .map_err(|e| JsValue::from_str(&e))?;
 
-        // Prepare test data (apply preprocessing and feature selection)
-        let x_test_prepared = self.pipeline.as_ref().unwrap().prepare_data(&x_test, &y_test);
-
-        // Predict on test set (batch prediction on prepared data)
+        // Predict on test set (preprocessing sa aplikuje automaticky v predict())
         let mut predictions = Vec::new();
-        for row_idx in 0..x_test_prepared.shape().0 {
-            let row: Vec<f64> = (0..x_test_prepared.shape().1)
-                .map(|col_idx| *x_test_prepared.get((row_idx, col_idx)))
+        for row_idx in 0..x_test.shape().0 {
+            let row: Vec<f64> = (0..x_test.shape().1)
+                .map(|col_idx| *x_test.get((row_idx, col_idx)))
                 .collect();
-            let pred_vec = self.pipeline.as_ref().unwrap()
+            
+            // predict() už interné volá prepare_data
+            let pred_result = self.pipeline.as_mut().unwrap()
                 .predict(row)
-                .map_err(|e| JsValue::from_str(&e))?;
+                .map_err(|e| JsValue::from_str(&format!("Prediction error on row {}: {}", row_idx, e)))?;
+            
             // Predikcia vracia Vec, zoberieme prvý prvok
-            let pred: f64 = pred_vec.first().copied().unwrap_or(0.0);
+            let pred: f64 = pred_result.first().copied().unwrap_or(0.0);
             predictions.push(pred);
         }
 

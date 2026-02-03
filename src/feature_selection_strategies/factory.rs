@@ -37,13 +37,18 @@ impl FeatureSelectorFactory {
     /// Vráti popis feature selektora
     pub fn get_description(selector_type: &str) -> Option<&'static str> {
         match selector_type {
-            "variance" => Some("Variance Threshold - odstráni features s nízkou varianciou"),
-            "correlation" => Some("Correlation - odstráni vysoko korelované features"),
-            "chi_square" => Some("Chi-Square Test - pre kategorické features"),
-            "information_gain" => Some("Information Gain - meria redukciu entropie"),
-            "mutual_information" => Some("Mutual Information - meria závislosti"),
+            "variance" => Some("Variance Threshold - odstraňuje features s nízkou varianciou (konštantné hodnoty)"),
+            "correlation" => Some("Correlation - vyberie features s najvyššou koreláciou k targetu (pre regression)"),
+            "chi_square" => Some("Chi-Square Test - testuje nezávislosť medzi features a targetom (len klasifikácia)"),
+            "information_gain" => Some("Information Gain - meria redukciu entropie (⚠️ vyžaduje Binner processor!)"),
+            "mutual_information" => Some("Mutual Information (KSG) - meria vzájomnú závislosť (funguje na spojitých dátach)"),
             _ => None,
         }
+    }
+    
+    /// Vráti či selector vyžaduje preprocessing (napr. binning)
+    pub fn requires_binning(selector_type: &str) -> bool {
+        matches!(selector_type, "information_gain")
     }
 
     /// Vráti podporované typy problémov pre selector

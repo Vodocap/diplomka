@@ -51,6 +51,10 @@ pub struct TrainingWithEvaluationResult {
     pub rmse: f64,
     pub mae: f64,
     pub r2_score: f64,
+    // Feature selection info
+    pub selected_features_indices: Option<Vec<usize>>,
+    pub total_features_before: usize,
+    pub total_features_after: usize,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -391,7 +395,17 @@ impl WasmMLPipeline {
         let x_test = DenseMatrix::from_2d_vec(&x_test_data)
             .map_err(|e| JsValue::from_str(&format!("Chyba pri vytváraní test matice: {:?}", e)))?;
 
-        // Train model
+        // Získať informácie o feature selection PRED tréningom (keď ešte máme x_train)
+        let (selected_indices, features_before, features_after) = if let Some(ref selector) = self.pipeline.as_ref().unwrap().selector {
+            // Spracujeme train data aby sme získali indexy po preprocessingu
+            let x_train_processed = self.pipeline.as_ref().unwrap().preprocess(&x_train);
+            let indices = selector.get_selected_indices(&x_train_processed, &y_train);
+            (Some(indices.clone()), x_train_processed.shape().1, indices.len())
+        } else {
+            (None, x_data.shape().1, x_data.shape().1)
+        };
+
+        // Train model (teraz môžeme posunúť x_train)
         self.pipeline.as_mut().unwrap()
             .train(x_train, y_train.clone())
             .map_err(|e| JsValue::from_str(&e))?;
@@ -429,6 +443,9 @@ impl WasmMLPipeline {
             rmse: 0.0,
             mae: 0.0,
             r2_score: 0.0,
+            selected_features_indices: selected_indices,
+            total_features_before: features_before,
+            total_features_after: features_after,
         };
 
         web_sys::console::log_1(&format!("Predictions: {:?}", predictions).into());

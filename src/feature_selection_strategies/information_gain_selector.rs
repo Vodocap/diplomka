@@ -6,7 +6,6 @@ use super::FeatureSelector;
 pub struct InformationGainSelector 
 {
     /// top_k: Určuje počet najlepších príznakov, ktoré majú byť vybrané.
-    /// Napríklad, ak je top_k = 5, selektor vráti len 5 stĺpcov s najvyšším informačným ziskom.
     top_k: usize,
 }
 
@@ -32,7 +31,6 @@ impl InformationGainSelector
         let mut counts = HashMap::new();
         for &l in labels 
         {
-            // f64 neimplementuje Eq, preto používame to_bits() na hashovanie unikátnych kategórií
             *counts.entry(l.to_bits()).or_insert(0) += 1;
         }
 
@@ -40,8 +38,23 @@ impl InformationGainSelector
         counts.values().map(|&c| 
         {
             let p = c as f64 / n;
-            -p * p.log2() // Vzorec pre entropiu: -sum(p * log2(p))
+            -p * p.log2()
         }).sum()
+    }
+    
+    /// Kontroluje či sú dáta pravdepodobne diskrétne
+    /// Loguje varovanie ak nie sú
+    fn check_discrete_warning(col: &[f64]) -> bool {
+        let unique_values: std::collections::HashSet<_> = col.iter().map(|v| v.to_bits()).collect();
+        // Ak je viac ako 50 unikátnych hodnôt, pravdepodobne spojité dáta
+        if unique_values.len() > 50 {
+            web_sys::console::warn_1(&format!(
+                "Information Gain: Stĺpec má {} unikátnych hodnôt. Pre správne výsledky použite Binner processor!",
+                unique_values.len()
+            ).into());
+            return false;
+        }
+        true
     }
 }
 
@@ -49,7 +62,7 @@ impl FeatureSelector for InformationGainSelector
 {
     fn get_name(&self) -> &str 
     {
-        "Information Gain (Diskrétny odhad)"
+        "Information Gain (vyžaduje diskrétne/binned dáta)"
     }
 
     fn get_supported_params(&self) -> Vec<&str> 
@@ -64,25 +77,34 @@ impl FeatureSelector for InformationGainSelector
             self.top_k = value.parse().map_err(|_| "num_features musí byť celé číslo".to_string())?;
             return Ok(());
         }
-        Err(format!("Parameter nenájdený: {}. Podporované parametre: num_features", key))
+        Err(format!("Parameter nenájdený: {}. Podporované: num_features", key))
     }
 
     /// Hlavná logika výberu príznakov.
-    /// Vypočíta IG(Y, Xi) = H(Y) - H(Y|Xi) pre každý stĺpec.
+    /// DÔLEŽITÉ: Information Gain vyžaduje diskrétne dáta!
+    /// Pridajte Binner processor pred tento selektor v pipeline.
     fn get_selected_indices(&self, x: &DenseMatrix<f64>, y: &[f64]) -> Vec<usize> 
     {
         let (_, cols) = x.shape();
         let mut ig_scores = Vec::new();
-        let base_entropy = Self::entropy(y); // H(Y)
+        
+        // Kontrola či target má rozumnú diskrétnosť
+        Self::check_discrete_warning(y);
+        
+        let base_entropy = Self::entropy(y);
 
         for j in 0..cols 
         {
-            // Extrakcia stĺpca do Vec
+            // Extrakcia stĺpca
             let col: Vec<f64> = (0..x.shape().0).map(|i| *x.get((i, j))).collect();
+            
+            // Kontrola či stĺpec má rozumnú diskrétnosť
+            Self::check_discrete_warning(&col);
+            
             let mut conditional_entropy = 0.0;
             let mut map: HashMap<u64, Vec<f64>> = HashMap::new();
 
-            // Rozdelenie targetov (y) podľa unikátnych hodnôt v príznaku (Xi)
+            // Rozdelenie targetov (y) podľa hodnôt v príznaku (Xi)
             for (val, target) in col.iter().zip(y.iter()) 
             {
                 map.entry((*val).to_bits()).or_default().push(*target);
@@ -99,10 +121,10 @@ impl FeatureSelector for InformationGainSelector
             ig_scores.push((j, base_entropy - conditional_entropy));
         }
 
-        // Zoradenie: Príznaky, ktoré najviac znižujú neistotu (najvyššie IG), idú na začiatok
+        // Zoradenie podľa IG (zostupne)
         ig_scores.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
         
-        // Vrátime len top_k indexov
+        // Vrátime top_k indexov
         ig_scores.into_iter().take(self.top_k).map(|(i, _)| i).collect()
     }
 

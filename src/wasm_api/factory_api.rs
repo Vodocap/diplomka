@@ -33,6 +33,7 @@ pub struct SelectorInfo {
     pub name: String,
     pub description: String,
     pub supported_types: Vec<String>,
+    pub requires_binning: bool,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -92,6 +93,7 @@ impl WasmFactory {
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
+                requires_binning: FeatureSelectorFactory::requires_binning(name),
             })
             .collect();
 

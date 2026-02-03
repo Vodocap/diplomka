@@ -62,7 +62,10 @@ jobs:
           # copy index and pkg into deploy dir
           cp -r index.html deploy/ || true
           cp -r test_data_with_nulls.csv deploy/ || true
-          if [ -d pkg ]; then cp -r pkg deploy/; fi
+          if [ -d pkg ]; then 
+            cp -r pkg deploy/
+            rm -f deploy/pkg/.gitignore
+          fi
           # ensure nojekyll so GitHub Pages serves files as-is
           touch deploy/.nojekyll
           # Add _headers file for proper MIME types (Netlify/Cloudflare)

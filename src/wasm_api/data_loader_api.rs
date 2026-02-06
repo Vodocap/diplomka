@@ -13,7 +13,6 @@ pub struct LoadedDataInfo {
 #[wasm_bindgen]
 pub struct WasmDataLoader {
     loader: Option<Box<dyn DataLoader>>,
-    format: String,
 }
 
 #[wasm_bindgen]
@@ -27,7 +26,6 @@ impl WasmDataLoader {
         
         Ok(WasmDataLoader {
             loader: Some(loader),
-            format,
         })
     }
 
@@ -37,11 +35,8 @@ impl WasmDataLoader {
         let loader = DataLoaderFactory::create_auto(data)
             .map_err(|e| JsValue::from_str(&e))?;
         
-        let format = loader.get_name().to_string();
-        
         Ok(WasmDataLoader {
             loader: Some(loader),
-            format,
         })
     }
 

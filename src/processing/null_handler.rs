@@ -1,6 +1,6 @@
 use crate::processing::DataProcessor;
 use smartcore::linalg::basic::matrix::DenseMatrix;
-use smartcore::linalg::basic::arrays::{Array, MutArray};
+use smartcore::linalg::basic::arrays::Array;
 
 /// Procesor pre nahradenie null hodnôt
 pub struct NullValueHandler {

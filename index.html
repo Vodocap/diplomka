@@ -744,6 +744,22 @@
         window.downloadSampleCSV = downloadSampleCSV;
         window.closeModal = closeModal;
 
+        // Helper functions
+        function calculateFeatureReduction(before, after) {
+            return ((1 - after / before) * 100).toFixed(1);
+        }
+
+        function formatFeatureBadge(name, index, score, metricName, badgeClass) {
+            const scoreText = score !== null && score !== undefined 
+                ? ` = ${score.toFixed(4)} (${metricName})` 
+                : '';
+            return `<span class="feature-badge ${badgeClass}">${name} <span class="feature-idx">[${index}]${scoreText}</span></span>`;
+        }
+
+        function convertWasmResult(result) {
+            return result instanceof Map ? Object.fromEntries(result) : result;
+        }
+
         async function initApp() {
             try {
                 showLoading(true);
@@ -950,6 +966,9 @@
             // Vyrenderuj chips
             orderDiv.innerHTML = '';
             selectedProcessors.forEach((proc, idx) => {
+                const chipContainer = document.createElement('div');
+                chipContainer.style.marginBottom = '10px';
+                
                 const chip = document.createElement('div');
                 chip.className = 'processor-chip';
                 
@@ -982,7 +1001,46 @@
                 };
                 chip.appendChild(removeBtn);
                 
-                orderDiv.appendChild(chip);
+                chipContainer.appendChild(chip);
+                
+                // Načítaj a zobraz parametre procesora
+                const paramDefs = factory.getProcessorParamDefinitions(proc);
+                if (paramDefs && paramDefs.length > 0) {
+                    const paramsDiv = document.createElement('div');
+                    paramsDiv.style.marginLeft = '20px';
+                    paramsDiv.style.marginTop = '5px';
+                    
+                    paramDefs.forEach(param => {
+                        const paramDiv = document.createElement('div');
+                        paramDiv.style.marginBottom = '5px';
+                        
+                        const paramLabel = document.createElement('label');
+                        paramLabel.textContent = `${param.description}: `;
+                        paramLabel.style.fontSize = '0.9em';
+                        
+                        const paramInput = document.createElement('input');
+                        paramInput.type = param.param_type === 'number' ? 'number' : 'text';
+                        paramInput.value = param.default_value;
+                        paramInput.id = `param_${proc}_${param.name}`;
+                        paramInput.style.width = '80px';
+                        paramInput.style.marginLeft = '5px';
+                        
+                        if (param.min !== null && param.min !== undefined) {
+                            paramInput.min = param.min;
+                        }
+                        if (param.max !== null && param.max !== undefined) {
+                            paramInput.max = param.max;
+                        }
+                        
+                        paramDiv.appendChild(paramLabel);
+                        paramDiv.appendChild(paramInput);
+                        paramsDiv.appendChild(paramDiv);
+                    });
+                    
+                    chipContainer.appendChild(paramsDiv);
+                }
+                
+                orderDiv.appendChild(chipContainer);
             });
         }
 
@@ -1134,6 +1192,16 @@
                         document.getElementById('selectorNumFeaturesGroup').style.display = 'block';
                     } else if (param === 'threshold') {
                         document.getElementById('selectorThresholdGroup').style.display = 'block';
+                        
+                        // Nastaviť správny default pre threshold podľa selectora
+                        const thresholdInput = document.getElementById('selectorThreshold');
+                        if (selectorName === 'Variance Threshold Selector') {
+                            thresholdInput.value = '0.01';
+                            thresholdInput.placeholder = '0.01';
+                        } else if (selectorName === 'Correlation Selector') {
+                            thresholdInput.value = '0.95';
+                            thresholdInput.placeholder = '0.95';
+                        }
                     }
                 });
             }
@@ -1284,6 +1352,22 @@
                         updateProcessorOrder();
                     }
 
+                    // Zozbierať parametre procesorov z dynamických inputov
+                    const processorParams = [];
+                    processors.forEach(proc => {
+                        const paramDefs = factory.getProcessorParamDefinitions(proc);
+                        if (paramDefs && paramDefs.length > 0) {
+                            paramDefs.forEach(paramDef => {
+                                const inputId = `param_${proc}_${paramDef.name}`;
+                                const input = document.getElementById(inputId);
+                                if (input && input.value) {
+                                    processorParams.push([proc, paramDef.name, input.value]);
+                                }
+                            });
+                        }
+                    });
+                    console.log('Processor params:', processorParams);
+
                     const config = {
                         model: model,
                         processors: processors.length > 0 ? processors : [],
@@ -1292,7 +1376,7 @@
                         evaluation_mode: evalMode || null,
                         model_params: modelParams.length > 0 ? modelParams : null,
                         selector_params: selectorParams.length > 0 ? selectorParams : null,
-                        processor_params: null // TODO: pridať UI pre processor params
+                        processor_params: processorParams.length > 0 ? processorParams : null
                     };
 
                     console.log('Custom config:', config);
@@ -1483,7 +1567,7 @@
                     indicesDiv.textContent = `[${displayIndices}]`;
                     
                     // Percentuálna redukcia
-                    const reduction = ((1 - result.total_features_after / result.total_features_before) * 100).toFixed(1);
+                    const reduction = calculateFeatureReduction(result.total_features_before, result.total_features_after);
                     indicesDiv.innerHTML += `<br><br><strong>Redukcia:</strong> ${reduction}% features odstránených (${result.total_features_before} → ${result.total_features_after})`;
                 } else {
                     document.getElementById('featureSelectionInfo').style.display = 'none';
@@ -1516,8 +1600,7 @@
         async function inspectData() {
             try {
                 const result = await pipeline.inspectData(10);
-                // Convert Map to plain object
-                const data = result instanceof Map ? Object.fromEntries(result) : result;
+                const data = convertWasmResult(result);
                 showDataModal('Nahraté dáta', data);
             } catch (error) {
                 console.error('inspectData error:', error);
@@ -1528,7 +1611,7 @@
         async function inspectProcessedData() {
             try {
                 const result = await pipeline.inspectProcessedData(10);
-                const data = result instanceof Map ? Object.fromEntries(result) : result;
+                const data = convertWasmResult(result);
                 showDataModal('Spracované dáta (po výbere a preprocessingu)', data);
             } catch (error) {
                 alert('Error: ' + error);
@@ -1538,7 +1621,7 @@
         async function showFeatureSelectionInfo() {
             try {
                 const result = await pipeline.getFeatureSelectionInfo();
-                const data = result instanceof Map ? Object.fromEntries(result) : result;
+                const data = convertWasmResult(result);
                 
                 if (data.selector_name === 'None') {
                     alert(data.message);
@@ -1551,28 +1634,24 @@
                         <p><strong>Metrika:</strong> ${data.metric_name}</p>
                         <p><strong>Počet príznakov pred:</strong> ${data.total_features_before}</p>
                         <p><strong>Počet príznakov po:</strong> ${data.total_features_after}</p>
-                        <p><strong>Redukcia:</strong> ${((1 - data.total_features_after / data.total_features_before) * 100).toFixed(1)}%</p>
+                        <p><strong>Redukcia:</strong> ${calculateFeatureReduction(data.total_features_before, data.total_features_after)}%</p>
                     </div>
 
                     <div class="feature-info">
                         <h4>Ponechané príznaky (${data.kept_features.length})</h4>
                         <div class="feature-list">
-                            ${data.kept_features.map((name, idx) => {
-                                const score = data.kept_scores[idx];
-                                const scoreText = score !== null && score !== undefined ? ` = ${score.toFixed(4)}` : '';
-                                return `<span class="feature-badge kept">${name} <span class="feature-idx">[${data.kept_indices[idx]}]${scoreText}</span></span>`;
-                            }).join('')}
+                            ${data.kept_features.map((name, idx) => 
+                                formatFeatureBadge(name, data.kept_indices[idx], data.kept_scores[idx], data.metric_name, 'kept')
+                            ).join('')}
                         </div>
                     </div>
 
                     <div class="feature-info">
                         <h4>Odstránené príznaky (${data.dropped_features.length})</h4>
                         <div class="feature-list">
-                            ${data.dropped_features.map((name, idx) => {
-                                const score = data.dropped_scores[idx];
-                                const scoreText = score !== null && score !== undefined ? ` = ${score.toFixed(4)}` : '';
-                                return `<span class="feature-badge dropped">${name} <span class="feature-idx">[${data.dropped_indices[idx]}]${scoreText}</span></span>`;
-                            }).join('')}
+                            ${data.dropped_features.map((name, idx) => 
+                                formatFeatureBadge(name, data.dropped_indices[idx], data.dropped_scores[idx], data.metric_name, 'dropped')
+                            ).join('')}
                         </div>
                     </div>
                 `;

@@ -13,21 +13,8 @@ impl ProcessorChain {
         }
     }
 
-    pub fn add(mut self, processor: Box<dyn DataProcessor>) -> Self {
-        self.processors.push(processor);
-        self
-    }
-
     pub fn add_mut(&mut self, processor: Box<dyn DataProcessor>) {
         self.processors.push(processor);
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.processors.is_empty()
-    }
-
-    pub fn len(&self) -> usize {
-        self.processors.len()
     }
 }
 

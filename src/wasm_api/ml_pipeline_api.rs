@@ -1,6 +1,6 @@
 use wasm_bindgen::prelude::*;
 use serde::{Serialize, Deserialize};
-use crate::pipeline::{MLPipeline, MLPipelineBuilder, MLPipelineDirector};
+use crate::pipeline::{MLPipeline, MLPipelineBuilder};
 use crate::data_loading::DataLoaderFactory;
 use smartcore::linalg::basic::matrix::DenseMatrix;
 use smartcore::linalg::basic::arrays::{Array, Array2};
@@ -57,12 +57,7 @@ pub struct TrainingWithEvaluationResult {
     pub total_features_after: usize,
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct EvaluationResult {
-    pub metrics: std::collections::HashMap<String, f64>,
-    pub model_name: String,
-    pub evaluation_type: String,
-}
+// EvaluationResult removed - not used
 
 #[wasm_bindgen]
 pub struct WasmMLPipeline {
@@ -196,6 +191,37 @@ impl WasmMLPipeline {
                     .feature_selector("correlation")
                     .evaluation_mode("regression");
             },
+            "minimal" => {
+                builder = builder
+                    .model(model)
+                    .evaluation_mode("classification");
+            },
+            
+            // === POKROČILÉ KLASIFIKAČNÉ ===
+            "advanced_classification" => {
+                builder = builder
+                    .model(model)
+                    .add_processor("scaler")
+                    .feature_selector("chi_square")
+                    .selector_param("num_features", "10")
+                    .evaluation_mode("classification");
+            },
+            "logreg_minmax_chisquare" => {
+                builder = builder
+                    .model("logreg")
+                    .add_processor("minmax_scaler")
+                    .feature_selector("chi_square")
+                    .selector_param("num_features", "10")
+                    .evaluation_mode("classification");
+            },
+            "tree_binner_infogain" => {
+                builder = builder
+                    .model("tree")
+                    .add_processor("binner")  // použije default 10 bins
+                    .feature_selector("information_gain")
+                    .selector_param("num_features", "10")
+                    .evaluation_mode("classification");
+            },
             "knn_classifier" => {
                 builder = builder
                     .model("knn")
@@ -205,29 +231,17 @@ impl WasmMLPipeline {
                     .selector_param("threshold", "0.05")
                     .evaluation_mode("classification");
             },
-            "knn_regressor" => {
+            "knn_robust_mi" => {
                 builder = builder
                     .model("knn")
                     .model_param("k", "5")
-                    .add_processor("scaler")
-                    .feature_selector("correlation")
-                    .evaluation_mode("regression");
-            },
-            "decision_tree" => {
-                builder = builder
-                    .model("tree")
-                    .feature_selector("information_gain")
+                    .add_processor("robust_scaler")
+                    .feature_selector("mutual_information")
                     .selector_param("num_features", "10")
                     .evaluation_mode("classification");
             },
-            "advanced_classification" => {
-                builder = builder
-                    .model(model)
-                    .add_processor("scaler")
-                    .feature_selector("chi_square")
-                    .selector_param("num_features", "10")
-                    .evaluation_mode("classification");
-            },
+            
+            // === POKROČILÉ REGRESNÉ ===
             "advanced_regression" => {
                 builder = builder
                     .model(model)
@@ -236,11 +250,114 @@ impl WasmMLPipeline {
                     .selector_param("num_features", "10")
                     .evaluation_mode("regression");
             },
-            "minimal" => {
+            "knn_regressor" => {
                 builder = builder
-                    .model(model)
+                    .model("knn")
+                    .model_param("k", "5")
+                    .add_processor("scaler")
+                    .feature_selector("correlation")
+                    .evaluation_mode("regression");
+            },
+            "linreg_minmax_correlation" => {
+                builder = builder
+                    .model("linreg")
+                    .add_processor("minmax_scaler")
+                    .feature_selector("correlation")
+                    .evaluation_mode("regression");
+            },
+            "linreg_robust_mi" => {
+                builder = builder
+                    .model("linreg")
+                    .add_processor("robust_scaler")
+                    .feature_selector("mutual_information")
+                    .selector_param("num_features", "10")
+                    .evaluation_mode("regression");
+            },
+            
+            // === S TRANSFORMÁCIAMI ===
+            "linreg_log_correlation" => {
+                builder = builder
+                    .model("linreg")
+                    .add_processor("log_transformer")  // použije default offset=1
+                    .feature_selector("correlation")
+                    .evaluation_mode("regression");
+            },
+            "knn_power_variance" => {
+                builder = builder
+                    .model("knn")
+                    .model_param("k", "5")
+                    .add_processor("power_transformer")
+                    .feature_selector("variance")
+                    .selector_param("threshold", "0.01")
+                    .evaluation_mode("regression");
+            },
+            
+            // === S OUTLIER HANDLINGOM ===
+            "linreg_outlier_correlation" => {
+                builder = builder
+                    .model("linreg")
+                    .add_processor("outlier_clipper")
+                    .feature_selector("correlation")
+                    .evaluation_mode("regression");
+            },
+            "knn_outlier_variance" => {
+                builder = builder
+                    .model("knn")
+                    .model_param("k", "5")
+                    .add_processor("outlier_clipper")
+                    .feature_selector("variance")
+                    .selector_param("threshold", "0.01")
+                    .evaluation_mode("regression");
+            },
+            
+            // === BEZ FEATURE SELECTION ===
+            "logreg_scaler_only" => {
+                builder = builder
+                    .model("logreg")
+                    .add_processor("scaler")
                     .evaluation_mode("classification");
             },
+            "linreg_minmax_only" => {
+                builder = builder
+                    .model("linreg")
+                    .add_processor("minmax_scaler")
+                    .evaluation_mode("regression");
+            },
+            "knn_robust_only" => {
+                builder = builder
+                    .model("knn")
+                    .model_param("k", "5")
+                    .add_processor("robust_scaler")
+                    .evaluation_mode("classification");
+            },
+            
+            // === S LABEL ENCODING ===
+            "tree_labelenc_chisquare" => {
+                builder = builder
+                    .model("tree")
+                    .add_processor("label_encoder")
+                    .feature_selector("chi_square")
+                    .selector_param("num_features", "10")
+                    .evaluation_mode("classification");
+            },
+            "logreg_labelenc_variance" => {
+                builder = builder
+                    .model("logreg")
+                    .add_processor("label_encoder")
+                    .feature_selector("variance")
+                    .selector_param("threshold", "0.01")
+                    .evaluation_mode("classification");
+            },
+            
+            // === DECISION TREE ===
+            "decision_tree" => {
+                builder = builder
+                    .model("tree")
+                    .feature_selector("information_gain")
+                    .selector_param("num_features", "10")
+                    .evaluation_mode("classification");
+            },
+            
             _ => return Err(JsValue::from_str(&format!("Neznámy preset: {}", preset_name))),
         }
 

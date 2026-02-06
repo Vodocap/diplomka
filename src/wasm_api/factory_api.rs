@@ -2,6 +2,7 @@ use wasm_bindgen::prelude::*;
 use serde::{Serialize, Deserialize};
 use crate::models::factory::ModelFactory;
 use crate::processing::factory::ProcessorFactory;
+use crate::processing::ProcessorParam;
 use crate::feature_selection_strategies::factory::FeatureSelectorFactory;
 use crate::data_loading::factory::DataLoaderFactory;
 use crate::pipeline::director::MLPipelineDirector;
@@ -157,6 +158,13 @@ impl WasmFactory {
     pub fn get_selector_params(&self, selector_name: &str) -> JsValue {
         use crate::feature_selection_strategies::factory::FeatureSelectorFactory;
         let params = FeatureSelectorFactory::get_supported_params(selector_name);
+        serde_wasm_bindgen::to_value(&params).unwrap()
+    }
+
+    /// Získa detailné definície parametrov pre procesor
+    #[wasm_bindgen(js_name = getProcessorParamDefinitions)]
+    pub fn get_processor_param_definitions(&self, processor_name: &str) -> JsValue {
+        let params = ProcessorFactory::get_param_definitions(processor_name);
         serde_wasm_bindgen::to_value(&params).unwrap()
     }
 

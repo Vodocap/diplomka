@@ -499,6 +499,9 @@ impl WasmMLPipeline {
         let num_samples = x_data.shape().0;
         let train_size = (num_samples as f64 * train_ratio) as usize;
 
+        // Reset training state to ensure clean baseline (no leftover indices)
+        self.pipeline.as_mut().unwrap().reset_training_state();
+
         // Split data - convert slices to DenseMatrix and Vec
         let x_train_slice = x_data.slice(0..train_size, 0..x_data.shape().1);
         let y_train = y_data[0..train_size].to_vec();
@@ -622,6 +625,176 @@ impl WasmMLPipeline {
             };
         } else {
             // Regression metrics
+            let n = predictions.len() as f64;
+            let mut sum_squared_error = 0.0;
+            let mut sum_abs_error = 0.0;
+            let y_mean = y_test.iter().sum::<f64>() / n;
+            let mut sum_squared_total = 0.0;
+
+            for (i, &pred) in predictions.iter().enumerate() {
+                let actual: f64 = y_test[i];
+                let error: f64 = pred - actual;
+                sum_squared_error += error * error;
+                sum_abs_error += error.abs();
+                sum_squared_total += (actual - y_mean).powi(2);
+            }
+
+            result.mse = sum_squared_error / n;
+            result.rmse = result.mse.sqrt();
+            result.mae = sum_abs_error / n;
+            result.r2_score = if sum_squared_total > 0.0 {
+                1.0 - (sum_squared_error / sum_squared_total)
+            } else {
+                0.0
+            };
+        }
+
+        Ok(serde_wasm_bindgen::to_value(&result).unwrap())
+    }
+
+    /// Trénuje model s konkrétnymi feature indices (z porovnania selektorov)
+    #[wasm_bindgen(js_name = trainWithFeatureIndices)]
+    pub fn train_with_feature_indices(&mut self, train_ratio: f64, indices_js: JsValue) -> Result<JsValue, JsValue> {
+        if self.pipeline.is_none() {
+            return Err(JsValue::from_str("Pipeline nie je vytvorený"));
+        }
+
+        if self.data_cache.is_none() {
+            return Err(JsValue::from_str("Dáta nie sú načítané"));
+        }
+
+        let indices: Vec<usize> = serde_wasm_bindgen::from_value(indices_js)
+            .map_err(|e| JsValue::from_str(&format!("Indices parse error: {:?}", e)))?;
+
+        if indices.is_empty() {
+            return Err(JsValue::from_str("Zoznam feature indices je prázdny"));
+        }
+
+        let (x_data, y_data) = self.data_cache.as_ref().unwrap();
+        let num_samples = x_data.shape().0;
+        let num_features = x_data.shape().1;
+        let train_size = (num_samples as f64 * train_ratio) as usize;
+
+        // Validate indices
+        for &idx in &indices {
+            if idx >= num_features {
+                return Err(JsValue::from_str(&format!(
+                    "Feature index {} je mimo rozsah (max {})", idx, num_features - 1
+                )));
+            }
+        }
+
+        // Reset pipeline training state and set new indices
+        let pipeline = self.pipeline.as_mut().unwrap();
+        pipeline.reset_training_state();
+        pipeline.set_selected_indices(indices.clone());
+
+        // Split data
+        let x_train_slice = x_data.slice(0..train_size, 0..num_features);
+        let y_train = y_data[0..train_size].to_vec();
+        let x_test_slice = x_data.slice(train_size..num_samples, 0..num_features);
+        let y_test = y_data[train_size..num_samples].to_vec();
+
+        // Convert slices to DenseMatrix
+        let x_train_data: Vec<Vec<f64>> = (0..x_train_slice.shape().0)
+            .map(|i| (0..x_train_slice.shape().1)
+                .map(|j| *x_train_slice.get((i, j)))
+                .collect())
+            .collect();
+        let x_train = DenseMatrix::from_2d_vec(&x_train_data)
+            .map_err(|e| JsValue::from_str(&format!("Chyba pri vytváraní train matice: {:?}", e)))?;
+
+        let x_test_data: Vec<Vec<f64>> = (0..x_test_slice.shape().0)
+            .map(|i| (0..x_test_slice.shape().1)
+                .map(|j| *x_test_slice.get((i, j)))
+                .collect())
+            .collect();
+        let x_test = DenseMatrix::from_2d_vec(&x_test_data)
+            .map_err(|e| JsValue::from_str(&format!("Chyba pri vytváraní test matice: {:?}", e)))?;
+
+        // Train with the set indices - train() will use select_features_cached
+        self.pipeline.as_mut().unwrap()
+            .train(x_train, y_train.clone())
+            .map_err(|e| JsValue::from_str(&e))?;
+
+        // Predict on test set
+        let mut predictions = Vec::new();
+        for row_idx in 0..x_test.shape().0 {
+            let row: Vec<f64> = (0..x_test.shape().1)
+                .map(|col_idx| *x_test.get((row_idx, col_idx)))
+                .collect();
+            
+            let pred_result = self.pipeline.as_mut().unwrap()
+                .predict(row)
+                .map_err(|e| {
+                    JsValue::from_str(&format!("Prediction error on row {}: {}", row_idx, e))
+                })?;
+            
+            let pred: f64 = pred_result.first().copied().unwrap_or(0.0);
+            predictions.push(pred);
+        }
+
+        // Calculate metrics
+        let eval_mode = self.pipeline.as_ref().unwrap().info().evaluation_mode;
+        
+        let mut result = TrainingWithEvaluationResult {
+            success: true,
+            message: format!("Model natrénovaný na {} vzorkách s {} features (z {}), testovaný na {}", 
+                train_size, indices.len(), num_features, num_samples - train_size),
+            samples_trained: train_size,
+            evaluation_mode: eval_mode.clone(),
+            accuracy: 0.0,
+            precision: 0.0,
+            recall: 0.0,
+            f1_score: 0.0,
+            mse: 0.0,
+            rmse: 0.0,
+            mae: 0.0,
+            r2_score: 0.0,
+            selected_features_indices: Some(indices),
+            total_features_before: num_features,
+            total_features_after: self.pipeline.as_ref().unwrap().selected_indices.as_ref().map_or(num_features, |i| i.len()),
+        };
+
+        if eval_mode == "classification" {
+            let mut correct = 0;
+            let mut true_positives = 0.0;
+            let mut false_positives = 0.0;
+            let mut false_negatives = 0.0;
+            
+            for (i, &pred) in predictions.iter().enumerate() {
+                let actual: f64 = y_test[i];
+                if (pred - actual).abs() < 0.5 {
+                    correct += 1;
+                    if actual > 0.5 {
+                        true_positives += 1.0;
+                    }
+                } else {
+                    if pred > 0.5 {
+                        false_positives += 1.0;
+                    } else {
+                        false_negatives += 1.0;
+                    }
+                }
+            }
+
+            result.accuracy = correct as f64 / predictions.len() as f64;
+            result.precision = if true_positives + false_positives > 0.0 {
+                true_positives / (true_positives + false_positives)
+            } else {
+                0.0
+            };
+            result.recall = if true_positives + false_negatives > 0.0 {
+                true_positives / (true_positives + false_negatives)
+            } else {
+                0.0
+            };
+            result.f1_score = if result.precision + result.recall > 0.0 {
+                2.0 * result.precision * result.recall / (result.precision + result.recall)
+            } else {
+                0.0
+            };
+        } else {
             let n = predictions.len() as f64;
             let mut sum_squared_error = 0.0;
             let mut sum_abs_error = 0.0;

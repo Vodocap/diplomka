@@ -1,6 +1,6 @@
 use smartcore::linalg::basic::matrix::DenseMatrix;
-use smartcore::linalg::basic::arrays::{Array, Array2, MutArray};
-use super::DataProcessor;
+use smartcore::linalg::basic::arrays::{Array, MutArray};
+use super::{DataProcessor, ProcessorParam, ColumnType};
 
 pub struct Binner 
 {
@@ -77,5 +77,21 @@ impl DataProcessor for Binner
 
     fn get_supported_params(&self) -> Vec<&str> {
         vec!["bins"]
+    }
+
+    fn get_param_definitions(&self) -> Vec<ProcessorParam> {
+        vec![ProcessorParam {
+            name: "bins".to_string(),
+            param_type: "number".to_string(),
+            default_value: "10".to_string(),
+            description: "Po\u{010d}et binov pre diskretiz\u{00e1}ciu".to_string(),
+            min: Some(2.0),
+            max: Some(100.0),
+            options: None,
+        }]
+    }
+
+    fn get_applicable_column_types(&self) -> Option<Vec<ColumnType>> {
+        Some(vec![ColumnType::Numeric])
     }
 }

@@ -128,6 +128,7 @@ impl MLPipelineDirector {
     /// Vráti všetky dostupné predpripravené konfigurácie
     pub fn available_presets() -> Vec<PresetInfo> {
         vec![
+            // === ZÁKLADNÉ PRESETY ===
             PresetInfo {
                 name: "basic_classification",
                 description: "Základný klasifikačný pipeline (LogReg + Scaler + Variance)",
@@ -145,6 +146,16 @@ impl MLPipelineDirector {
                 selector: Some("correlation"),
             },
             PresetInfo {
+                name: "minimal",
+                description: "Minimálny pipeline bez preprocessingu",
+                model_type: "both",
+                model: None,
+                processor: None,
+                selector: None,
+            },
+            
+            // === POKROČILÉ KLASIFIKAČNÉ PRESETY ===
+            PresetInfo {
                 name: "advanced_classification",
                 description: "Pokročilý klasifikačný pipeline (Model + Scaler + Chi-Square)",
                 model_type: "classification",
@@ -153,12 +164,20 @@ impl MLPipelineDirector {
                 selector: Some("chi_square"),
             },
             PresetInfo {
-                name: "advanced_regression",
-                description: "Pokročilý regresný pipeline (Model + Scaler + MI)",
-                model_type: "regression",
-                model: None,
-                processor: Some("scaler"),
-                selector: Some("mutual_information"),
+                name: "logreg_minmax_chisquare",
+                description: "LogReg s MinMax škálovaním a Chi-Square (klasifikácia)",
+                model_type: "classification",
+                model: Some("logreg"),
+                processor: Some("minmax_scaler"),
+                selector: Some("chi_square"),
+            },
+            PresetInfo {
+                name: "tree_binner_infogain",
+                description: "Decision Tree s Binnerom a Information Gain",
+                model_type: "classification",
+                model: Some("tree"),
+                processor: Some("binner"),
+                selector: Some("information_gain"),
             },
             PresetInfo {
                 name: "knn_classifier",
@@ -169,6 +188,24 @@ impl MLPipelineDirector {
                 selector: Some("variance"),
             },
             PresetInfo {
+                name: "knn_robust_mi",
+                description: "KNN s Robust škálovaním a Mutual Information (klasifikácia)",
+                model_type: "classification",
+                model: Some("knn"),
+                processor: Some("robust_scaler"),
+                selector: Some("mutual_information"),
+            },
+            
+            // === POKROČILÉ REGRESNÉ PRESETY ===
+            PresetInfo {
+                name: "advanced_regression",
+                description: "Pokročilý regresný pipeline (Model + Scaler + MI)",
+                model_type: "regression",
+                model: None,
+                processor: Some("scaler"),
+                selector: Some("mutual_information"),
+            },
+            PresetInfo {
                 name: "knn_regressor",
                 description: "KNN regressor s optimálnymi nastaveniami",
                 model_type: "regression",
@@ -177,20 +214,110 @@ impl MLPipelineDirector {
                 selector: Some("correlation"),
             },
             PresetInfo {
+                name: "linreg_minmax_correlation",
+                description: "LinReg s MinMax škálovaním a Correlation Filter",
+                model_type: "regression",
+                model: Some("linreg"),
+                processor: Some("minmax_scaler"),
+                selector: Some("correlation"),
+            },
+            PresetInfo {
+                name: "linreg_robust_mi",
+                description: "LinReg s Robust škálovaním a Mutual Information",
+                model_type: "regression",
+                model: Some("linreg"),
+                processor: Some("robust_scaler"),
+                selector: Some("mutual_information"),
+            },
+            
+            // === PRESETY S TRANSFORMÁCIAMI ===
+            PresetInfo {
+                name: "linreg_log_correlation",
+                description: "LinReg s Log transformáciou a Correlation Filter",
+                model_type: "regression",
+                model: Some("linreg"),
+                processor: Some("log_transformer"),
+                selector: Some("correlation"),
+            },
+            PresetInfo {
+                name: "knn_power_variance",
+                description: "KNN s Power transformáciou a Variance Threshold",
+                model_type: "regression",
+                model: Some("knn"),
+                processor: Some("power_transformer"),
+                selector: Some("variance"),
+            },
+            
+            // === PRESETY S OUTLIER HANDLINGOM ===
+            PresetInfo {
+                name: "linreg_outlier_correlation",
+                description: "LinReg s Outlier Clipperom a Correlation Filter",
+                model_type: "regression",
+                model: Some("linreg"),
+                processor: Some("outlier_clipper"),
+                selector: Some("correlation"),
+            },
+            PresetInfo {
+                name: "knn_outlier_variance",
+                description: "KNN s Outlier Clipperom a Variance Threshold",
+                model_type: "regression",
+                model: Some("knn"),
+                processor: Some("outlier_clipper"),
+                selector: Some("variance"),
+            },
+            
+            // === PRESETY BEZ FEATURE SELECTION ===
+            PresetInfo {
+                name: "logreg_scaler_only",
+                description: "LogReg len so Standard Scalerom (bez feature selection)",
+                model_type: "classification",
+                model: Some("logreg"),
+                processor: Some("scaler"),
+                selector: None,
+            },
+            PresetInfo {
+                name: "linreg_minmax_only",
+                description: "LinReg len s MinMax Scalerom (bez feature selection)",
+                model_type: "regression",
+                model: Some("linreg"),
+                processor: Some("minmax_scaler"),
+                selector: None,
+            },
+            PresetInfo {
+                name: "knn_robust_only",
+                description: "KNN len s Robust Scalerom (bez feature selection)",
+                model_type: "both",
+                model: Some("knn"),
+                processor: Some("robust_scaler"),
+                selector: None,
+            },
+            
+            // === PRESETY S LABEL ENCODING ===
+            PresetInfo {
+                name: "tree_labelenc_chisquare",
+                description: "Decision Tree s Label Encoderom a Chi-Square",
+                model_type: "classification",
+                model: Some("tree"),
+                processor: Some("label_encoder"),
+                selector: Some("chi_square"),
+            },
+            PresetInfo {
+                name: "logreg_labelenc_variance",
+                description: "LogReg s Label Encoderom a Variance Threshold",
+                model_type: "classification",
+                model: Some("logreg"),
+                processor: Some("label_encoder"),
+                selector: Some("variance"),
+            },
+            
+            // === DECISION TREE PRESET ===
+            PresetInfo {
                 name: "decision_tree",
                 description: "Decision Tree s Information Gain selection",
                 model_type: "classification",
                 model: Some("tree"),
                 processor: None,
                 selector: Some("information_gain"),
-            },
-            PresetInfo {
-                name: "minimal",
-                description: "Minimálny pipeline bez preprocessingu",
-                model_type: "both",
-                model: None,
-                processor: None,
-                selector: None,
             },
         ]
     }

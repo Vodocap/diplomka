@@ -5,5 +5,5 @@ pub mod compatibility;
 
 pub use pipeline::MLPipeline;
 pub use builder::MLPipelineBuilder;
-pub use director::{MLPipelineDirector, PresetInfo};
+pub use director::MLPipelineDirector;
 pub use compatibility::CompatibilityRegistry;

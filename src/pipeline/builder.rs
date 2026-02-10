@@ -1,9 +1,9 @@
-use crate::models::{IModel, factory::ModelFactory};
-use crate::processing::{DataProcessor, factory::ProcessorFactory};
-use crate::feature_selection_strategies::{FeatureSelector, factory::FeatureSelectorFactory};
-use crate::evaluation::{ModelEvaluator, EvaluationReport};
+use crate::models::factory::ModelFactory;
+use crate::processing::factory::ProcessorFactory;
+use crate::feature_selection_strategies::factory::FeatureSelectorFactory;
+// Removed unused evaluation imports
 use super::{compatibility::CompatibilityRegistry, pipeline::MLPipeline};
-use smartcore::linalg::basic::matrix::DenseMatrix;
+
 use std::collections::HashMap;
 
 /// Builder pre konfiguráciu ML Pipeline
@@ -108,7 +108,7 @@ impl MLPipelineBuilder {
         };
 
         // Vytvorenie selektora (optional)
-        let mut selector = if let Some(sel_type) = &self.selector_type {
+        let selector = if let Some(sel_type) = &self.selector_type {
             let mut sel = FeatureSelectorFactory::create(sel_type)?;
             
             // Nastavenie parametrov selektora

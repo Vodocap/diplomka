@@ -2,7 +2,7 @@ use wasm_bindgen::prelude::*;
 use csv::ReaderBuilder;
 use std::collections::HashMap;
 use wasm_bindgen::JsValue;
-use wasm_bindgen_futures::spawn_local;
+
 use serde_wasm_bindgen::to_value;
 
 #[wasm_bindgen]

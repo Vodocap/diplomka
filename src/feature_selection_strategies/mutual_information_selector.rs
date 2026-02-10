@@ -1,5 +1,5 @@
 use smartcore::linalg::basic::matrix::DenseMatrix;
-use smartcore::linalg::basic::arrays::{Array, Array2};
+use smartcore::linalg::basic::arrays::Array;
 use super::FeatureSelector;
 use statrs::function::gamma::digamma;
 
@@ -29,7 +29,6 @@ impl MutualInformationSelector
             return 0.0; 
         }
 
-        let mut mi = 0.0;
         let mut nx_vec = vec![0; n];
         let mut ny_vec = vec![0; n];
 
@@ -82,7 +81,7 @@ impl MutualInformationSelector
         }
         mean_psi_nx_ny /= n as f64;
 
-        mi = psi_k - mean_psi_nx_ny + psi_n;
+        let mi = psi_k - mean_psi_nx_ny + psi_n;
         
         // MI nemôže byť záporná (v dôsledku šumu pri odhade môže vyjsť mierne pod 0)
         mi.max(0.0)

@@ -1,5 +1,5 @@
 use smartcore::linalg::basic::matrix::DenseMatrix;
-use smartcore::linalg::basic::arrays::{Array, Array2};
+use smartcore::linalg::basic::arrays::Array;
 use super::FeatureSelector;
 use std::collections::HashSet;
 

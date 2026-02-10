@@ -1,5 +1,5 @@
 use smartcore::linalg::basic::matrix::DenseMatrix;
-use smartcore::linalg::basic::arrays::{Array, Array2};
+use smartcore::linalg::basic::arrays::Array;
 use super::FeatureSelector;
 
 pub struct VarianceSelector 
@@ -13,7 +13,7 @@ impl VarianceSelector
     {
         Self 
         { 
-            threshold: 0.0 
+            threshold: 0.01 
         }
     }
 }

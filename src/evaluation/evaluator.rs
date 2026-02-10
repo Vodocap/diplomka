@@ -1,6 +1,6 @@
 use super::metrics::EvaluationReport;
 use smartcore::metrics::{
-    accuracy, f1, precision, recall,
+    f1, precision, recall,
     mean_squared_error, r2, mean_absolute_error,
 };
 

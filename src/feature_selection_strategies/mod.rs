@@ -32,4 +32,4 @@ pub use correlation_selector::CorrelationSelector;
 pub use chi_square_selector::ChiSquareSelector;
 pub use information_gain_selector::InformationGainSelector;
 pub use mutual_information_selector::MutualInformationSelector;
-pub use factory::FeatureSelectorFactory;
+// FeatureSelectorFactory removed - not used directly

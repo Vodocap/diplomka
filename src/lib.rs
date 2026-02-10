@@ -1,4 +1,4 @@
-use wasm_bindgen::prelude::*;
+// Removed unused import
 
 mod data_loading;
 mod evaluation;

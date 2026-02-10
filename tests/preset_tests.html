@@ -121,6 +121,7 @@
 
         // Test konfigurácie pre každý preset
         const presetTests = [
+            // === ZÁKLADNÉ PRESETY ===
             {
                 name: 'basic_classification',
                 description: 'Základný klasifikačný preset s logreg',
@@ -138,6 +139,55 @@
                 expectedProcessor: 'Standard Scaler'
             },
             {
+                name: 'minimal',
+                description: 'Minimálny preset bez processingu',
+                model: 'knn',
+                params: {
+                    model: [['k', '3']],
+                    selector: null
+                },
+                expectedModel: 'K-Nearest Neighbors',
+                expectedSelector: undefined,
+                expectedProcessor: undefined
+            },
+            
+            // === POKROČILÉ KLASIFIKAČNÉ PRESETY ===
+            {
+                name: 'advanced_classification',
+                description: 'Pokročilá klasifikácia s chi-square',
+                model: 'logreg',
+                params: {
+                    model: null,
+                    selector: [['num_features', '2']]
+                },
+                expectedModel: 'Logistická Regresia (Klasifikácia)',
+                expectedSelector: 'Chi-Square Selector',
+                expectedProcessor: 'Standard Scaler'
+            },
+            {
+                name: 'logreg_minmax_chisquare',
+                description: 'LogReg s MinMax škálovaním a Chi-Square',
+                model: 'logreg',
+                params: {
+                    selector: [['num_features', '2']]
+                },
+                expectedModel: 'Logistická Regresia (Klasifikácia)',
+                expectedSelector: 'Chi-Square Selector',
+                expectedProcessor: 'MinMax Scaler'
+            },
+            {
+                name: 'tree_binner_infogain',
+                description: 'Decision Tree s Binnerom a Information Gain',
+                model: 'tree',
+                params: {
+                    processor: [['bins', '5']],
+                    selector: [['num_features', '2']]
+                },
+                expectedModel: 'Decision Tree',
+                expectedSelector: 'Information Gain (vyžaduje diskrétne/binned dáta)',
+                expectedProcessor: 'Equal-width Binner'
+            },
+            {
                 name: 'knn_classifier',
                 description: 'KNN klasifikátor s defaultnými parametrami',
                 model: 'knn',
@@ -150,15 +200,29 @@
                 expectedProcessor: 'Standard Scaler'
             },
             {
-                name: 'knn_classifier',
-                description: 'KNN klasifikátor s vlastnými parametrami',
+                name: 'knn_robust_mi',
+                description: 'KNN s Robust škálovaním a Mutual Information',
                 model: 'knn',
                 params: {
-                    model: [['k', '5']],
-                    selector: [['threshold', '0.01']]
+                    model: [['k', '3']],
+                    selector: [['num_features', '2']]
                 },
                 expectedModel: 'K-Nearest Neighbors',
-                expectedSelector: 'Variance Threshold Selector',
+                expectedSelector: 'Mutual Information (KSG Estimator)',
+                expectedProcessor: 'Robust Scaler'
+            },
+            
+            // === POKROČILÉ REGRESNÉ PRESETY ===
+            {
+                name: 'advanced_regression',
+                description: 'Pokročilá regresia s mutual information',
+                model: 'linreg',
+                params: {
+                    model: null,
+                    selector: [['num_features', '2']]
+                },
+                expectedModel: 'Lineárna Regresia',
+                expectedSelector: 'Mutual Information (KSG Estimator)',
                 expectedProcessor: 'Standard Scaler'
             },
             {
@@ -174,6 +238,127 @@
                 expectedProcessor: 'Standard Scaler'
             },
             {
+                name: 'linreg_minmax_correlation',
+                description: 'LinReg s MinMax škálovaním a Correlation Filter',
+                model: 'linreg',
+                expectedModel: 'Lineárna Regresia',
+                expectedSelector: 'Correlation Filter',
+                expectedProcessor: 'MinMax Scaler'
+            },
+            {
+                name: 'linreg_robust_mi',
+                description: 'LinReg s Robust škálovaním a Mutual Information',
+                model: 'linreg',
+                params: {
+                    selector: [['num_features', '2']]
+                },
+                expectedModel: 'Lineárna Regresia',
+                expectedSelector: 'Mutual Information (KSG Estimator)',
+                expectedProcessor: 'Robust Scaler'
+            },
+            
+            // === PRESETY S TRANSFORMÁCIAMI ===
+            {
+                name: 'linreg_log_correlation',
+                description: 'LinReg s Log transformáciou a Correlation Filter',
+                model: 'linreg',
+                params: {
+                    processor: [['offset', '1']]
+                },
+                expectedModel: 'Lineárna Regresia',
+                expectedSelector: 'Correlation Filter',
+                expectedProcessor: 'Log Transformer'
+            },
+            {
+                name: 'knn_power_variance',
+                description: 'KNN s Power transformáciou a Variance Threshold',
+                model: 'knn',
+                params: {
+                    model: [['k', '3']],
+                    selector: [['threshold', '0.01']]
+                },
+                expectedModel: 'K-Nearest Neighbors',
+                expectedSelector: 'Variance Threshold Selector',
+                expectedProcessor: 'Yeo-Johnson Transformer'
+            },
+            
+            // === PRESETY S OUTLIER HANDLINGOM ===
+            {
+                name: 'linreg_outlier_correlation',
+                description: 'LinReg s Outlier Clipperom a Correlation Filter',
+                model: 'linreg',
+                expectedModel: 'Lineárna Regresia',
+                expectedSelector: 'Correlation Filter',
+                expectedProcessor: 'Outlier Clipper'
+            },
+            {
+                name: 'knn_outlier_variance',
+                description: 'KNN s Outlier Clipperom a Variance Threshold',
+                model: 'knn',
+                params: {
+                    model: [['k', '3']],
+                    selector: [['threshold', '0.01']]
+                },
+                expectedModel: 'K-Nearest Neighbors',
+                expectedSelector: 'Variance Threshold Selector',
+                expectedProcessor: 'Outlier Clipper'
+            },
+            
+            // === PRESETY BEZ FEATURE SELECTION ===
+            {
+                name: 'logreg_scaler_only',
+                description: 'LogReg len so Standard Scalerom (bez feature selection)',
+                model: 'logreg',
+                expectedModel: 'Logistická Regresia (Klasifikácia)',
+                expectedSelector: undefined,
+                expectedProcessor: 'Standard Scaler'
+            },
+            {
+                name: 'linreg_minmax_only',
+                description: 'LinReg len s MinMax Scalerom (bez feature selection)',
+                model: 'linreg',
+                expectedModel: 'Lineárna Regresia',
+                expectedSelector: undefined,
+                expectedProcessor: 'MinMax Scaler'
+            },
+            {
+                name: 'knn_robust_only',
+                description: 'KNN len s Robust Scalerom (bez feature selection)',
+                model: 'knn',
+                params: {
+                    model: [['k', '3']]
+                },
+                expectedModel: 'K-Nearest Neighbors',
+                expectedSelector: undefined,
+                expectedProcessor: 'Robust Scaler'
+            },
+            
+            // === PRESETY S LABEL ENCODING ===
+            {
+                name: 'tree_labelenc_chisquare',
+                description: 'Decision Tree s Label Encoderom a Chi-Square',
+                model: 'tree',
+                params: {
+                    selector: [['num_features', '2']]
+                },
+                expectedModel: 'Decision Tree',
+                expectedSelector: 'Chi-Square Selector',
+                expectedProcessor: 'Label Encoder'
+            },
+            {
+                name: 'logreg_labelenc_variance',
+                description: 'LogReg s Label Encoderom a Variance Threshold',
+                model: 'logreg',
+                params: {
+                    selector: [['threshold', '0.01']]
+                },
+                expectedModel: 'Logistická Regresia (Klasifikácia)',
+                expectedSelector: 'Variance Threshold Selector',
+                expectedProcessor: 'Label Encoder'
+            },
+            
+            // === DECISION TREE PRESET ===
+            {
                 name: 'decision_tree',
                 description: 'Decision Tree s information gain',
                 model: 'tree',
@@ -183,42 +368,6 @@
                 },
                 expectedModel: 'Decision Tree',
                 expectedSelector: 'Information Gain (vyžaduje diskrétne/binned dáta)',
-                expectedProcessor: undefined
-            },
-            {
-                name: 'advanced_classification',
-                description: 'Pokročilá klasifikácia s chi-square',
-                model: 'logreg',
-                params: {
-                    model: null,
-                    selector: [['num_features', '2']]
-                },
-                expectedModel: 'Logistická Regresia (Klasifikácia)',
-                expectedSelector: 'Chi-Square Selector',
-                expectedProcessor: 'Standard Scaler'
-            },
-            {
-                name: 'advanced_regression',
-                description: 'Pokročilá regresia s mutual information',
-                model: 'linreg',
-                params: {
-                    model: null,
-                    selector: [['num_features', '2']]
-                },
-                expectedModel: 'Lineárna Regresia',
-                expectedSelector: 'Mutual Information (KSG Estimator)',
-                expectedProcessor: 'Standard Scaler'
-            },
-            {
-                name: 'minimal',
-                description: 'Minimálny preset bez processingu',
-                model: 'knn',
-                params: {
-                    model: [['k', '3']],
-                    selector: null
-                },
-                expectedModel: 'K-Nearest Neighbors',
-                expectedSelector: undefined,
                 expectedProcessor: undefined
             }
         ];
@@ -271,7 +420,17 @@
                 
                 // Validate evaluation mode
                 let expectedEvalMode = 'classification'; // default
-                if (testConfig.model === 'linreg' || testConfig.name === 'knn_regressor' || testConfig.name === 'basic_regression' || testConfig.name === 'advanced_regression') {
+                if (testConfig.model === 'linreg' || 
+                    testConfig.name === 'knn_regressor' || 
+                    testConfig.name === 'basic_regression' || 
+                    testConfig.name === 'advanced_regression' ||
+                    testConfig.name === 'linreg_minmax_correlation' ||
+                    testConfig.name === 'linreg_robust_mi' ||
+                    testConfig.name === 'linreg_log_correlation' ||
+                    testConfig.name === 'knn_power_variance' ||
+                    testConfig.name === 'linreg_outlier_correlation' ||
+                    testConfig.name === 'knn_outlier_variance' ||
+                    testConfig.name === 'linreg_minmax_only') {
                     expectedEvalMode = 'regression';
                 }
                 if (trainResult.evaluation_mode !== expectedEvalMode) {

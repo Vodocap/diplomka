@@ -40,7 +40,20 @@ impl CompatibilityRegistry {
         self.model_types.insert("tree".to_string(), "both".to_string());
 
         // Kompatibilné procesory (všetky modely môžu použiť všetky procesory)
-        let all_processors = vec!["scaler".to_string(), "binner".to_string(), "onehot".to_string()];
+        let all_processors = vec![
+            "scaler".to_string(), 
+            "standard_scaler".to_string(),
+            "minmax_scaler".to_string(),
+            "robust_scaler".to_string(),
+            "binner".to_string(), 
+            "onehot".to_string(),
+            "one_hot_encoder".to_string(),
+            "label_encoder".to_string(),
+            "null_handler".to_string(),
+            "outlier_clipper".to_string(),
+            "log_transformer".to_string(),
+            "power_transformer".to_string()
+        ];
         self.compatible_processors.insert("linreg".to_string(), all_processors.clone());
         self.compatible_processors.insert("logreg".to_string(), all_processors.clone());
         self.compatible_processors.insert("knn".to_string(), all_processors.clone());

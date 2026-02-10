@@ -1,7 +1,7 @@
 use smartcore::linalg::basic::matrix::DenseMatrix;
-use smartcore::linalg::basic::arrays::{Array, Array2, MutArray};
+use smartcore::linalg::basic::arrays::{Array, MutArray};
 use std::collections::HashMap;
-use super::DataProcessor;
+use super::{DataProcessor, ColumnType};
 
 pub struct OneHotEncoder;
 
@@ -72,5 +72,9 @@ impl DataProcessor for OneHotEncoder
 
     fn get_supported_params(&self) -> Vec<&str> {
         vec![]
+    }
+
+    fn get_applicable_column_types(&self) -> Option<Vec<ColumnType>> {
+        Some(vec![ColumnType::Categorical, ColumnType::Discrete])
     }
 }

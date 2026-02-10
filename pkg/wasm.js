@@ -224,6 +224,17 @@ export class WasmFactory {
         return ret;
     }
     /**
+     * Získa detailné definície parametrov pre procesor
+     * @param {string} processor_name
+     * @returns {any}
+     */
+    getProcessorParamDefinitions(processor_name) {
+        const ptr0 = passStringToWasm0(processor_name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.wasmfactory_getProcessorParamDefinitions(this.__wbg_ptr, ptr0, len0);
+        return ret;
+    }
+    /**
      * Získa podporované parametre pre selector
      * @param {string} selector_name
      * @returns {any}
@@ -680,7 +691,7 @@ function __wbg_get_imports() {
             console.warn(arg0);
         },
         __wbindgen_cast_0000000000000001: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { dtor_idx: 287, function: Function { arguments: [Externref], shim_idx: 288, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
+            // Cast intrinsic for `Closure(Closure { dtor_idx: 342, function: Function { arguments: [Externref], shim_idx: 343, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
             const ret = makeMutClosure(arg0, arg1, wasm.wasm_bindgen__closure__destroy__h062d55d9c7b8c652, wasm_bindgen__convert__closures_____invoke__h8f27a5fbd1cc09f3);
             return ret;
         },

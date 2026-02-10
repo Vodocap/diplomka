@@ -58,6 +58,10 @@ export class WasmFactory {
      */
     getPresetDetails(preset_name: string): any;
     /**
+     * Získa detailné definície parametrov pre procesor
+     */
+    getProcessorParamDefinitions(processor_name: string): any;
+    /**
      * Získa podporované parametre pre selector
      */
     getSelectorParams(selector_name: string): any;
@@ -142,17 +146,18 @@ export interface InitOutput {
     readonly wasmmlpipeline_train: (a: number) => [number, number, number];
     readonly wasmmlpipeline_trainWithSplit: (a: number, b: number) => [number, number, number];
     readonly __wbg_wasmdataloader_free: (a: number, b: number) => void;
+    readonly __wbg_wasmfactory_free: (a: number, b: number) => void;
     readonly wasmdataloader_createAuto: (a: number, b: number) => [number, number, number];
     readonly wasmdataloader_getAvailableColumns: (a: number, b: number, c: number) => [number, number, number];
     readonly wasmdataloader_loadData: (a: number, b: number, c: number, d: number, e: number) => [number, number, number];
     readonly wasmdataloader_new: (a: number, b: number) => [number, number, number];
     readonly wasmdataloader_validateFormat: (a: number, b: number, c: number) => [number, number];
-    readonly __wbg_wasmfactory_free: (a: number, b: number) => void;
     readonly wasmfactory_getAvailableOptions: (a: number) => any;
     readonly wasmfactory_getCompatibleProcessors: (a: number, b: number, c: number) => any;
     readonly wasmfactory_getCompatibleSelectors: (a: number, b: number, c: number) => any;
     readonly wasmfactory_getModelParams: (a: number, b: number, c: number) => any;
     readonly wasmfactory_getPresetDetails: (a: number, b: number, c: number) => any;
+    readonly wasmfactory_getProcessorParamDefinitions: (a: number, b: number, c: number) => any;
     readonly wasmfactory_getSelectorParams: (a: number, b: number, c: number) => any;
     readonly wasmfactory_new: () => number;
     readonly __wbg_csvloader_free: (a: number, b: number) => void;

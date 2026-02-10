@@ -2,8 +2,17 @@ use wasm_bindgen::prelude::*;
 use serde::{Serialize, Deserialize};
 use crate::pipeline::{MLPipeline, MLPipelineBuilder};
 use crate::data_loading::DataLoaderFactory;
+use crate::feature_selection_strategies::factory::FeatureSelectorFactory;
+use crate::target_analysis::TargetAnalyzerFactory;
 use smartcore::linalg::basic::matrix::DenseMatrix;
 use smartcore::linalg::basic::arrays::{Array, Array2};
+
+#[derive(Serialize, Deserialize)]
+pub struct SelectorCompareConfig {
+    pub name: String,
+    #[serde(default)]
+    pub params: Vec<(String, String)>,
+}
 
 #[derive(Serialize, Deserialize)]
 pub struct PipelineConfig {
@@ -908,5 +917,657 @@ impl WasmMLPipeline {
         } else {
             Err(JsValue::from_str("Pipeline not built"))
         }
+    }
+    
+    /// Get detailed selection information (e.g., correlation matrix for correlation selector)
+    #[wasm_bindgen(js_name = getSelectionDetails)]
+    pub fn get_selection_details(&self) -> Result<JsValue, JsValue> {
+        if let Some(ref pipeline) = self.pipeline {
+            if let Some(ref selector) = pipeline.selector {
+                let html = selector.get_selection_details();
+                Ok(JsValue::from_str(&html))
+            } else {
+                Ok(JsValue::from_str(""))
+            }
+        } else {
+            Err(JsValue::from_str("Pipeline not built"))
+        }
+    }
+
+    /// Porovná viaceré feature selektory na dátach BEZ potreby pipeline.
+    /// Umožňuje používateľovi preskúmať feature selection ešte pred vytvorením pipeline.
+    #[wasm_bindgen(js_name = compareSelectors)]
+    pub fn compare_selectors(
+        &self,
+        data: &str,
+        target_column: &str,
+        format: &str,
+        selectors_json: JsValue,
+    ) -> Result<JsValue, JsValue> {
+        let selector_configs: Vec<SelectorCompareConfig> = serde_wasm_bindgen::from_value(selectors_json)
+            .map_err(|e| JsValue::from_str(&format!("Invalid selector configs: {:?}", e)))?;
+
+        if selector_configs.is_empty() {
+            return Err(JsValue::from_str("Vyberte aspoň jeden selektor na porovnanie"));
+        }
+
+        // Load data
+        let mut loader = DataLoaderFactory::create(format)
+            .map_err(|e| JsValue::from_str(&e))?;
+        let loaded = loader.load_from_string(data, target_column)
+            .map_err(|e| JsValue::from_str(&e))?;
+
+        let x = &loaded.x_data;
+        let y = &loaded.y_data;
+        let (n_rows, n_features) = x.shape();
+
+        // Extract feature names
+        let feature_names: Vec<String> = if format == "csv" {
+            let first_line = data.lines().next().unwrap_or("");
+            first_line.split(',')
+                .map(|h| h.trim().to_string())
+                .filter(|h| h != target_column)
+                .collect()
+        } else {
+            (0..n_features).map(|i| format!("feature{}", i + 1)).collect()
+        };
+
+        // Run each selector
+        let mut selector_results: Vec<serde_json::Value> = Vec::new();
+
+        for config in &selector_configs {
+            match FeatureSelectorFactory::create(&config.name) {
+                Ok(mut selector) => {
+                    // Set params
+                    for (key, value) in &config.params {
+                        let _ = selector.set_param(key, value);
+                    }
+                    // Run selection (catch panics gracefully)
+                    let selected = selector.get_selected_indices(x, y);
+                    let scores = selector.get_feature_scores(x, y);
+                    let details_html = selector.get_selection_details();
+                    let metric_name = selector.get_metric_name().to_string();
+
+                    // Build per-feature scores map
+                    let mut score_map: Vec<Option<f64>> = vec![None; n_features];
+                    if let Some(ref s) = scores {
+                        for &(idx, val) in s {
+                            if idx < n_features {
+                                score_map[idx] = Some(val);
+                            }
+                        }
+                    }
+
+                    selector_results.push(serde_json::json!({
+                        "selector_name": selector.get_name(),
+                        "config_name": config.name,
+                        "selected_indices": selected,
+                        "total_features": n_features,
+                        "selected_count": selected.len(),
+                        "metric_name": metric_name,
+                        "score_map": score_map,
+                        "details_html": details_html,
+                        "error": null
+                    }));
+                },
+                Err(e) => {
+                    selector_results.push(serde_json::json!({
+                        "selector_name": config.name,
+                        "config_name": config.name,
+                        "error": format!("Chyba: {}", e),
+                        "selected_indices": [],
+                        "total_features": n_features,
+                        "selected_count": 0,
+                        "metric_name": "",
+                        "score_map": [],
+                        "details_html": ""
+                    }));
+                }
+            }
+        }
+
+        // Build comparison HTML
+        let comparison_html = Self::build_comparison_html(&selector_results, &feature_names, n_features);
+
+        let result = serde_json::json!({
+            "selectors": selector_results,
+            "comparison_html": comparison_html,
+            "total_features": n_features,
+            "total_rows": n_rows,
+            "feature_names": feature_names,
+        });
+
+        Ok(serde_wasm_bindgen::to_value(&result).unwrap())
+    }
+
+    /// Analyzuje stĺpce dát a odporúča najlepšiu cieľovú premennú
+    /// Pre každý stĺpec vypočíta priemernú absolútnu koreláciu s ostatnými stĺpcami
+    #[wasm_bindgen(js_name = analyzeTargetCandidates)]
+    pub fn analyze_target_candidates(&self, data: &str, format: &str) -> Result<JsValue, JsValue> {
+        if format != "csv" {
+            return Err(JsValue::from_str("Analýza je zatiaľ podporovaná len pre CSV formát"));
+        }
+        
+        let lines: Vec<&str> = data.lines().filter(|l| !l.trim().is_empty()).collect();
+        if lines.len() < 3 {
+            return Err(JsValue::from_str("Nedostatok dát (minimum 2 riadky + hlavička)"));
+        }
+        
+        let headers: Vec<String> = lines[0].split(',').map(|s| s.trim().to_string()).collect();
+        let num_cols = headers.len();
+        if num_cols < 2 {
+            return Err(JsValue::from_str("Potrebné sú aspoň 2 stĺpce"));
+        }
+        
+        // Parse all data rows
+        let mut all_data: Vec<Vec<f64>> = Vec::new();
+        let mut skipped = 0usize;
+        for line in &lines[1..] {
+            let vals: Vec<&str> = line.split(',').map(|s| s.trim()).collect();
+            if vals.len() != num_cols { skipped += 1; continue; }
+            match vals.iter().map(|v| v.parse::<f64>()).collect::<Result<Vec<f64>, _>>() {
+                Ok(row) => all_data.push(row),
+                Err(_) => { skipped += 1; }
+            }
+        }
+        
+        if all_data.len() < 2 {
+            return Err(JsValue::from_str("Nedostatok numerických riadkov pre analýzu"));
+        }
+        let n = all_data.len();
+        
+        // Full correlation matrix
+        let mut corr_matrix = vec![vec![0.0f64; num_cols]; num_cols];
+        for i in 0..num_cols {
+            let col_i: Vec<f64> = all_data.iter().map(|r| r[i]).collect();
+            corr_matrix[i][i] = 1.0;
+            for j in (i+1)..num_cols {
+                let col_j: Vec<f64> = all_data.iter().map(|r| r[j]).collect();
+                let c = Self::pearson_corr(&col_i, &col_j);
+                corr_matrix[i][j] = c;
+                corr_matrix[j][i] = c;
+            }
+        }
+        
+        // Analyze each column as potential target
+        let mut candidates: Vec<serde_json::Value> = Vec::new();
+        for col_idx in 0..num_cols {
+            let col_values: Vec<f64> = all_data.iter().map(|r| r[col_idx]).collect();
+            
+            // Unique values
+            let mut uniq = std::collections::HashSet::new();
+            for &v in &col_values { uniq.insert(v.to_bits()); }
+            let unique_count = uniq.len();
+            
+            // Variance
+            let mean = col_values.iter().sum::<f64>() / n as f64;
+            let variance = col_values.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / n as f64;
+            
+            // Average abs correlation with other columns
+            let mut total = 0.0f64;
+            let mut max_c = 0.0f64;
+            for j in 0..num_cols {
+                if j == col_idx { continue; }
+                let ac = corr_matrix[col_idx][j].abs();
+                total += ac;
+                if ac > max_c { max_c = ac; }
+            }
+            let avg = if num_cols > 1 { total / (num_cols - 1) as f64 } else { 0.0 };
+            
+            // Determine classification vs regression
+            let is_cat = unique_count <= 10 || (unique_count as f64 / n as f64) < 0.05;
+            let stype = if is_cat { "classification" } else { "regression" };
+            let score = avg * 100.0;
+            
+            candidates.push(serde_json::json!({
+                "column_index": col_idx,
+                "column_name": headers[col_idx],
+                "unique_values": unique_count,
+                "variance": (variance * 10000.0).round() / 10000.0,
+                "avg_correlation": (avg * 10000.0).round() / 10000.0,
+                "max_correlation": (max_c * 10000.0).round() / 10000.0,
+                "suggested_type": stype,
+                "target_score": (score * 10.0).round() / 10.0
+            }));
+        }
+        
+        // Sort by target_score descending
+        candidates.sort_by(|a, b| {
+            let sa = a["target_score"].as_f64().unwrap_or(0.0);
+            let sb = b["target_score"].as_f64().unwrap_or(0.0);
+            sb.partial_cmp(&sa).unwrap()
+        });
+        
+        // Build HTML
+        let mut html = String::new();
+        html.push_str("<div style='font-family:Segoe UI,sans-serif;'>");
+        html.push_str(&format!("<p style='color:#6c757d;margin-bottom:15px;'>Analýza <b>{}</b> riadkov × <b>{}</b> stĺpcov", n, num_cols));
+        if skipped > 0 { html.push_str(&format!(" ({} ne-numerických preskočených)", skipped)); }
+        html.push_str("</p>");
+        
+        // Ranking table
+        html.push_str("<table style='width:100%;border-collapse:collapse;font-size:13px;margin-bottom:20px;'>");
+        html.push_str("<thead><tr>");
+        for h in &["#", "Stĺpec", "Unikátnych hodnôt", "Priem. |korelácia|", "Max |korelácia|", "Odporúčaný typ", "Skóre prediktability"] {
+            html.push_str(&format!("<th style='padding:10px 8px;border:1px solid #dee2e6;background:#3498db;color:white;text-align:center;font-size:12px;'>{}</th>", h));
+        }
+        html.push_str("</tr></thead><tbody>");
+        
+        for (rank, cand) in candidates.iter().enumerate() {
+            let bg = match rank {
+                0 => "background:#d1ecf1;",
+                1 | 2 => "background:#e8f4f8;",
+                _ => if rank % 2 == 0 { "background:#f8f9fa;" } else { "" },
+            };
+            let type_icon = if cand["suggested_type"].as_str() == Some("classification") { "Klasifikácia" } else { "Regresia" };
+            
+            html.push_str(&format!("<tr style='{}'>", bg));
+            html.push_str(&format!("<td style='padding:8px;border:1px solid #dee2e6;text-align:center;font-weight:bold;'>{}</td>", rank + 1));
+            html.push_str(&format!("<td style='padding:8px;border:1px solid #dee2e6;font-weight:bold;'>{}</td>", cand["column_name"].as_str().unwrap_or("")));
+            html.push_str(&format!("<td style='padding:8px;border:1px solid #dee2e6;text-align:center;'>{}</td>", cand["unique_values"]));
+            html.push_str(&format!("<td style='padding:8px;border:1px solid #dee2e6;text-align:center;'>{}</td>", cand["avg_correlation"]));
+            html.push_str(&format!("<td style='padding:8px;border:1px solid #dee2e6;text-align:center;'>{}</td>", cand["max_correlation"]));
+            html.push_str(&format!("<td style='padding:8px;border:1px solid #dee2e6;text-align:center;'>{}</td>", type_icon));
+            html.push_str(&format!("<td style='padding:8px;border:1px solid #dee2e6;text-align:center;font-weight:bold;color:#2980b9;font-size:1.1em;'>{}</td>", cand["target_score"]));
+            html.push_str("</tr>");
+        }
+        html.push_str("</tbody></table>");
+        
+        // Correlation matrix (only if <= 15 columns)
+        if num_cols <= 15 {
+            html.push_str("<h4 style='color:#495057;margin:20px 0 10px;border-bottom:2px solid #dee2e6;padding-bottom:8px;'>Korelačná matica všetkých stĺpcov</h4>");
+            html.push_str("<div style='overflow-x:auto;'><table style='border-collapse:collapse;font-size:11px;'>");
+            html.push_str("<tr><th style='padding:6px;border:1px solid #ddd;background:#f0f0f0;'></th>");
+            for h in &headers {
+                html.push_str(&format!("<th style='padding:6px;border:1px solid #ddd;background:#f0f0f0;font-size:10px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'>{}</th>", h));
+            }
+            html.push_str("</tr>");
+            for i in 0..num_cols {
+                html.push_str(&format!("<tr><th style='padding:6px;border:1px solid #ddd;background:#f0f0f0;font-size:10px;white-space:nowrap;'>{}</th>", &headers[i]));
+                for j in 0..num_cols {
+                    let c = corr_matrix[i][j];
+                    let ac = c.abs();
+                    let bg_color = if i == j {
+                        "#e0e0e0".to_string()
+                    } else if ac > 0.7 {
+                        format!("rgba(52,152,219,{})", 0.3 + ac * 0.5)
+                    } else if ac > 0.4 {
+                        format!("rgba(46,204,113,{})", 0.2 + ac * 0.3)
+                    } else {
+                        format!("rgba(200,200,200,{})", 0.1 + ac * 0.2)
+                    };
+                    html.push_str(&format!("<td style='padding:6px;border:1px solid #ddd;text-align:center;background:{};font-size:10px;'>{:.3}</td>", bg_color, c));
+                }
+                html.push_str("</tr>");
+            }
+            html.push_str("</table></div>");
+            html.push_str("<div style='margin-top:8px;font-size:11px;display:flex;gap:10px;flex-wrap:wrap;'>");
+            html.push_str("<span style='background:rgba(52,152,219,0.7);padding:2px 8px;color:white;'>Silná korelácia (|r| &gt; 0.7)</span>");
+            html.push_str("<span style='background:rgba(46,204,113,0.4);padding:2px 8px;'>Stredná korelácia (|r| &gt; 0.4)</span>");
+            html.push_str("<span style='background:rgba(200,200,200,0.3);padding:2px 8px;'>Slabá korelácia</span>");
+            html.push_str("</div>");
+        }
+        
+        // Recommendation box
+        let best_name = candidates[0]["column_name"].as_str().unwrap_or("");
+        let best_score = candidates[0]["target_score"].as_f64().unwrap_or(0.0);
+        let best_type = if candidates[0]["suggested_type"].as_str() == Some("classification") { "klasifikácia" } else { "regresia" };
+        html.push_str(&format!(
+            "<div style='margin-top:15px;padding:15px;background:#d1ecf1;border-left:4px solid #3498db;'>\
+            <strong>Odporúčanie:</strong> Najlepšia cieľová premenná je <strong>{}</strong> \
+            (skóre prediktability: <strong>{:.1}</strong>, odporúčaný typ: <strong>{}</strong>)\
+            </div>", best_name, best_score, best_type
+        ));
+        html.push_str("</div>");
+        
+        let recommended_target = candidates[0]["column_name"].as_str().unwrap_or("").to_string();
+        let recommended_type = candidates[0]["suggested_type"].as_str().unwrap_or("classification").to_string();
+        
+        let result = serde_json::json!({
+            "candidates": candidates,
+            "recommended_target": recommended_target,
+            "recommended_type": recommended_type,
+            "html": html,
+            "total_rows": n,
+            "total_cols": num_cols,
+            "skipped_rows": skipped
+        });
+        
+        Ok(serde_wasm_bindgen::to_value(&result).unwrap())
+    }
+
+    /// Vráti zoznam dostupných analyzátorov cieľovej premennej
+    #[wasm_bindgen(js_name = getAvailableTargetAnalyzers)]
+    pub fn get_available_target_analyzers(&self) -> Result<JsValue, JsValue> {
+        let analyzers: Vec<serde_json::Value> = TargetAnalyzerFactory::available()
+            .into_iter()
+            .map(|(name, desc)| {
+                let analyzer = TargetAnalyzerFactory::create(name).unwrap();
+                serde_json::json!({
+                    "name": name,
+                    "description": desc,
+                    "metric_name": analyzer.get_metric_name(),
+                    "metric_explanation": analyzer.get_metric_explanation(),
+                })
+            })
+            .collect();
+        Ok(serde_wasm_bindgen::to_value(&analyzers).unwrap())
+    }
+
+    /// Analyzuje cieľovú premennú pomocou zvoleného analyzátora
+    #[wasm_bindgen(js_name = analyzeTargetWith)]
+    pub fn analyze_target_with(&self, data: &str, format: &str, method: &str) -> Result<JsValue, JsValue> {
+        if format != "csv" {
+            return Err(JsValue::from_str("Analýza je zatiaľ podporovaná len pre CSV formát"));
+        }
+
+        let analyzer = TargetAnalyzerFactory::create(method)
+            .map_err(|e| JsValue::from_str(&e))?;
+
+        let lines: Vec<&str> = data.lines().filter(|l| !l.trim().is_empty()).collect();
+        if lines.len() < 3 {
+            return Err(JsValue::from_str("Nedostatok dát (minimum 2 riadky + hlavička)"));
+        }
+
+        let headers: Vec<String> = lines[0].split(',').map(|s| s.trim().to_string()).collect();
+        let num_cols = headers.len();
+        if num_cols < 2 {
+            return Err(JsValue::from_str("Potrebné sú aspoň 2 stĺpce"));
+        }
+
+        // Parse data rows
+        let mut all_data: Vec<Vec<f64>> = Vec::new();
+        let mut skipped = 0usize;
+        for line in &lines[1..] {
+            let vals: Vec<&str> = line.split(',').map(|s| s.trim()).collect();
+            if vals.len() != num_cols { skipped += 1; continue; }
+            match vals.iter().map(|v| v.parse::<f64>()).collect::<Result<Vec<f64>, _>>() {
+                Ok(row) => all_data.push(row),
+                Err(_) => { skipped += 1; }
+            }
+        }
+
+        if all_data.len() < 2 {
+            return Err(JsValue::from_str("Nedostatok numerických riadkov pre analýzu"));
+        }
+        let n = all_data.len();
+
+        // Convert rows to columns
+        let columns: Vec<Vec<f64>> = (0..num_cols)
+            .map(|col_idx| all_data.iter().map(|row| row[col_idx]).collect())
+            .collect();
+
+        // Run analyzer
+        let candidates = analyzer.analyze(&columns, &headers);
+
+        // Build result HTML
+        let mut html = String::new();
+        html.push_str("<div style='font-family:Segoe UI,sans-serif;'>");
+        html.push_str(&format!("<p style='color:#6c757d;margin-bottom:10px;'>Analýza <b>{}</b> riadkov x <b>{}</b> stĺpcov", n, num_cols));
+        if skipped > 0 { html.push_str(&format!(" ({} ne-numerických preskočených)", skipped)); }
+        html.push_str("</p>");
+
+        // Metric explanation box
+        html.push_str(&format!(
+            "<div style='margin-bottom:15px;padding:12px;background:#eaf2f8;border-left:4px solid #3498db;font-size:0.9em;'>\
+            <strong>Metrika: {}</strong><br>\
+            <span style='color:#495057;'>{}</span>\
+            </div>",
+            analyzer.get_metric_name(),
+            analyzer.get_metric_explanation()
+        ));
+
+        // Ranking table
+        html.push_str("<table style='width:100%;border-collapse:collapse;font-size:13px;margin-bottom:20px;'>");
+        html.push_str("<thead><tr>");
+        for h in &["#", "Stĺpec", "Unikátnych hodnôt", "Variancia", analyzer.get_metric_name(), "Odporúčaný typ", "Skóre"] {
+            html.push_str(&format!("<th style='padding:10px 8px;border:1px solid #dee2e6;background:#3498db;color:white;text-align:center;font-size:12px;'>{}</th>", h));
+        }
+        html.push_str("</tr></thead><tbody>");
+
+        for (rank, cand) in candidates.iter().enumerate() {
+            let bg = match rank {
+                0 => "background:#d1ecf1;",
+                1 | 2 => "background:#e8f4f8;",
+                _ => if rank % 2 == 0 { "background:#f8f9fa;" } else { "" },
+            };
+            let type_label = if cand.suggested_type == "classification" { "Klasifikácia" } else { "Regresia" };
+
+            // Main metric value from extra_metrics (first one)
+            let metric_val = cand.extra_metrics.first().map(|(_, v)| format!("{:.4}", v)).unwrap_or_default();
+
+            html.push_str(&format!("<tr style='{}cursor:pointer;' onclick=\"window.selectTargetFromAnalysis && window.selectTargetFromAnalysis('{}', '{}')\">", bg, cand.column_name, cand.suggested_type));
+            html.push_str(&format!("<td style='padding:8px;border:1px solid #dee2e6;text-align:center;font-weight:bold;'>{}</td>", rank + 1));
+            html.push_str(&format!("<td style='padding:8px;border:1px solid #dee2e6;font-weight:bold;'>{}</td>", cand.column_name));
+            html.push_str(&format!("<td style='padding:8px;border:1px solid #dee2e6;text-align:center;'>{}</td>", cand.unique_values));
+            html.push_str(&format!("<td style='padding:8px;border:1px solid #dee2e6;text-align:center;'>{}</td>", cand.variance));
+            html.push_str(&format!("<td style='padding:8px;border:1px solid #dee2e6;text-align:center;'>{}</td>", metric_val));
+            html.push_str(&format!("<td style='padding:8px;border:1px solid #dee2e6;text-align:center;'>{}</td>", type_label));
+            html.push_str(&format!("<td style='padding:8px;border:1px solid #dee2e6;text-align:center;font-weight:bold;color:#2980b9;font-size:1.1em;'>{:.1}</td>", cand.score));
+            html.push_str("</tr>");
+        }
+        html.push_str("</tbody></table>");
+
+        // Details HTML (matrix etc.)
+        let details_html = analyzer.get_details_html(&columns, &headers, &candidates);
+        if !details_html.is_empty() {
+            html.push_str("<details style='margin-bottom:15px;border:1px solid #dee2e6;'>");
+            html.push_str(&format!(
+                "<summary style='padding:12px;background:#f8f9fa;cursor:pointer;font-weight:600;color:#3498db;'>Detailná vizualizácia - {}</summary>",
+                analyzer.get_description()
+            ));
+            html.push_str(&format!("<div style='padding:15px;overflow:auto;max-height:500px;'>{}</div>", details_html));
+            html.push_str("</details>");
+        }
+
+        // Recommendation box
+        if let Some(best) = candidates.first() {
+            let best_type = if best.suggested_type == "classification" { "klasifikácia" } else { "regresia" };
+            html.push_str(&format!(
+                "<div style='margin-top:15px;padding:15px;background:#d1ecf1;border-left:4px solid #3498db;'>\
+                <strong>Odporúčanie ({}):</strong> Najlepšia cieľová premenná je <strong>{}</strong> \
+                (skóre: <strong>{:.1}</strong>, odporúčaný typ: <strong>{}</strong>)\
+                </div>",
+                analyzer.get_description(), best.column_name, best.score, best_type
+            ));
+        }
+        html.push_str("</div>");
+
+        // Structured result
+        let cand_json: Vec<serde_json::Value> = candidates.iter().map(|c| {
+            serde_json::json!({
+                "column_index": c.column_index,
+                "column_name": c.column_name,
+                "score": c.score,
+                "unique_values": c.unique_values,
+                "variance": c.variance,
+                "suggested_type": c.suggested_type,
+                "extra_metrics": c.extra_metrics,
+            })
+        }).collect();
+
+        let recommended_target = candidates.first().map(|c| c.column_name.clone()).unwrap_or_default();
+        let recommended_type = candidates.first().map(|c| c.suggested_type.clone()).unwrap_or_else(|| "classification".to_string());
+
+        let result = serde_json::json!({
+            "method": method,
+            "method_description": analyzer.get_description(),
+            "metric_name": analyzer.get_metric_name(),
+            "metric_explanation": analyzer.get_metric_explanation(),
+            "candidates": cand_json,
+            "recommended_target": recommended_target,
+            "recommended_type": recommended_type,
+            "html": html,
+            "total_rows": n,
+            "total_cols": num_cols,
+            "skipped_rows": skipped,
+        });
+
+        Ok(serde_wasm_bindgen::to_value(&result).unwrap())
+    }
+}
+
+// Helper methods (not exported to WASM)
+impl WasmMLPipeline {
+    fn pearson_corr(x: &[f64], y: &[f64]) -> f64 {
+        let n = x.len() as f64;
+        if n == 0.0 { return 0.0; }
+        let mean_x = x.iter().sum::<f64>() / n;
+        let mean_y = y.iter().sum::<f64>() / n;
+        let mut num = 0.0;
+        let mut den_x = 0.0;
+        let mut den_y = 0.0;
+        for (xi, yi) in x.iter().zip(y.iter()) {
+            let dx = xi - mean_x;
+            let dy = yi - mean_y;
+            num += dx * dy;
+            den_x += dx * dx;
+            den_y += dy * dy;
+        }
+        let den = (den_x * den_y).sqrt();
+        if den == 0.0 { 0.0 } else { num / den }
+    }
+
+    /// Vytvori porovnávaciu HTML tabulku pre viaceré selektory
+    fn build_comparison_html(
+        selector_results: &[serde_json::Value],
+        feature_names: &[String],
+        total_features: usize,
+    ) -> String {
+        let mut html = String::new();
+        html.push_str("<div style='font-family:Segoe UI,sans-serif;'>");
+
+        // Summary cards
+        html.push_str("<div style='display:flex;gap:15px;flex-wrap:wrap;margin-bottom:20px;'>");
+        for r in selector_results {
+            let name = r["selector_name"].as_str().unwrap_or("");
+            let err = r["error"].as_str();
+            let count = r["selected_count"].as_u64().unwrap_or(0);
+            let border_color = if err.is_some() { "#e74c3c" } else { "#3498db" };
+            html.push_str(&format!(
+                "<div style='flex:1;min-width:180px;padding:15px;border:2px solid {};background:white;'>\
+                <div style='font-weight:bold;color:{};margin-bottom:8px;'>{}</div>",
+                border_color, border_color, name
+            ));
+            if let Some(e) = err {
+                html.push_str(&format!("<div style='color:#e74c3c;font-size:0.9em;'>{}</div>", e));
+            } else {
+                let metric = r["metric_name"].as_str().unwrap_or("");
+                html.push_str(&format!(
+                    "<div style='font-size:1.5em;font-weight:bold;color:#2c3e50;'>{}/{}</div>\
+                    <div style='font-size:0.85em;color:#6c757d;'>vybraných features</div>\
+                    <div style='font-size:0.8em;color:#6c757d;margin-top:4px;'>Metrika: {}</div>",
+                    count, total_features, metric
+                ));
+            }
+            html.push_str("</div>");
+        }
+        html.push_str("</div>");
+
+        // Comparison matrix table
+        let valid_selectors: Vec<&serde_json::Value> = selector_results.iter()
+            .filter(|r| r["error"].is_null())
+            .collect();
+
+        if !valid_selectors.is_empty() {
+            html.push_str("<h4 style='color:#495057;margin:20px 0 10px;border-bottom:2px solid #dee2e6;padding-bottom:8px;'>Porovnávacia matica</h4>");
+            html.push_str("<div style='overflow-x:auto;'>");
+            html.push_str("<table style='width:100%;border-collapse:collapse;font-size:13px;'>");
+
+            // Header
+            html.push_str("<thead><tr>");
+            html.push_str("<th style='padding:10px;border:1px solid #dee2e6;background:#3498db;color:white;text-align:left;min-width:120px;position:sticky;left:0;z-index:1;'>Príznak</th>");
+            for r in &valid_selectors {
+                let name = r["selector_name"].as_str().unwrap_or("");
+                let count = r["selected_count"].as_u64().unwrap_or(0);
+                html.push_str(&format!(
+                    "<th style='padding:10px;border:1px solid #dee2e6;background:#3498db;color:white;text-align:center;min-width:100px;'>{}<br><small>({}/{})</small></th>",
+                    name, count, total_features
+                ));
+            }
+            html.push_str("<th style='padding:10px;border:1px solid #dee2e6;background:#2c3e50;color:white;text-align:center;'>Zhoda</th>");
+            html.push_str("</tr></thead><tbody>");
+
+            // Feature rows
+            for (idx, fname) in feature_names.iter().enumerate() {
+                let mut selected_by = 0usize;
+                let total_valid = valid_selectors.len();
+
+                let mut cells = String::new();
+                for r in &valid_selectors {
+                    let sel_arr = r["selected_indices"].as_array();
+                    let is_selected = sel_arr.map_or(false, |a|
+                        a.iter().any(|v| v.as_u64() == Some(idx as u64))
+                    );
+                    if is_selected { selected_by += 1; }
+
+                    // Score
+                    let score_text = r["score_map"].as_array()
+                        .and_then(|arr| arr.get(idx))
+                        .and_then(|v| v.as_f64())
+                        .map(|v| format!("<br><small style='color:#6c757d;'>{:.4}</small>", v))
+                        .unwrap_or_default();
+
+                    let (bg, icon) = if is_selected {
+                        ("#d1ecf1", "[+]")
+                    } else {
+                        ("#fce4ec", "[-]")
+                    };
+                    cells.push_str(&format!(
+                        "<td style='padding:8px;border:1px solid #dee2e6;text-align:center;background:{};'><strong>{}</strong>{}</td>",
+                        bg, icon, score_text
+                    ));
+                }
+
+                // Consensus column
+                let consensus_pct = if total_valid > 0 { (selected_by as f64 / total_valid as f64 * 100.0) as u64 } else { 0 };
+                let consensus_bg = if consensus_pct == 100 { "#c8e6c9" }
+                    else if consensus_pct >= 50 { "#fff9c4" }
+                    else if consensus_pct > 0 { "#ffe0b2" }
+                    else { "#ffcdd2" };
+
+                let row_bg = if idx % 2 == 0 { "" } else { "background:#fafafa;" };
+                html.push_str(&format!("<tr style='{}'>", row_bg));
+                html.push_str(&format!(
+                    "<td style='padding:8px;border:1px solid #dee2e6;font-weight:bold;position:sticky;left:0;background:white;z-index:1;'>{} <span style='color:#6c757d;font-size:0.8em;'>[{}]</span></td>",
+                    fname, idx
+                ));
+                html.push_str(&cells);
+                html.push_str(&format!(
+                    "<td style='padding:8px;border:1px solid #dee2e6;text-align:center;background:{};font-weight:bold;'>{}/{} ({}%)</td>",
+                    consensus_bg, selected_by, total_valid, consensus_pct
+                ));
+                html.push_str("</tr>");
+            }
+            html.push_str("</tbody></table></div>");
+
+            // Legend
+            html.push_str("<div style='margin-top:10px;font-size:12px;display:flex;gap:15px;flex-wrap:wrap;'>");
+            html.push_str("<span style='background:#d1ecf1;padding:3px 10px;'>[+] Vybraný</span>");
+            html.push_str("<span style='background:#fce4ec;padding:3px 10px;'>[-] Nevybraný</span>");
+            html.push_str("<span style='background:#c8e6c9;padding:3px 10px;'>100% zhoda</span>");
+            html.push_str("<span style='background:#fff9c4;padding:3px 10px;'>&ge;50% zhoda</span>");
+            html.push_str("<span style='background:#ffcdd2;padding:3px 10px;'>0% zhoda</span>");
+            html.push_str("</div>");
+
+            // Per-selector details in collapsible sections
+            html.push_str("<h4 style='color:#495057;margin:25px 0 10px;border-bottom:2px solid #dee2e6;padding-bottom:8px;'>Detaily jednotlivých selektorov</h4>");
+            for r in &valid_selectors {
+                let name = r["selector_name"].as_str().unwrap_or("");
+                let details = r["details_html"].as_str().unwrap_or("");
+                if !details.is_empty() {
+                    html.push_str(&format!(
+                        "<details style='margin-bottom:10px;border:1px solid #dee2e6;'>\
+                        <summary style='padding:12px;background:#f8f9fa;cursor:pointer;font-weight:600;color:#3498db;'>{} - Detailná analýza</summary>\
+                        <div style='padding:15px;overflow:auto;max-height:500px;'>{}</div>\
+                        </details>",
+                        name, details
+                    ));
+                }
+            }
+        }
+
+        html.push_str("</div>");
+        html
     }
 }

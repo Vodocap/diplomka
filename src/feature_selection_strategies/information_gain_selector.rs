@@ -2,11 +2,13 @@ use smartcore::linalg::basic::matrix::DenseMatrix;
 use smartcore::linalg::basic::arrays::Array;
 use std::collections::HashMap;
 use super::FeatureSelector;
+use std::cell::RefCell;
 
 pub struct InformationGainSelector 
 {
     /// top_k: Určuje počet najlepších príznakov, ktoré majú byť vybrané.
     top_k: usize,
+    details_cache: RefCell<String>,
 }
 
 impl InformationGainSelector 
@@ -15,7 +17,8 @@ impl InformationGainSelector
     {
         Self 
         { 
-            top_k: 10 
+            top_k: 10,
+            details_cache: RefCell::new(String::new()),
         }
     }
 
@@ -86,50 +89,48 @@ impl FeatureSelector for InformationGainSelector
     fn get_selected_indices(&self, x: &DenseMatrix<f64>, y: &[f64]) -> Vec<usize> 
     {
         let (_, cols) = x.shape();
-        
-        // Limituj top_k na maximum dostupných features
         let effective_k = self.top_k.min(cols);
-        
         let mut ig_scores = Vec::new();
         
-        // Kontrola či target má rozumnú diskrétnosť
         Self::check_discrete_warning(y);
-        
         let base_entropy = Self::entropy(y);
 
         for j in 0..cols 
         {
-            // Extrakcia stĺpca
             let col: Vec<f64> = (0..x.shape().0).map(|i| *x.get((i, j))).collect();
-            
-            // Kontrola či stĺpec má rozumnú diskrétnosť
             Self::check_discrete_warning(&col);
             
             let mut conditional_entropy = 0.0;
             let mut map: HashMap<u64, Vec<f64>> = HashMap::new();
-
-            // Rozdelenie targetov (y) podľa hodnôt v príznaku (Xi)
-            for (val, target) in col.iter().zip(y.iter()) 
-            {
+            for (val, target) in col.iter().zip(y.iter()) {
                 map.entry((*val).to_bits()).or_default().push(*target);
             }
-
-            // Výpočet podmienenej entropie H(Y|Xi)
-            for subset in map.values() 
-            {
+            for subset in map.values() {
                 let weight = subset.len() as f64 / y.len() as f64;
                 conditional_entropy += weight * Self::entropy(subset);
             }
-
-            // IG = H(Y) - H(Y|Xi)
             ig_scores.push((j, base_entropy - conditional_entropy));
         }
 
-        // Zoradenie podľa IG (zostupne)
         ig_scores.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+        let selected: Vec<usize> = ig_scores.iter().take(effective_k).map(|(i, _)| *i).collect();
         
-        // Vrátime top_k indexov
-        ig_scores.into_iter().take(effective_k).map(|(i, _)| i).collect()
+        // Cache details
+        let mut html = String::from("<div style='margin:10px 0;'>");
+        html.push_str("<h4>Information Gain Feature Selection</h4>");
+        html.push_str(&format!("<p>Base Entropy H(Y): <b>{:.4}</b> | Top K: <b>{}</b> z <b>{}</b></p>", base_entropy, effective_k, cols));
+        html.push_str("<table style='border-collapse:collapse;font-size:12px;width:100%;'>");
+        html.push_str("<tr><th style='padding:4px;border:1px solid #ddd;'>Poradie</th><th style='padding:4px;border:1px solid #ddd;'>Feature</th><th style='padding:4px;border:1px solid #ddd;'>IG Score</th><th style='padding:4px;border:1px solid #ddd;'>Status</th></tr>");
+        for (rank, (idx, score)) in ig_scores.iter().enumerate() {
+            let sel = rank < effective_k;
+            let bg = if sel { "rgba(0,200,0,0.15)" } else { "rgba(255,0,0,0.15)" };
+            let status = if sel { "✅ Vybraný" } else { "❌ Odstránený" };
+            html.push_str(&format!("<tr style='background:{}'><td style='padding:4px;border:1px solid #ddd;'>#{}</td><td style='padding:4px;border:1px solid #ddd;'>F{}</td><td style='padding:4px;border:1px solid #ddd;'>{:.4}</td><td style='padding:4px;border:1px solid #ddd;'>{}</td></tr>", bg, rank+1, idx, score, status));
+        }
+        html.push_str("</table></div>");
+        *self.details_cache.borrow_mut() = html;
+        
+        selected
     }
 
     fn select_features(&self, x: &DenseMatrix<f64>, y: &[f64]) -> DenseMatrix<f64> 
@@ -164,6 +165,10 @@ impl FeatureSelector for InformationGainSelector
     
     fn get_metric_name(&self) -> &str {
         "Information Gain"
+    }
+    
+    fn get_selection_details(&self) -> String {
+        self.details_cache.borrow().clone()
     }
 }
 

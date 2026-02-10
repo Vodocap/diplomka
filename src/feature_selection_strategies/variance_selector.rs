@@ -1,10 +1,12 @@
 use smartcore::linalg::basic::matrix::DenseMatrix;
 use smartcore::linalg::basic::arrays::Array;
 use super::FeatureSelector;
+use std::cell::RefCell;
 
 pub struct VarianceSelector 
 {
     threshold: f64,
+    details_cache: RefCell<String>,
 }
 
 impl VarianceSelector 
@@ -13,7 +15,8 @@ impl VarianceSelector
     {
         Self 
         { 
-            threshold: 0.01 
+            threshold: 0.01,
+            details_cache: RefCell::new(String::new()),
         }
     }
 }
@@ -47,19 +50,32 @@ impl FeatureSelector for VarianceSelector
     {
         let shape = x.shape();
         let mut selected = Vec::new();
+        let mut all_scores: Vec<(usize, f64, bool)> = Vec::new();
 
         for j in 0..shape.1 
         {
-            // Extrakcia stĺpca do Vec
             let col: Vec<f64> = (0..shape.0).map(|i| *x.get((i, j))).collect();
             let mean: f64 = col.iter().sum::<f64>() / shape.0 as f64;
             let variance: f64 = col.iter().map(|&v| (v - mean).powi(2)).sum::<f64>() / shape.0 as f64;
-            
-            if variance > self.threshold 
-            {
-                selected.push(j);
-            }
+            let sel = variance > self.threshold;
+            all_scores.push((j, variance, sel));
+            if sel { selected.push(j); }
         }
+        
+        // Cache details
+        let mut html = String::from("<div style='margin:10px 0;'>");
+        html.push_str("<h4>Variance Threshold Selection</h4>");
+        html.push_str(&format!("<p>Threshold: <b>{:.4}</b> | Vybraných: <b>{}/{}</b></p>", self.threshold, selected.len(), shape.1));
+        html.push_str("<table style='border-collapse:collapse;font-size:12px;width:100%;'>");
+        html.push_str("<tr><th style='padding:4px;border:1px solid #ddd;'>Feature</th><th style='padding:4px;border:1px solid #ddd;'>Variance</th><th style='padding:4px;border:1px solid #ddd;'>Status</th></tr>");
+        for (idx, var, sel) in &all_scores {
+            let bg = if *sel { "rgba(0,200,0,0.15)" } else { "rgba(255,0,0,0.15)" };
+            let status = if *sel { "✅ Vybraný" } else { "❌ Odstránený" };
+            html.push_str(&format!("<tr style='background:{}'><td style='padding:4px;border:1px solid #ddd;'>F{}</td><td style='padding:4px;border:1px solid #ddd;'>{:.4}</td><td style='padding:4px;border:1px solid #ddd;'>{}</td></tr>", bg, idx, var, status));
+        }
+        html.push_str("</table></div>");
+        *self.details_cache.borrow_mut() = html;
+        
         selected
     }
 
@@ -84,6 +100,10 @@ impl FeatureSelector for VarianceSelector
     
     fn get_metric_name(&self) -> &str {
         "Variance"
+    }
+    
+    fn get_selection_details(&self) -> String {
+        self.details_cache.borrow().clone()
     }
 }
 

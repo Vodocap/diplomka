@@ -40,7 +40,7 @@ impl FeatureSelectorFactory {
             "variance" => Some("Variance Threshold - odstraňuje features s nízkou varianciou (konštantné hodnoty)"),
             "correlation" => Some("Correlation - vyberie features s najvyššou koreláciou k targetu (pre regression)"),
             "chi_square" => Some("Chi-Square Test - testuje nezávislosť medzi features a targetom (len klasifikácia)"),
-            "information_gain" => Some("Information Gain - meria redukciu entropie (⚠️ vyžaduje Binner processor!)"),
+            "information_gain" => Some("Information Gain - meria redukciu entropie (Pozor: vyžaduje Binner processor!)"),
             "mutual_information" => Some("Mutual Information (KSG) - meria vzájomnú závislosť (funguje na spojitých dátach)"),
             _ => None,
         }

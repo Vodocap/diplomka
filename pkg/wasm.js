@@ -266,6 +266,44 @@ export class WasmMLPipeline {
         wasm.__wbg_wasmmlpipeline_free(ptr, 0);
     }
     /**
+     * Analyzuje stĺpce dát a odporúča najlepšiu cieľovú premennú
+     * Pre každý stĺpec vypočíta priemernú absolútnu koreláciu s ostatnými stĺpcami
+     * @param {string} data
+     * @param {string} format
+     * @returns {any}
+     */
+    analyzeTargetCandidates(data, format) {
+        const ptr0 = passStringToWasm0(data, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(format, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ret = wasm.wasmmlpipeline_analyzeTargetCandidates(this.__wbg_ptr, ptr0, len0, ptr1, len1);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return takeFromExternrefTable0(ret[0]);
+    }
+    /**
+     * Analyzuje cieľovú premennú pomocou zvoleného analyzátora
+     * @param {string} data
+     * @param {string} format
+     * @param {string} method
+     * @returns {any}
+     */
+    analyzeTargetWith(data, format, method) {
+        const ptr0 = passStringToWasm0(data, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(format, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ptr2 = passStringToWasm0(method, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len2 = WASM_VECTOR_LEN;
+        const ret = wasm.wasmmlpipeline_analyzeTargetWith(this.__wbg_ptr, ptr0, len0, ptr1, len1, ptr2, len2);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return takeFromExternrefTable0(ret[0]);
+    }
+    /**
      * Vytvorí pipeline z JSON konfigurácie
      * @param {any} config_json
      * @returns {any}
@@ -297,6 +335,28 @@ export class WasmMLPipeline {
         return takeFromExternrefTable0(ret[0]);
     }
     /**
+     * Porovná viaceré feature selektory na dátach BEZ potreby pipeline.
+     * Umožňuje používateľovi preskúmať feature selection ešte pred vytvorením pipeline.
+     * @param {string} data
+     * @param {string} target_column
+     * @param {string} format
+     * @param {any} selectors_json
+     * @returns {any}
+     */
+    compareSelectors(data, target_column, format, selectors_json) {
+        const ptr0 = passStringToWasm0(data, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(target_column, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ptr2 = passStringToWasm0(format, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len2 = WASM_VECTOR_LEN;
+        const ret = wasm.wasmmlpipeline_compareSelectors(this.__wbg_ptr, ptr0, len0, ptr1, len1, ptr2, len2, selectors_json);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return takeFromExternrefTable0(ret[0]);
+    }
+    /**
      * Evaluácia (split dáta)
      * @param {number} _train_ratio
      * @returns {any}
@@ -315,6 +375,17 @@ export class WasmMLPipeline {
     static getAvailableProcessors() {
         const ret = wasm.wasmmlpipeline_getAvailableProcessors();
         return ret;
+    }
+    /**
+     * Vráti zoznam dostupných analyzátorov cieľovej premennej
+     * @returns {any}
+     */
+    getAvailableTargetAnalyzers() {
+        const ret = wasm.wasmmlpipeline_getAvailableTargetAnalyzers(this.__wbg_ptr);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return takeFromExternrefTable0(ret[0]);
     }
     /**
      * Get feature selection details with names and scores
@@ -348,6 +419,17 @@ export class WasmMLPipeline {
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmmlpipeline_getProcessorParams(ptr0, len0);
         return ret;
+    }
+    /**
+     * Get detailed selection information (e.g., correlation matrix for correlation selector)
+     * @returns {any}
+     */
+    getSelectionDetails() {
+        const ret = wasm.wasmmlpipeline_getSelectionDetails(this.__wbg_ptr);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return takeFromExternrefTable0(ret[0]);
     }
     /**
      * Inspect uploaded data - returns first N rows with feature names
@@ -423,6 +505,19 @@ export class WasmMLPipeline {
         return takeFromExternrefTable0(ret[0]);
     }
     /**
+     * Trénuje model s konkrétnymi feature indices (z porovnania selektorov)
+     * @param {number} train_ratio
+     * @param {any} indices_js
+     * @returns {any}
+     */
+    trainWithFeatureIndices(train_ratio, indices_js) {
+        const ret = wasm.wasmmlpipeline_trainWithFeatureIndices(this.__wbg_ptr, train_ratio, indices_js);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return takeFromExternrefTable0(ret[0]);
+    }
+    /**
      * Trénuje model s train/test splitom a vracia evaluačné metriky
      * @param {number} train_ratio
      * @returns {any}
@@ -444,6 +539,16 @@ function __wbg_get_imports() {
             const ret = Error(getStringFromWasm0(arg0, arg1));
             return ret;
         },
+        __wbg_Number_04624de7d0e8332d: function(arg0) {
+            const ret = Number(arg0);
+            return ret;
+        },
+        __wbg___wbindgen_bigint_get_as_i64_8fcf4ce7f1ca72a2: function(arg0, arg1) {
+            const v = arg1;
+            const ret = typeof(v) === 'bigint' ? v : undefined;
+            getDataViewMemory0().setBigInt64(arg0 + 8 * 1, isLikeNone(ret) ? BigInt(0) : ret, true);
+            getDataViewMemory0().setInt32(arg0 + 4 * 0, !isLikeNone(ret), true);
+        },
         __wbg___wbindgen_boolean_get_bbbb1c18aa2f5e25: function(arg0) {
             const v = arg0;
             const ret = typeof(v) === 'boolean' ? v : undefined;
@@ -458,6 +563,10 @@ function __wbg_get_imports() {
         },
         __wbg___wbindgen_in_47fa6863be6f2f25: function(arg0, arg1) {
             const ret = arg0 in arg1;
+            return ret;
+        },
+        __wbg___wbindgen_is_bigint_31b12575b56f32fc: function(arg0) {
+            const ret = typeof(arg0) === 'bigint';
             return ret;
         },
         __wbg___wbindgen_is_function_0095a73b8b156f76: function(arg0) {
@@ -479,6 +588,10 @@ function __wbg_get_imports() {
         },
         __wbg___wbindgen_is_undefined_9e4d92534c42d778: function(arg0) {
             const ret = arg0 === undefined;
+            return ret;
+        },
+        __wbg___wbindgen_jsval_eq_11888390b0186270: function(arg0, arg1) {
+            const ret = arg0 === arg1;
             return ret;
         },
         __wbg___wbindgen_jsval_loose_eq_9dd77d8cd6671811: function(arg0, arg1) {
@@ -565,6 +678,10 @@ function __wbg_get_imports() {
         },
         __wbg_isArray_d314bb98fcf08331: function(arg0) {
             const ret = Array.isArray(arg0);
+            return ret;
+        },
+        __wbg_isSafeInteger_bfbc7332a9768d2a: function(arg0) {
+            const ret = Number.isSafeInteger(arg0);
             return ret;
         },
         __wbg_iterator_6ff6560ca1568e55: function() {
@@ -691,7 +808,7 @@ function __wbg_get_imports() {
             console.warn(arg0);
         },
         __wbindgen_cast_0000000000000001: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { dtor_idx: 342, function: Function { arguments: [Externref], shim_idx: 343, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
+            // Cast intrinsic for `Closure(Closure { dtor_idx: 381, function: Function { arguments: [Externref], shim_idx: 382, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
             const ret = makeMutClosure(arg0, arg1, wasm.wasm_bindgen__closure__destroy__h062d55d9c7b8c652, wasm_bindgen__convert__closures_____invoke__h8f27a5fbd1cc09f3);
             return ret;
         },

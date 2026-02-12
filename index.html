@@ -14,7 +14,7 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            background: #2c3e50;
             min-height: 100vh;
             padding: 20px;
         }
@@ -29,7 +29,7 @@
         }
 
         header {
-            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            background: #3498db;
             color: white;
             padding: 30px;
             text-align: center;
@@ -114,7 +114,7 @@
         }
 
         button {
-            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            background: #3498db;
             color: white;
             border: none;
             padding: 14px 28px;
@@ -142,11 +142,11 @@
         }
 
         .btn-secondary {
-            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+            background: #6c757d;
         }
 
         .btn-success {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            background: #2980b9;
         }
 
         .info-box {
@@ -323,7 +323,7 @@
         }
 
         .metric-box {
-            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            background: #3498db;
             padding: 20px;
             border-radius: 0px;
             text-align: center;
@@ -477,6 +477,193 @@
             from { opacity: 0; }
             to { opacity: 1; }
         }
+
+        /* Target Recommendation Styles */
+        .target-recommendation {
+            margin-top: 15px;
+            padding: 15px;
+            background: white;
+            border: 2px solid #3498db;
+            border-radius: 0px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .target-recommendation h3 {
+            color: #3498db;
+            margin-bottom: 10px;
+        }
+
+        /* Selection Details Styles */
+        .selection-details-container {
+            margin-top: 20px;
+            padding: 15px;
+            background: white;
+            border: 2px solid #3498db;
+            border-radius: 0px;
+            max-height: 600px;
+            overflow: auto;
+        }
+
+        .selection-details-container h4 {
+            color: #3498db;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 8px;
+        }
+
+        .btn-analyze {
+            background: #2980b9;
+            width: 100%;
+            margin-top: 10px;
+            font-size: 1em;
+        }
+
+        .btn-analyze:hover {
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+
+        /* Column stats table */
+        .column-stats {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85em;
+            margin-bottom: 15px;
+        }
+        .column-stats th,
+        .column-stats td {
+            padding: 6px 10px;
+            border: 1px solid #dee2e6;
+            text-align: center;
+        }
+        .column-stats th {
+            background: #3498db;
+            color: white;
+            font-size: 0.9em;
+        }
+        .column-stats tbody tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        .column-stats tbody tr:hover {
+            background: #e9ecef;
+            cursor: pointer;
+        }
+        .column-stats tbody tr.selected-row {
+            background: #d1ecf1;
+            font-weight: bold;
+        }
+
+        /* Selector comparison grid */
+        .selector-compare-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .selector-compare-card {
+            background: white;
+            border: 2px solid #dee2e6;
+            padding: 15px;
+            transition: border-color 0.2s;
+        }
+        .selector-compare-card:hover {
+            border-color: #3498db;
+        }
+        .selector-compare-card.active {
+            border-color: #3498db;
+            background: #f0f8ff;
+        }
+        .selector-compare-card .card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .selector-compare-card .card-header input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        .selector-compare-card .card-header label {
+            margin: 0;
+            font-weight: bold;
+            color: #2c3e50;
+            cursor: pointer;
+            font-size: 1em;
+        }
+        .selector-compare-card .card-desc {
+            font-size: 0.85em;
+            color: #6c757d;
+            margin-bottom: 10px;
+        }
+        .selector-compare-card .card-tags {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+        .selector-compare-card .card-tag {
+            font-size: 0.75em;
+            padding: 2px 8px;
+            background: #e9ecef;
+            color: #495057;
+        }
+        .selector-compare-card .card-tag.warn {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .selector-compare-card .card-params {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #dee2e6;
+            display: none;
+        }
+        .selector-compare-card.active .card-params {
+            display: block;
+        }
+        .selector-compare-card .card-params label {
+            font-size: 0.85em;
+            margin-bottom: 4px;
+        }
+        .selector-compare-card .card-params input {
+            width: 100%;
+            padding: 6px 10px;
+            font-size: 0.9em;
+        }
+
+        /* Target method tabs */
+        .target-method-tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #dee2e6;
+        }
+        .target-method-tab {
+            padding: 10px 20px;
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-bottom: none;
+            cursor: pointer;
+            font-weight: 600;
+            color: #6c757d;
+            font-size: 0.9em;
+            transition: all 0.2s;
+            margin-bottom: -2px;
+        }
+        .target-method-tab:hover {
+            color: #3498db;
+        }
+        .target-method-tab.active {
+            background: white;
+            color: #3498db;
+            border-color: #3498db;
+            border-bottom-color: white;
+        }
+        .target-method-content {
+            display: none;
+        }
+        .target-method-content.active {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -516,13 +703,6 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Feature Selector (voliteľné):</label>
-                    <select id="selectorSelect">
-                        <option value="">-- Žiadny --</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
                     <label>Evaluation Mode:</label>
                     <select id="evalModeSelect">
                         <option value="">-- Auto --</option>
@@ -541,19 +721,6 @@
                     <div class="form-group" id="treeMaxDepthGroup" style="display: none;">
                         <label>Max Depth (maximálna hĺbka stromu):</label>
                         <input type="number" id="treeMaxDepth" placeholder="10" min="1" max="50" value="10">
-                    </div>
-                </div>
-
-                <div id="selectorParamsContainer" style="display: none;">
-                    <h3 style="margin-top: 20px; font-size: 1.1em;">Parametre selectora</h3>
-                    <div class="form-group" id="selectorNumFeaturesGroup" style="display: none;">
-                        <label>Num Features (počet features):</label>
-                        <input type="number" id="selectorNumFeatures" placeholder="5" min="1" max="100" value="5">
-                    </div>
-
-                    <div class="form-group" id="selectorThresholdGroup" style="display: none;">
-                        <label>Threshold (prahová hodnota):</label>
-                        <input type="number" id="selectorThreshold" placeholder="0.01" min="0" max="1" step="0.01" value="0.01">
                     </div>
                 </div>
 
@@ -597,109 +764,121 @@
                     <label>Vyberte súbor:</label>
                     <input type="file" id="fileInput" accept=".csv,.json,.txt">
                     <div id="fileInfo" style="margin-top: 10px; font-size: 0.9em; color: #6c757d;"></div>
-                    <button type="button" onclick="downloadSampleCSV()" style="margin-top: 10px; padding: 8px 16px; font-size: 0.9em; background: linear-gradient(135deg, #27ae60 0%, #229954 100%);">
-                        ⬇ Stiahnuť vzorový CSV súbor
+                    <button type="button" onclick="downloadSampleCSV()" style="margin-top: 10px; padding: 8px 16px; font-size: 0.9em; background: #3498db;">
+                        Stiahnuť vzorový CSV súbor
                     </button>
                 </div>
 
-                <div class="form-group">
-                    <label>Target stĺpec:</label>
-                    <select id="targetColumnSelect">
-                        <option value="">-- Najprv načítajte dáta --</option>
-                    </select>
+                <button id="parseDataBtn">Načítať dáta</button>
+                <div id="parseStatus" class="status"></div>
+
+                <div id="targetSelectionArea" style="display: none; margin-top: 20px; padding-top: 20px; border-top: 2px solid #dee2e6;">
+                    <h3 style="color: #3498db; margin-bottom: 15px;">Výber cieľovej premennej</h3>
+
+                    <!-- Target method tabs -->
+                    <div class="target-method-tabs">
+                        <div class="target-method-tab active" data-tab="manual" onclick="switchTargetTab('manual')">Manuálny výber</div>
+                        <div class="target-method-tab" data-tab="stats" onclick="switchTargetTab('stats')">Štatistický prehľad</div>
+                        <div class="target-method-tab" data-tab="analysis" onclick="switchTargetTab('analysis')">Analýza cieľovej premennej</div>
+                    </div>
+
+                    <!-- Tab: Manuálny výber -->
+                    <div id="tabManual" class="target-method-content active">
+                        <div class="form-group">
+                            <label>Cieľový stĺpec:</label>
+                            <select id="targetColumnSelect">
+                                <option value="">-- Vyberte cieľový stĺpec --</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Tab: Štatistický prehľad -->
+                    <div id="tabStats" class="target-method-content">
+                        <p style="font-size: 0.9em; color: #6c757d; margin-bottom: 10px;">
+                            Kliknite na riadok v tabuľke pre výber cieľovej premennej.
+                        </p>
+                        <div id="columnStatsContainer" style="overflow-x: auto;"></div>
+                    </div>
+
+                    <!-- Tab: Analýza cieľovej premennej -->
+                    <div id="tabAnalysis" class="target-method-content">
+                        <p style="font-size: 0.9em; color: #6c757d; margin-bottom: 10px;">
+                            Vyberte metódu analýzy a spustite hodnotenie stĺpcov ako potenciálnych cieľových premenných.
+                        </p>
+                        <div style="display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 10px;">
+                            <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">
+                                <label>Metóda analýzy:</label>
+                                <select id="targetAnalysisMethod">
+                                    <option value="correlation">Pearsonova korelácia (lineárne vzťahy)</option>
+                                    <option value="mutual_information">Mutual Information (aj nelineárne vzťahy)</option>
+                                    <option value="entropy">Entropia a Information Gain</option>
+                                </select>
+                            </div>
+                            <button id="analyzeTargetBtn" class="btn-analyze" style="margin-bottom: 0; white-space: nowrap;">
+                                Spustiť analýzu
+                            </button>
+                        </div>
+                        <div id="targetMethodExplanation" style="font-size: 0.85em; color: #6c757d; padding: 8px; background: #f8f9fa; border-left: 3px solid #3498db; margin-bottom: 10px;"></div>
+                        <div id="analyzeTargetStatus" class="status"></div>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 15px;">
+                        <label>Train/Test Split (% pre tréning):</label>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <input type="range" id="trainTestSplit" min="50" max="95" value="80" step="5" style="flex: 1;">
+                            <span id="splitValue" style="min-width: 60px; font-weight: bold; color: #3498db;">80%</span>
+                        </div>
+                        <div style="font-size: 0.85em; color: #6c757d; margin-top: 5px;">
+                            Train: <span id="trainPercent">80%</span> | Test: <span id="testPercent">20%</span>
+                        </div>
+                    </div>
+
+                    <button id="confirmTargetBtn">Potvrdiť výber a načítať do pipeline</button>
+                    <div id="dataStatus" class="status"></div>
                 </div>
 
-                <div class="form-group">
-                    <label>Train/Test Split (% pre tréning):</label>
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <input type="range" id="trainTestSplit" min="50" max="95" value="80" step="5" style="flex: 1;">
-                        <span id="splitValue" style="min-width: 60px; font-weight: bold; color: #3498db;">80%</span>
-                    </div>
-                    <div style="font-size: 0.85em; color: #6c757d; margin-top: 5px;">
-                        Train: <span id="trainPercent">80%</span> | Test: <span id="testPercent">20%</span>
-                    </div>
-                </div>
-
-                <button id="loadDataBtn">Načítať Dáta</button>
-                
-                <div id="dataStatus" class="status"></div>
-                
-                <!-- Data Inspection Buttons -->
                 <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
-                    <button id="inspectDataBtn" disabled style="flex: 1; min-width: 150px; background: #3498db;">
+                    <button id="inspectDataBtn" disabled style="flex: 1; min-width: 150px;">
                         Zobraziť dáta
                     </button>
-                    <button id="inspectProcessedBtn" disabled style="flex: 1; min-width: 150px; background: #3498db;">
+                    <button id="inspectProcessedBtn" disabled style="flex: 1; min-width: 150px;">
                         Zobraziť spracované dáta
-                    </button>
-                    <button id="featureSelectionInfoBtn" disabled style="flex: 1; min-width: 150px; background: #3498db;">
-                        Informácie o výbere príznakov
                     </button>
                 </div>
             </div>
 
-            <!-- Trénovanie -->
-            <div class="section">
-                <h2>3. Trénovanie</h2>
-                <button id="trainBtn" disabled>Trénovať Model</button>
-                <div id="trainStatus" class="status"></div>
-                
-                <div id="trainingInfo" class="info-box" style="display: none; margin-top: 20px;">
-                    <h3>Výsledky Tréningu</h3>
-                    <p><strong>Stav:</strong> <span id="trainingStatus">-</span></p>
-                    
-                    <div id="metricsContainer" style="margin-top: 20px;">
-                        <h4>Evaluačné Metriky (Test Set)</h4>
-                        <div id="classificationMetrics" style="display: none;">
-                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 10px;">
-                                <div class="metric-box">
-                                    <div class="metric-label">Accuracy</div>
-                                    <div class="metric-value" id="metricAccuracy">-</div>
-                                </div>
-                                <div class="metric-box">
-                                    <div class="metric-label">F1 Score</div>
-                                    <div class="metric-value" id="metricF1">-</div>
-                                </div>
-                                <div class="metric-box">
-                                    <div class="metric-label">Precision</div>
-                                    <div class="metric-value" id="metricPrecision">-</div>
-                                </div>
-                                <div class="metric-box">
-                                    <div class="metric-label">Recall</div>
-                                    <div class="metric-value" id="metricRecall">-</div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div id="regressionMetrics" style="display: none;">
-                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 10px;">
-                                <div class="metric-box">
-                                    <div class="metric-label">R² Score</div>
-                                    <div class="metric-value" id="metricR2">-</div>
-                                </div>
-                                <div class="metric-box">
-                                    <div class="metric-label">RMSE</div>
-                                    <div class="metric-value" id="metricRMSE">-</div>
-                                </div>
-                                <div class="metric-box">
-                                    <div class="metric-label">MSE</div>
-                                    <div class="metric-value" id="metricMSE">-</div>
-                                </div>
-                                <div class="metric-box">
-                                    <div class="metric-label">MAE</div>
-                                    <div class="metric-value" id="metricMAE">-</div>
-                                </div>
-                            </div>
-                        </div>
+            <!-- Prieskum príznakov (Feature Exploration) -->
+            <div class="section full-width" id="featureExplorationSection" style="display: none;">
+                <h2>Prieskum a výber príznakov</h2>
+                <p style="color: #6c757d; margin-bottom: 15px;">
+                    Porovnajte rôzne metódy výberu príznakov na vašich dátach. 
+                    Po porovnaní môžete natrénovať model s features vybranými jednotlivými selektormi a porovnať výsledky.
+                </p>
+
+                <div id="selectorCompareGrid" class="selector-compare-grid">
+                    <!-- Dynamicky generované karty selektorov -->
+                </div>
+
+                <div style="margin-top: 20px; display: flex; gap: 10px; align-items: center;">
+                    <button id="compareSelectorBtn" style="flex: 0 0 auto;">
+                        Porovnať vybrané selektory
+                    </button>
+                    <button id="selectAllSelectorsBtn" class="btn-secondary" style="flex: 0 0 auto; padding: 10px 20px;">
+                        Vybrať všetky
+                    </button>
+                    <span id="compareStatus" style="font-size: 0.9em; color: #6c757d;"></span>
+                </div>
+                <div id="compareSelectorStatus" class="status"></div>
+
+                <!-- Výsledky porovnania a trénovania -->
+                <div id="comparisonResultsArea" style="display: none; margin-top: 20px;">
+                    <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 15px; flex-wrap: wrap;">
+                        <button id="trainAllSelectorsBtn" style="background: #27ae60; color: white; border: none; padding: 10px 20px; cursor: pointer; font-size: 14px;">
+                            Natrénovať a porovnať všetky varianty
+                        </button>
+                        <span id="trainCompareStatus" style="font-size: 0.9em; color: #6c757d;"></span>
                     </div>
-                    
-                    <div id="featureSelectionInfo" style="display: none; margin-top: 20px;">
-                        <h4>Feature Selection</h4>
-                        <p><strong>Počet features pred selekciou:</strong> <span id="featuresBefore">-</span></p>
-                        <p><strong>Počet vybraných features:</strong> <span id="featuresAfter">-</span></p>
-                        <p><strong>Vybrané indexy features:</strong></p>
-                        <div id="selectedIndices" style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 0px; font-family: monospace;"></div>
-                    </div>
+                    <div id="selectorTrainingResults"></div>
                 </div>
             </div>
 
@@ -728,7 +907,6 @@
                     <h3>Aktuálny Pipeline</h3>
                     <p><strong>Model:</strong> <span id="currentModel">-</span></p>
                     <p><strong>Processors:</strong> <span id="currentProcessor">-</span></p>
-                    <p><strong>Selector:</strong> <span id="currentSelector">-</span></p>
                     <p><strong>Eval Mode:</strong> <span id="currentEvalMode">-</span></p>
                 </div>
             </div>
@@ -743,6 +921,7 @@
         // Make functions globally available for inline handlers
         window.downloadSampleCSV = downloadSampleCSV;
         window.closeModal = closeModal;
+        window.switchTargetTab = switchTargetTab;
 
         // Helper functions
         function calculateFeatureReduction(before, after) {
@@ -757,7 +936,17 @@
         }
 
         function convertWasmResult(result) {
-            return result instanceof Map ? Object.fromEntries(result) : result;
+            if (result instanceof Map) {
+                const obj = {};
+                result.forEach((val, key) => {
+                    obj[key] = convertWasmResult(val);
+                });
+                return obj;
+            }
+            if (Array.isArray(result)) {
+                return result.map(item => convertWasmResult(item));
+            }
+            return result;
         }
 
         async function initApp() {
@@ -832,20 +1021,20 @@
                 console.log('✓ Event listeners ready');
 
                 console.log('=== INITIALIZATION COMPLETE ===');
-                showStatus('info', 'Aplikácia pripravená!', 'dataStatus');
+                showStatus('info', 'Aplikácia pripravená!', 'parseStatus');
             } catch (error) {
                 console.error('=== INIT ERROR ===');
                 console.error('Init error:', error);
                 console.error('Error stack:', error.stack);
                 const message = (error && error.message) ? error.message : String(error);
-                showStatus('error', `Chyba pri načítaní WASM: ${message}\n\nOtvorte Developer Console (F12) pre viac detailov.`, 'dataStatus');
+                showStatus('error', `Chyba pri načítaní WASM: ${message}\n\nOtvorte Developer Console (F12) pre viac detailov.`, 'parseStatus');
                 
                 // Zobrazenie viditeľného erroru na stránke
                 document.body.innerHTML += `
                     <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
                                 background: #f8d7da; border: 3px solid #f5c6cb; padding: 30px; 
                                 border-radius: 10px; max-width: 600px; z-index: 9999; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
-                        <h2 style="color: #721c24; margin-bottom: 15px;">⚠️ Chyba inicializácie WASM</h2>
+                        <h2 style="color: #721c24; margin-bottom: 15px;">Chyba inicializácie WASM</h2>
                         <p style="color: #721c24; margin-bottom: 10px;"><strong>Chyba:</strong> ${message}</p>
                         <p style="color: #721c24; font-size: 0.9em;">Otvorte Developer Console (F12) pre viac informácií.</p>
                         <hr style="margin: 15px 0; border-color: #f5c6cb;">
@@ -893,14 +1082,6 @@
                 item.appendChild(checkbox);
                 item.appendChild(label);
                 processorCheckboxes.appendChild(item);
-            });
-
-            const selectorSelect = document.getElementById('selectorSelect');
-            availableOptions.selectors.forEach(s => {
-                const opt = document.createElement('option');
-                opt.value = s.name;
-                opt.textContent = `${s.name} - ${s.description}`;
-                selectorSelect.appendChild(opt);
             });
 
             const presetSelect = document.getElementById('presetSelect');
@@ -1053,11 +1234,14 @@
 
         function setupEventListeners() {
             document.getElementById('buildPipelineBtn').onclick = buildPipeline;
-            document.getElementById('loadDataBtn').onclick = loadData;
-            document.getElementById('trainBtn').onclick = trainModel;
+            document.getElementById('parseDataBtn').onclick = parseData;
+            document.getElementById('confirmTargetBtn').onclick = confirmTarget;
             document.getElementById('inspectDataBtn').onclick = inspectData;
             document.getElementById('inspectProcessedBtn').onclick = inspectProcessedData;
-            document.getElementById('featureSelectionInfoBtn').onclick = showFeatureSelectionInfo;
+            document.getElementById('analyzeTargetBtn').onclick = analyzeTargets;
+            document.getElementById('compareSelectorBtn').onclick = compareSelectors;
+            document.getElementById('selectAllSelectorsBtn').onclick = toggleAllSelectors;
+            document.getElementById('trainAllSelectorsBtn').onclick = trainAllSelectors;
             
             // Data input method radio buttons
             document.getElementById('dataInputText').onchange = toggleDataInputMethod;
@@ -1095,7 +1279,6 @@
                 
                 document.getElementById('modelSelect').disabled = !isCustom;
                 // Processor checkboxy ostanú vždy enabled
-                document.getElementById('selectorSelect').disabled = !isCustom;
                 document.getElementById('evalModeSelect').disabled = !isCustom;
                 
                 if (preset) {
@@ -1108,10 +1291,6 @@
                         } else {
                             hideAllParamFields();
                         }
-                        // Zobraz polia pre selector ak je definovaný
-                        if (presetDetails.selector) {
-                            updateSelectorParams(presetDetails.selector);
-                        }
                     }
                 } else {
                     hideAllParamFields();
@@ -1120,11 +1299,6 @@
 
             document.getElementById('modelSelect').onchange = function() {
                 updateModelParams(this.value);
-            };
-
-            document.getElementById('selectorSelect').onchange = function() {
-                updateSelectorParams(this.value);
-                checkBinningRequirement(this.value);
             };
         }
         
@@ -1140,7 +1314,7 @@
                         binnerCheckbox.checked = true;
                         updateProcessorOrder();
                         
-                        alert('ℹ️ Information Gain vyžaduje diskrétne dáta.\n\nAutomaticky bol pridaný Binner processor do pipeline.\n\nAk chcete použiť vlastné binning nastavenie, upravte poradie procesorov.');
+                        alert('Information Gain vyžaduje diskrétne dáta.\n\nAutomaticky bol pridaný Binner processor do pipeline.\n\nAk chcete použiť vlastné binning nastavenie, upravte poradie procesorov.');
                     }
                 }
             }
@@ -1148,11 +1322,8 @@
 
         function hideAllParamFields() {
             document.getElementById('modelParamsContainer').style.display = 'none';
-            document.getElementById('selectorParamsContainer').style.display = 'none';
             document.getElementById('knnKGroup').style.display = 'none';
             document.getElementById('treeMaxDepthGroup').style.display = 'none';
-            document.getElementById('selectorNumFeaturesGroup').style.display = 'none';
-            document.getElementById('selectorThresholdGroup').style.display = 'none';
         }
 
         function updateModelParams(modelName) {
@@ -1175,38 +1346,6 @@
             }
         }
 
-        function updateSelectorParams(selectorName) {
-            document.getElementById('selectorParamsContainer').style.display = 'none';
-            document.getElementById('selectorNumFeaturesGroup').style.display = 'none';
-            document.getElementById('selectorThresholdGroup').style.display = 'none';
-            
-            if (!selectorName) return;
-
-            const params = factory.getSelectorParams(selectorName);
-            
-            if (params.length > 0) {
-                document.getElementById('selectorParamsContainer').style.display = 'block';
-                
-                params.forEach(param => {
-                    if (param === 'num_features') {
-                        document.getElementById('selectorNumFeaturesGroup').style.display = 'block';
-                    } else if (param === 'threshold') {
-                        document.getElementById('selectorThresholdGroup').style.display = 'block';
-                        
-                        // Nastaviť správny default pre threshold podľa selectora
-                        const thresholdInput = document.getElementById('selectorThreshold');
-                        if (selectorName === 'Variance Threshold Selector') {
-                            thresholdInput.value = '0.01';
-                            thresholdInput.placeholder = '0.01';
-                        } else if (selectorName === 'Correlation Selector') {
-                            thresholdInput.value = '0.95';
-                            thresholdInput.placeholder = '0.95';
-                        }
-                    }
-                });
-            }
-        }
-
         async function buildPipeline() {
             try {
                 showLoading(true);
@@ -1214,14 +1353,12 @@
                 const preset = document.getElementById('presetSelect').value;
                 const model = document.getElementById('modelSelect').value;
                 const processors = selectedProcessors;
-                const selector = document.getElementById('selectorSelect').value;
                 const evalMode = document.getElementById('evalModeSelect').value;
 
                 console.log('=== BUILD PIPELINE START ===');
                 console.log('Preset:', preset);
                 console.log('Model:', model);
                 console.log('Processors:', processors);
-                console.log('Selector:', selector);
                 console.log('EvalMode:', evalMode);
 
                 let result;
@@ -1232,64 +1369,26 @@
                     console.log('Preset Details:', presetDetails);
                     
                     const modelParams = [];
-                    const selectorParams = [];
 
                     // Zozbierať model parametre ak sú viditeľné
                     const knnK = document.getElementById('knnK').value;
-                    console.log('KNN K value:', knnK);
                     if (knnK && presetDetails.model === 'knn') {
                         modelParams.push(['k', knnK]);
-                        console.log('Added K parameter:', knnK);
                     }
 
                     const treeMaxDepth = document.getElementById('treeMaxDepth').value;
-                    console.log('Tree max_depth value:', treeMaxDepth);
                     if (treeMaxDepth && presetDetails.model === 'tree') {
                         modelParams.push(['max_depth', treeMaxDepth]);
-                        console.log('Added max_depth parameter:', treeMaxDepth);
                     }
 
-                    // Zozbierať selector parametre - len tie, ktoré daný selector podporuje
-                    if (presetDetails.selector) {
-                        const supportedParams = factory.getSelectorParams(presetDetails.selector);
-                        console.log('Selector supported params:', supportedParams);
-                        
-                        const selectorNumFeatures = document.getElementById('selectorNumFeatures').value;
-                        console.log('Selector num_features value:', selectorNumFeatures);
-                        if (selectorNumFeatures && supportedParams.includes('num_features')) {
-                            selectorParams.push(['num_features', selectorNumFeatures]);
-                            console.log('Added num_features parameter:', selectorNumFeatures);
-                        }
-
-                        const selectorThreshold = document.getElementById('selectorThreshold').value;
-                        console.log('Selector threshold value:', selectorThreshold);
-                        if (selectorThreshold && supportedParams.includes('threshold')) {
-                            selectorParams.push(['threshold', selectorThreshold]);
-                            console.log('Added threshold parameter:', selectorThreshold);
-                        }
-                    }
-
-                    console.log('Final modelParams:', modelParams);
-                    console.log('Final selectorParams:', selectorParams);
-                    
-                    // Pre preset používame model z preset details, nie z dropdownu
                     const presetModel = presetDetails.model || model || 'knn';
-                    console.log('Using model:', presetModel);
                     
-                    console.log('Calling buildFromPreset with:', {
-                        preset: preset,
-                        model: presetModel,
-                        modelParams: modelParams.length > 0 ? modelParams : null,
-                        selectorParams: selectorParams.length > 0 ? selectorParams : null
-                    });
-
                     result = await pipeline.buildFromPreset(
                         preset, 
                         presetModel,
                         modelParams.length > 0 ? modelParams : null,
-                        selectorParams.length > 0 ? selectorParams : null
+                        null
                     );
-                    console.log('buildFromPreset result:', result);
                 } else {
                     // Vlastná konfigurácia
                     if (!model) throw new Error('Vyberte model');
@@ -1297,14 +1396,14 @@
                     // Validácia evaluation_mode vs model
                     if (evalMode) {
                         if (model === 'linreg' && evalMode === 'classification') {
-                            showStatus('error', '⚠️ Upozornenie: Lineárna regresia (linreg) vyžaduje evaluation_mode = "regression", nie "classification". Metriky môžu byť nesprávne!', 'buildStatus');
-                            if (!confirm('Vybrali ste nekompatibilný evaluation_mode.\n\nModel: Lineárna Regresia (linreg)\nEvaluation Mode: classification\n\nMal by byť: regression\n\nChcete pokračovať aj tak? (Metriky budú nesprávne)')) {
+                            showStatus('error', 'Upozornenie: Lineárna regresia (linreg) vyžaduje evaluation_mode = "regression", nie "classification".', 'pipelineStatus');
+                            if (!confirm('Vybrali ste nekompatibilný evaluation_mode.\n\nModel: Lineárna Regresia (linreg)\nEvaluation Mode: classification\n\nMal by byť: regression\n\nChcete pokračovať?')) {
                                 return;
                             }
                         }
                         if (model === 'logreg' && evalMode === 'regression') {
-                            showStatus('error', '⚠️ Upozornenie: Logistická regresia (logreg) vyžaduje evaluation_mode = "classification", nie "regression". Metriky môžu byť nesprávne!', 'buildStatus');
-                            if (!confirm('Vybrali ste nekompatibilný evaluation_mode.\n\nModel: Logistická Regresia (logreg)\nEvaluation Mode: regression\n\nMal by byť: classification\n\nChcete pokračovať aj tak? (Metriky budú nesprávne)')) {
+                            showStatus('error', 'Upozornenie: Logistická regresia (logreg) vyžaduje evaluation_mode = "classification", nie "regression".', 'pipelineStatus');
+                            if (!confirm('Vybrali ste nekompatibilný evaluation_mode.\n\nModel: Logistická Regresia (logreg)\nEvaluation Mode: regression\n\nMal by byť: classification\n\nChcete pokračovať?')) {
                                 return;
                             }
                         }
@@ -1312,44 +1411,15 @@
 
                     // Zozbierať parametre
                     const modelParams = [];
-                    const selectorParams = [];
 
                     const knnK = document.getElementById('knnK').value;
-                    console.log('Custom config - KNN K value:', knnK);
                     if (knnK && model === 'knn') {
                         modelParams.push(['k', knnK]);
                     }
 
                     const treeMaxDepth = document.getElementById('treeMaxDepth').value;
-                    console.log('Custom config - Tree max_depth value:', treeMaxDepth);
                     if (treeMaxDepth && model === 'tree') {
                         modelParams.push(['max_depth', treeMaxDepth]);
-                    }
-
-                    const selectorNumFeatures = document.getElementById('selectorNumFeatures').value;
-                    console.log('Custom config - Selector num_features value:', selectorNumFeatures);
-                    // num_features je pre: information_gain, chi_square, mutual_information
-                    if (selectorNumFeatures && selector && ['information_gain', 'chi_square', 'mutual_information'].includes(selector)) {
-                        selectorParams.push(['num_features', selectorNumFeatures]);
-                    }
-
-                    const selectorThreshold = document.getElementById('selectorThreshold').value;
-                    console.log('Custom config - Selector threshold value:', selectorThreshold);
-                    // threshold je len pre: variance, correlation
-                    if (selectorThreshold && selector && ['variance', 'correlation'].includes(selector)) {
-                        selectorParams.push(['threshold', selectorThreshold]);
-                    }
-
-                    // Validácia: Information Gain vyžaduje Binner
-                    if (selector === 'information_gain' && !processors.includes('binner')) {
-                        showStatus('error', '⚠️ Information Gain vyžaduje diskrétne dáta. Pridajte Binner processor!', 'pipelineStatus');
-                        if (!confirm('Information Gain vyžaduje diskrétne dáta.\n\nChcete automaticky pridať Binner processor?\n\n(Odporúčaný počet binov: 10)')) {
-                            return;
-                        }
-                        // Automaticky pridaj binner na začiatok
-                        processors.unshift('binner');
-                        selectedProcessors.unshift('binner');
-                        updateProcessorOrder();
                     }
 
                     // Zozbierať parametre procesorov z dynamických inputov
@@ -1366,43 +1436,34 @@
                             });
                         }
                     });
-                    console.log('Processor params:', processorParams);
 
                     const config = {
                         model: model,
                         processors: processors.length > 0 ? processors : [],
-                        processor: null, // Späť kompatibilita
-                        selector: selector || null,
+                        processor: null,
+                        selector: null,
                         evaluation_mode: evalMode || null,
                         model_params: modelParams.length > 0 ? modelParams : null,
-                        selector_params: selectorParams.length > 0 ? selectorParams : null,
+                        selector_params: null,
                         processor_params: processorParams.length > 0 ? processorParams : null
                     };
 
-                    console.log('Custom config:', config);
                     result = await pipeline.buildFromConfig(config);
-                    console.log('buildFromConfig result:', result);
                 }
                 
-                console.log('Pipeline built successfully!');
                 document.getElementById('currentPipelineInfo').style.display = 'block';
                 document.getElementById('currentModel').textContent = result.model_name;
                 
-                // Zobraz processors ako zoznam
                 const processorText = result.processors && result.processors.length > 0 
                     ? result.processors.join(' → ') 
                     : 'Žiadny';
                 document.getElementById('currentProcessor').textContent = processorText;
-                
-                document.getElementById('currentSelector').textContent = result.selector || 'Žiadny';
                 document.getElementById('currentEvalMode').textContent = result.evaluation_mode;
                 
+                window.pipelineBuilt = true;
                 showStatus('success', 'Pipeline vytvorený!', 'pipelineStatus');
             } catch (error) {
-                console.error('=== BUILD PIPELINE ERROR ===');
-                console.error('Error message:', error.message);
-                console.error('Error stack:', error.stack);
-                console.error('Full error:', error);
+                console.error('Build pipeline error:', error);
                 showStatus('error', `Chyba: ${error}`, 'pipelineStatus');
             } finally {
                 showLoading(false);
@@ -1424,17 +1485,37 @@
         }
 
         function downloadSampleCSV() {
-            const csvContent = `age,income,credit_score,approved
-25,50000,700,1
-35,75000,750,1
-45,60000,650,0
-22,30000,600,0
-50,90000,800,1
-30,55000,680,1
-40,80000,720,1
-28,45000,640,0
-55,95000,790,1
-32,62000,710,1`;
+            const csvContent = `age,income,credit_score,debt_ratio,employment_years,education_level,num_accounts,account_balance,loan_amount,monthly_payment,savings,investment_score,property_value,approved
+25,50000,700,0.35,3,2,4,12500,15000,450,8000,65,0,1
+35,75000,750,0.28,8,3,6,28000,22000,680,25000,78,180000,1
+45,60000,650,0.42,15,2,3,8500,28000,820,15000,58,150000,0
+22,30000,600,0.48,1,1,2,3500,12000,380,2500,42,0,0
+50,90000,800,0.22,20,4,8,45000,35000,920,55000,88,320000,1
+30,55000,680,0.38,5,3,5,15000,18000,520,12000,68,0,1
+40,80000,720,0.30,12,3,7,32000,25000,750,30000,75,220000,1
+28,45000,640,0.44,4,2,3,7500,20000,610,6000,55,0,0
+55,95000,790,0.20,25,4,9,58000,40000,980,68000,92,450000,1
+32,62000,710,0.33,7,3,6,18500,21000,640,16000,72,125000,1
+38,72000,730,0.29,10,3,7,26000,24000,710,28000,76,195000,1
+27,48000,660,0.40,3,2,4,9500,17000,550,9500,60,0,0
+52,88000,780,0.24,22,4,8,42000,32000,890,52000,86,380000,1
+29,51000,670,0.37,4,2,5,11500,19000,570,11000,63,0,1
+43,68000,700,0.32,13,3,6,21000,23000,690,22000,74,175000,1
+24,42000,630,0.45,2,2,3,6000,14000,480,5000,50,0,0
+48,82000,760,0.26,18,3,7,35000,28000,820,38000,82,280000,1
+31,58000,690,0.36,6,3,5,14000,20000,600,13500,66,110000,1
+36,70000,725,0.31,9,3,6,24000,26000,730,26000,77,200000,1
+26,46000,655,0.41,3,2,4,8000,16000,520,7500,58,0,0
+53,92000,795,0.21,24,4,9,50000,38000,950,62000,90,410000,1
+33,64000,705,0.34,8,3,6,19500,22000,660,18000,70,140000,1
+41,76000,740,0.27,14,3,7,30000,27000,780,32000,80,240000,1
+23,38000,620,0.47,1,1,2,4500,13000,420,3500,45,0,0
+49,85000,770,0.25,19,4,8,40000,33000,870,48000,84,350000,1
+34,66000,715,0.30,9,3,6,22000,24000,700,24000,73,160000,1
+39,74000,735,0.28,11,3,7,28000,26000,760,29000,78,210000,1
+28,49000,665,0.39,4,2,4,10000,18000,560,10500,62,0,0
+54,94000,785,0.23,23,4,9,55000,36000,930,65000,89,430000,1
+30,56000,685,0.35,5,3,5,13500,19000,590,14500,67,95000,1`;
             
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
@@ -1449,40 +1530,38 @@
             document.body.removeChild(link);
         }
 
-        async function loadData() {
+        async function getDataString() {
+            const method = document.querySelector('input[name="dataInputMethod"]:checked').value;
+            if (method === 'text') {
+                const data = document.getElementById('dataInput').value;
+                if (!data) throw new Error('Vložte dáta');
+                return data;
+            } else {
+                const fileInput = document.getElementById('fileInput');
+                const file = fileInput.files[0];
+                if (!file) throw new Error('Vyberte súbor');
+                return await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.onerror = () => reject(new Error('Chyba pri čítaní súboru'));
+                    reader.readAsText(file);
+                });
+            }
+        }
+
+        async function parseData() {
             try {
                 showLoading(true);
-                
                 const format = document.getElementById('dataFormatSelect').value;
-                const method = document.querySelector('input[name="dataInputMethod"]:checked').value;
-                let data;
+                const data = await getDataString();
 
-                if (method === 'text') {
-                    data = document.getElementById('dataInput').value;
-                    if (!data) throw new Error('Vložte dáta');
-                } else {
-                    const fileInput = document.getElementById('fileInput');
-                    const file = fileInput.files[0];
-                    if (!file) throw new Error('Vyberte súbor');
-                    
-                    // Prečítať súbor
-                    data = await new Promise((resolve, reject) => {
-                        const reader = new FileReader();
-                        reader.onload = (e) => resolve(e.target.result);
-                        reader.onerror = (e) => reject(new Error('Chyba pri čítaní súboru'));
-                        reader.readAsText(file);
-                    });
-
-                    // Aktualizovať info o súbore
-                    const fileInfo = document.getElementById('fileInfo');
-                    fileInfo.textContent = `Načítaný súbor: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
-                }
-
-                const targetColumn = document.getElementById('targetColumnSelect').value;
+                window.rawDataString = data;
+                window.dataFormat = format;
 
                 dataLoader = new WasmDataLoaderClass(format);
                 const columns = await dataLoader.getAvailableColumns(data);
-                
+                window.parsedColumns = columns;
+
                 const targetSelect = document.getElementById('targetColumnSelect');
                 targetSelect.innerHTML = '';
                 columns.forEach(col => {
@@ -1492,22 +1571,50 @@
                     targetSelect.appendChild(opt);
                 });
 
+                // Build column stats table
+                buildColumnStatsTable(data, columns, format);
+
+                document.getElementById('targetSelectionArea').style.display = 'block';
+                document.getElementById('inspectDataBtn').disabled = true;
+                document.getElementById('inspectProcessedBtn').disabled = true;
+
+                // Show feature exploration section and populate selector cards
+                document.getElementById('featureExplorationSection').style.display = 'block';
+                populateComparisonSelectors();
+                populateTargetAnalyzerMethods();
+
+                showStatus('success', `Dáta načítané: ${columns.length} stĺpcov nájdených. Vyberte cieľovú premennú.`, 'parseStatus');
+            } catch (error) {
+                showStatus('error', `Chyba: ${error}`, 'parseStatus');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function confirmTarget() {
+            try {
+                showLoading(true);
+                const targetColumn = document.getElementById('targetColumnSelect').value;
                 if (!targetColumn) {
-                    showStatus('info', 'Vyberte target stĺpec', 'dataStatus');
+                    showStatus('error', 'Vyberte cieľový stĺpec', 'dataStatus');
+                    return;
+                }
+
+                const data = window.rawDataString;
+                const format = window.dataFormat;
+                if (!data) {
+                    showStatus('error', 'Najprv načítajte dáta', 'dataStatus');
                     return;
                 }
 
                 const result = await pipeline.loadData(data, targetColumn, format);
-                
-                // Get train/test split ratio
+
                 const trainPercent = parseInt(document.getElementById('trainTestSplit').value) / 100;
                 window.trainTestRatio = trainPercent;
-                
-                // Enable data inspection buttons
+
                 document.getElementById('inspectDataBtn').disabled = false;
-                
+
                 showStatus('success', `${result.message} (Train: ${Math.round(trainPercent * 100)}%, Test: ${Math.round((1 - trainPercent) * 100)}%)`, 'dataStatus');
-                document.getElementById('trainBtn').disabled = false;
             } catch (error) {
                 showStatus('error', `Chyba: ${error}`, 'dataStatus');
             } finally {
@@ -1515,75 +1622,484 @@
             }
         }
 
-        async function trainModel() {
+        async function analyzeTargets() {
             try {
                 showLoading(true);
-                
-                // Get train/test ratio
-                const trainRatio = window.trainTestRatio || 0.8;
-                
-                const result = await pipeline.trainWithSplit(trainRatio);
-                
-                console.log('Training result:', result);
-                
-                document.getElementById('trainingInfo').style.display = 'block';
-                document.getElementById('trainingStatus').textContent = 'Dokončené';
-                
-                // Determine evaluation mode and show appropriate metrics
-                const isClassification = result.evaluation_mode === 'classification';
-                
-                if (isClassification) {
-                    document.getElementById('classificationMetrics').style.display = 'block';
-                    document.getElementById('regressionMetrics').style.display = 'none';
-                    
-                    document.getElementById('metricAccuracy').textContent = (result.accuracy * 100).toFixed(2) + '%';
-                    document.getElementById('metricF1').textContent = result.f1_score.toFixed(4);
-                    document.getElementById('metricPrecision').textContent = result.precision.toFixed(4);
-                    document.getElementById('metricRecall').textContent = result.recall.toFixed(4);
-                } else {
-                    document.getElementById('classificationMetrics').style.display = 'none';
-                    document.getElementById('regressionMetrics').style.display = 'block';
-                    
-                    document.getElementById('metricR2').textContent = result.r2_score.toFixed(4);
-                    document.getElementById('metricRMSE').textContent = result.rmse.toFixed(4);
-                    document.getElementById('metricMSE').textContent = result.mse.toFixed(4);
-                    document.getElementById('metricMAE').textContent = result.mae.toFixed(4);
+                const data = window.rawDataString;
+                const format = window.dataFormat;
+                if (!data) {
+                    showStatus('error', 'Najprv načítajte dáta', 'analyzeTargetStatus');
+                    return;
                 }
-                
-                // Zobraziť feature selection info ak bola použitá
-                if (result.selected_features_indices && result.selected_features_indices.length > 0) {
-                    document.getElementById('featureSelectionInfo').style.display = 'block';
-                    document.getElementById('featuresBefore').textContent = result.total_features_before;
-                    document.getElementById('featuresAfter').textContent = result.total_features_after;
-                    
-                    const indicesDiv = document.getElementById('selectedIndices');
-                    const indices = result.selected_features_indices;
-                    
-                    // Zobrazíme max 50 indexov aby to nebolo príliš dlhé
-                    const displayIndices = indices.length > 50 
-                        ? indices.slice(0, 50).join(', ') + `, ... (${indices.length - 50} ďalších)`
-                        : indices.join(', ');
-                    
-                    indicesDiv.textContent = `[${displayIndices}]`;
-                    
-                    // Percentuálna redukcia
-                    const reduction = calculateFeatureReduction(result.total_features_before, result.total_features_after);
-                    indicesDiv.innerHTML += `<br><br><strong>Redukcia:</strong> ${reduction}% features odstránených (${result.total_features_before} → ${result.total_features_after})`;
-                } else {
-                    document.getElementById('featureSelectionInfo').style.display = 'none';
+
+                const method = document.getElementById('targetAnalysisMethod').value;
+                const rawResult = await pipeline.analyzeTargetWith(data, format, method);
+                const result = convertWasmResult(rawResult);
+
+                // Open results in modal
+                const modal = document.getElementById('dataModal');
+                document.getElementById('modalTitle').textContent = `Analýza cieľovej premennej - ${result.method_description || method}`;
+                document.getElementById('modalBody').innerHTML = result.html;
+                modal.classList.add('show');
+
+                if (result.recommended_target) {
+                    const targetSelect = document.getElementById('targetColumnSelect');
+                    for (const opt of targetSelect.options) {
+                        if (opt.value === result.recommended_target) {
+                            targetSelect.value = result.recommended_target;
+                            break;
+                        }
+                    }
+                    // Also highlight in stats table
+                    highlightStatsRow(result.recommended_target);
                 }
-                
-                // Enable post-training inspection buttons
-                document.getElementById('inspectProcessedBtn').disabled = false;
-                document.getElementById('featureSelectionInfoBtn').disabled = false;
-                
-                showStatus('success', 'Model natrénovaný a vyhodnotený na test sete!', 'trainStatus');
+
+                if (result.recommended_type) {
+                    document.getElementById('evalModeSelect').value = result.recommended_type;
+                }
+
+                showStatus('success', `Odporúčaná: ${result.recommended_target} (${result.recommended_type})`, 'analyzeTargetStatus');
             } catch (error) {
-                console.error('Training error:', error);
-                showStatus('error', `Chyba: ${error}`, 'trainStatus');
+                showStatus('error', `Chyba analýzy: ${error}`, 'analyzeTargetStatus');
             } finally {
                 showLoading(false);
             }
+        }
+
+        // Select target from analysis table rows (called from WASM-generated HTML)
+        function selectTargetFromAnalysis(colName, suggestedType) {
+            const targetSelect = document.getElementById('targetColumnSelect');
+            targetSelect.value = colName;
+            highlightStatsRow(colName);
+            if (suggestedType) {
+                document.getElementById('evalModeSelect').value = suggestedType;
+            }
+            // Close modal
+            document.getElementById('dataModal').classList.remove('show');
+            switchTargetTab('manual');
+        }
+        window.selectTargetFromAnalysis = selectTargetFromAnalysis;
+
+        // ===== Target selection helpers =====
+
+        function switchTargetTab(tabName) {
+            document.querySelectorAll('.target-method-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.target-method-content').forEach(c => c.classList.remove('active'));
+            document.querySelector(`.target-method-tab[data-tab="${tabName}"]`).classList.add('active');
+            const tabMap = { manual: 'tabManual', stats: 'tabStats', analysis: 'tabAnalysis' };
+            document.getElementById(tabMap[tabName]).classList.add('active');
+        }
+
+        function populateTargetAnalyzerMethods() {
+            try {
+                const rawAnalyzers = pipeline.getAvailableTargetAnalyzers();
+                const analyzers = convertWasmResult(rawAnalyzers);
+                if (!analyzers || !analyzers.length) return;
+
+                const select = document.getElementById('targetAnalysisMethod');
+                select.innerHTML = '';
+                analyzers.forEach(a => {
+                    const opt = document.createElement('option');
+                    opt.value = a.name;
+                    opt.textContent = `${a.metric_name} - ${a.description}`;
+                    select.appendChild(opt);
+                });
+
+                // Show explanation for the initially selected method
+                updateTargetMethodExplanation(analyzers, select.value);
+
+                // Update explanation on change
+                select.onchange = () => updateTargetMethodExplanation(analyzers, select.value);
+
+                window._targetAnalyzers = analyzers;
+            } catch (e) {
+                console.warn('Could not load target analyzers:', e);
+            }
+        }
+
+        function updateTargetMethodExplanation(analyzers, selectedMethod) {
+            const explanationDiv = document.getElementById('targetMethodExplanation');
+            const found = analyzers.find(a => a.name === selectedMethod);
+            if (found && explanationDiv) {
+                explanationDiv.innerHTML = `<strong>${found.metric_name}:</strong> ${found.metric_explanation}`;
+            }
+        }
+
+        function buildColumnStatsTable(data, columns, format) {
+            if (format !== 'csv') {
+                document.getElementById('columnStatsContainer').innerHTML = '<p style="color:#6c757d;">Štatistický prehľad je dostupný len pre CSV formát.</p>';
+                return;
+            }
+            const lines = data.split('\n').filter(l => l.trim());
+            if (lines.length < 2) return;
+
+            const headers = lines[0].split(',').map(h => h.trim());
+            const rows = lines.slice(1).map(l => l.split(',').map(v => v.trim()));
+
+            let html = '<table class="column-stats"><thead><tr>';
+            html += '<th>Stĺpec</th><th>Typ</th><th>Unikátnych</th><th>Min</th><th>Max</th><th>Priemer</th><th>Odporúčanie</th>';
+            html += '</tr></thead><tbody>';
+
+            columns.forEach((col, colIdx) => {
+                // Find column index in headers (might not match columns if target excluded)
+                const hIdx = headers.indexOf(col);
+                if (hIdx === -1) return;
+
+                const values = rows.map(r => r[hIdx]).filter(v => v !== undefined && v !== '');
+                const numValues = values.map(Number).filter(v => !isNaN(v));
+                const isNumeric = numValues.length > values.length * 0.8;
+                const uniqueCount = new Set(values).size;
+
+                let min = '-', max = '-', mean = '-';
+                if (isNumeric && numValues.length > 0) {
+                    min = Math.min(...numValues).toFixed(2);
+                    max = Math.max(...numValues).toFixed(2);
+                    mean = (numValues.reduce((a,b) => a+b, 0) / numValues.length).toFixed(2);
+                }
+
+                const ratio = uniqueCount / values.length;
+                let typeLabel, suggestion;
+                if (!isNumeric) {
+                    typeLabel = 'Kategorický';
+                    suggestion = uniqueCount <= 10 ? 'Klasifikácia' : 'Kategorický';
+                } else if (uniqueCount <= 10 || ratio < 0.05) {
+                    typeLabel = 'Diskrétny';
+                    suggestion = 'Klasifikácia';
+                } else {
+                    typeLabel = 'Spojitý';
+                    suggestion = 'Regresia';
+                }
+
+                html += `<tr data-column="${col}" onclick="selectTargetFromStats('${col}')">`;
+                html += `<td style="text-align:left;font-weight:bold;">${col}</td>`;
+                html += `<td>${typeLabel}</td>`;
+                html += `<td>${uniqueCount}</td>`;
+                html += `<td>${min}</td>`;
+                html += `<td>${max}</td>`;
+                html += `<td>${mean}</td>`;
+                html += `<td><span style="font-size:0.85em;padding:2px 8px;background:${suggestion === 'Klasifikácia' ? '#d1ecf1' : suggestion === 'Regresia' ? '#e8f4f8' : '#f8f9fa'};">${suggestion}</span></td>`;
+                html += '</tr>';
+            });
+            html += '</tbody></table>';
+            document.getElementById('columnStatsContainer').innerHTML = html;
+        }
+
+        function selectTargetFromStats(colName) {
+            const targetSelect = document.getElementById('targetColumnSelect');
+            targetSelect.value = colName;
+            highlightStatsRow(colName);
+            // Switch to manual tab to show the dropdown
+            switchTargetTab('manual');
+        }
+        window.selectTargetFromStats = selectTargetFromStats;
+
+        function highlightStatsRow(colName) {
+            document.querySelectorAll('.column-stats tbody tr').forEach(tr => {
+                tr.classList.toggle('selected-row', tr.dataset.column === colName);
+            });
+        }
+
+        // ===== Feature exploration / selector comparison =====
+
+        function populateComparisonSelectors() {
+            if (!availableOptions || !availableOptions.selectors) return;
+            const grid = document.getElementById('selectorCompareGrid');
+            grid.innerHTML = '';
+
+            availableOptions.selectors.forEach(sel => {
+                const card = document.createElement('div');
+                card.className = 'selector-compare-card';
+                card.id = `compare_card_${sel.name}`;
+
+                const tags = sel.supported_types.map(t =>
+                    `<span class="card-tag">${t}</span>`
+                ).join('');
+                const warnTag = sel.requires_binning
+                    ? '<span class="card-tag warn">Vyžaduje Binner</span>'
+                    : '';
+
+                // Build param inputs based on selector type
+                let paramsHtml = '';
+                const params = factory.getSelectorParams(sel.name);
+                if (params && params.length > 0) {
+                    params.forEach(p => {
+                        let defaultVal = '';
+                        let label = p;
+                        if (p === 'num_features') {
+                            defaultVal = '5';
+                            label = 'Počet features';
+                        } else if (p === 'threshold') {
+                            defaultVal = sel.name === 'correlation' ? '0.95' : '0.01';
+                            label = 'Prahová hodnota';
+                        }
+                        paramsHtml += `<div class="form-group" style="margin-bottom:8px;">
+                            <label>${label} (${p}):</label>
+                            <input type="number" step="any" value="${defaultVal}" id="compare_param_${sel.name}_${p}">
+                        </div>`;
+                    });
+                }
+
+                card.innerHTML = `
+                    <div class="card-header">
+                        <input type="checkbox" id="compare_sel_${sel.name}" onchange="toggleCompareCard('${sel.name}')">
+                        <label for="compare_sel_${sel.name}">${sel.name}</label>
+                    </div>
+                    <div class="card-desc">${sel.description}</div>
+                    <div class="card-tags">${tags}${warnTag}</div>
+                    <div class="card-params">${paramsHtml}</div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function toggleCompareCard(name) {
+            const cb = document.getElementById(`compare_sel_${name}`);
+            const card = document.getElementById(`compare_card_${name}`);
+            card.classList.toggle('active', cb.checked);
+        }
+        window.toggleCompareCard = toggleCompareCard;
+
+        function toggleAllSelectors() {
+            const cards = document.querySelectorAll('.selector-compare-card');
+            const allChecked = Array.from(cards).every(c => c.classList.contains('active'));
+            cards.forEach(card => {
+                const cb = card.querySelector('input[type="checkbox"]');
+                cb.checked = !allChecked;
+                card.classList.toggle('active', !allChecked);
+            });
+        }
+
+        async function compareSelectors() {
+            try {
+                const targetColumn = document.getElementById('targetColumnSelect').value;
+                if (!targetColumn) {
+                    showStatus('error', 'Najprv vyberte cieľovú premennú', 'compareSelectorStatus');
+                    return;
+                }
+                if (!pipeline) {
+                    showStatus('error', 'Pipeline nie je inicializovaný', 'compareSelectorStatus');
+                    return;
+                }
+                const data = window.rawDataString;
+                const format = window.dataFormat;
+                if (!data) {
+                    showStatus('error', 'Najprv načítajte dáta', 'compareSelectorStatus');
+                    return;
+                }
+
+                // Collect selected selectors and their params
+                const selectorConfigs = [];
+                document.querySelectorAll('.selector-compare-card.active').forEach(card => {
+                    const name = card.id.replace('compare_card_', '');
+                    const params = [];
+                    card.querySelectorAll('.card-params input').forEach(input => {
+                        const paramName = input.id.replace(`compare_param_${name}_`, '');
+                        if (input.value) {
+                            params.push([paramName, input.value]);
+                        }
+                    });
+                    selectorConfigs.push({ name, params });
+                });
+
+                if (selectorConfigs.length === 0) {
+                    showStatus('error', 'Vyberte aspoň jeden selektor na porovnanie', 'compareSelectorStatus');
+                    return;
+                }
+
+                showLoading(true);
+                showStatus('info', `Porovnávam ${selectorConfigs.length} selektorov...`, 'compareSelectorStatus');
+
+                const rawResult = await pipeline.compareSelectors(data, targetColumn, format, selectorConfigs);
+                const result = convertWasmResult(rawResult);
+
+                // Store results for training
+                window._lastComparisonResult = result;
+
+                // Open comparison in modal
+                const modal = document.getElementById('dataModal');
+                document.getElementById('modalTitle').textContent = `Porovnanie selektorov (cieľ: ${targetColumn})`;
+                document.getElementById('modalBody').innerHTML = result.comparison_html;
+                modal.classList.add('show');
+
+                // Show training area
+                document.getElementById('comparisonResultsArea').style.display = 'block';
+                document.getElementById('selectorTrainingResults').innerHTML = '';
+
+                showStatus('success', `Porovnanie dokončené: ${selectorConfigs.length} selektorov na ${result.total_features} príznakoch. Teraz môžete natrénovať model s vybranými features.`, 'compareSelectorStatus');
+            } catch (error) {
+                showStatus('error', `Chyba porovnania: ${error}`, 'compareSelectorStatus');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Train model with features selected by all compared selectors + baseline
+        async function trainAllSelectors() {
+            const comparison = window._lastComparisonResult;
+            if (!comparison || !comparison.selectors) {
+                showStatus('error', 'Najprv spustite porovnanie selektorov', 'compareSelectorStatus');
+                return;
+            }
+            if (!pipeline || !window.pipelineBuilt) {
+                showStatus('error', 'Najprv vytvorte pipeline', 'compareSelectorStatus');
+                return;
+            }
+
+            const trainRatio = window.trainTestRatio || 0.8;
+            const resultsDiv = document.getElementById('selectorTrainingResults');
+            resultsDiv.innerHTML = '';
+
+            showLoading(true);
+            document.getElementById('trainCompareStatus').textContent = 'Trénujem...';
+
+            const allResults = [];
+
+            try {
+                // First train baseline (all features, no selection)
+                try {
+                    const t0 = performance.now();
+                    const baseRaw = await pipeline.trainWithSplit(trainRatio);
+                    const baseTime = performance.now() - t0;
+                    const baseResult = convertWasmResult(baseRaw);
+                    allResults.push({ name: 'Všetky features (baseline)', result: baseResult, indices: null, count: comparison.total_features, timeMs: baseTime });
+                } catch (e) {
+                    console.error('Baseline training failed:', e);
+                    allResults.push({ name: 'Všetky features (baseline)', error: String(e), indices: null, count: comparison.total_features, timeMs: 0 });
+                }
+
+                // Rebuild pipeline for each selector's features
+                const selectors = Array.isArray(comparison.selectors) ? comparison.selectors : [];
+                for (const sel of selectors) {
+                    const selData = (sel instanceof Map) ? Object.fromEntries(sel) : sel;
+                    if (selData.error) {
+                        allResults.push({ name: selData.selector_name || selData.config_name, error: selData.error, indices: [], count: 0 });
+                        continue;
+                    }
+
+                    const indices = selData.selected_indices || [];
+                    if (indices.length === 0) {
+                        allResults.push({ name: selData.selector_name, error: 'Selektor nevybral žiadne features', indices: [], count: 0 });
+                        continue;
+                    }
+
+                    try {
+                        const t0 = performance.now();
+                        const trainRaw = await pipeline.trainWithFeatureIndices(trainRatio, indices);
+                        const trainTime = performance.now() - t0;
+                        const trainResult = convertWasmResult(trainRaw);
+                        allResults.push({ name: selData.selector_name || selData.config_name, result: trainResult, indices: indices, count: indices.length, timeMs: trainTime });
+                    } catch (e) {
+                        console.error(`Training with ${selData.selector_name || selData.config_name} failed:`, e);
+                        allResults.push({ name: selData.selector_name || selData.config_name, error: String(e), indices: indices, count: indices.length, timeMs: 0 });
+                    }
+                }
+
+                // Display results as comparison table
+                renderTrainingComparison(allResults, comparison.total_features, comparison.feature_names || []);
+                document.getElementById('inspectProcessedBtn').disabled = false;
+                document.getElementById('trainCompareStatus').textContent = `Hotovo - ${allResults.length} variantov natrénovaných`;
+            } catch (error) {
+                showStatus('error', `Chyba pri trénovaní: ${error}`, 'compareSelectorStatus');
+                document.getElementById('trainCompareStatus').textContent = '';
+            } finally {
+                showLoading(false);
+            }
+        }
+
+
+
+        // Render training comparison table
+        function renderTrainingComparison(allResults, totalFeatures, featureNames) {
+            const resultsDiv = document.getElementById('selectorTrainingResults');
+            
+            // Determine if classification or regression from first successful result
+            const firstSuccess = allResults.find(r => r.result);
+            if (!firstSuccess) {
+                // All failed - show errors
+                let errHtml = '<h3 style="margin-top:20px;margin-bottom:10px;color:#e74c3c;">Všetky pokusy o trénovanie zlyhali</h3>';
+                errHtml += '<ul style="color:#e74c3c;">';
+                allResults.forEach(r => {
+                    errHtml += `<li><strong>${r.name}</strong>: ${r.error || 'Neznáma chyba'}</li>`;
+                });
+                errHtml += '</ul>';
+                resultsDiv.innerHTML = errHtml;
+                return;
+            }
+            const isClassification = firstSuccess.result.evaluation_mode === 'classification';
+
+            let html = '<h3 style="margin-top:20px;margin-bottom:10px;color:#2c3e50;">Porovnanie výsledkov tréningu</h3>';
+            html += '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:13px;">';
+            html += '<thead><tr>';
+            html += '<th style="padding:10px 8px;border:1px solid #dee2e6;background:#3498db;color:white;text-align:left;">Metóda</th>';
+            html += '<th style="padding:10px 8px;border:1px solid #dee2e6;background:#3498db;color:white;text-align:center;">Features</th>';
+            
+            if (isClassification) {
+                html += '<th style="padding:10px 8px;border:1px solid #dee2e6;background:#3498db;color:white;text-align:center;">Accuracy</th>';
+                html += '<th style="padding:10px 8px;border:1px solid #dee2e6;background:#3498db;color:white;text-align:center;">F1 Score</th>';
+                html += '<th style="padding:10px 8px;border:1px solid #dee2e6;background:#3498db;color:white;text-align:center;">Precision</th>';
+                html += '<th style="padding:10px 8px;border:1px solid #dee2e6;background:#3498db;color:white;text-align:center;">Recall</th>';
+            } else {
+                html += '<th style="padding:10px 8px;border:1px solid #dee2e6;background:#3498db;color:white;text-align:center;">R2</th>';
+                html += '<th style="padding:10px 8px;border:1px solid #dee2e6;background:#3498db;color:white;text-align:center;">RMSE</th>';
+                html += '<th style="padding:10px 8px;border:1px solid #dee2e6;background:#3498db;color:white;text-align:center;">MSE</th>';
+                html += '<th style="padding:10px 8px;border:1px solid #dee2e6;background:#3498db;color:white;text-align:center;">MAE</th>';
+            }
+            html += '<th style="padding:10px 8px;border:1px solid #dee2e6;background:#3498db;color:white;text-align:center;">Cas tréningu</th>';
+            html += '</tr></thead><tbody>';
+
+            // Find best values for highlighting
+            let bestMetric = -Infinity;
+            allResults.forEach(r => {
+                if (!r.result) return;
+                const val = isClassification ? r.result.accuracy : r.result.r2_score;
+                if (val > bestMetric) bestMetric = val;
+            });
+
+            allResults.forEach((r, idx) => {
+                const isBaseline = r.indices === null;
+                const isBest = r.result && ((isClassification ? r.result.accuracy : r.result.r2_score) === bestMetric);
+                const bg = isBest ? 'background:#d1ecf1;' : (idx % 2 === 0 ? 'background:#f8f9fa;' : '');
+                
+                html += `<tr style="${bg}">`;
+                html += `<td style="padding:8px;border:1px solid #dee2e6;font-weight:${isBaseline ? 'normal' : 'bold'};">${r.name}${isBest ? ' (najlepsi)' : ''}</td>`;
+                html += `<td style="padding:8px;border:1px solid #dee2e6;text-align:center;">${r.count}/${totalFeatures}</td>`;
+
+                if (r.error) {
+                    html += `<td colspan="5" style="padding:8px;border:1px solid #dee2e6;color:#e74c3c;text-align:center;">${r.error}</td>`;
+                } else if (r.result) {
+                    if (isClassification) {
+                        html += `<td style="padding:8px;border:1px solid #dee2e6;text-align:center;font-weight:bold;color:#2980b9;">${(r.result.accuracy * 100).toFixed(2)}%</td>`;
+                        html += `<td style="padding:8px;border:1px solid #dee2e6;text-align:center;">${r.result.f1_score.toFixed(4)}</td>`;
+                        html += `<td style="padding:8px;border:1px solid #dee2e6;text-align:center;">${r.result.precision.toFixed(4)}</td>`;
+                        html += `<td style="padding:8px;border:1px solid #dee2e6;text-align:center;">${r.result.recall.toFixed(4)}</td>`;
+                    } else {
+                        html += `<td style="padding:8px;border:1px solid #dee2e6;text-align:center;font-weight:bold;color:#2980b9;">${r.result.r2_score.toFixed(4)}</td>`;
+                        html += `<td style="padding:8px;border:1px solid #dee2e6;text-align:center;">${r.result.rmse.toFixed(4)}</td>`;
+                        html += `<td style="padding:8px;border:1px solid #dee2e6;text-align:center;">${r.result.mse.toFixed(4)}</td>`;
+                        html += `<td style="padding:8px;border:1px solid #dee2e6;text-align:center;">${r.result.mae.toFixed(4)}</td>`;
+                    }
+                    const timeStr = r.timeMs ? `${r.timeMs.toFixed(0)} ms` : '-';
+                    html += `<td style="padding:8px;border:1px solid #dee2e6;text-align:center;color:#6c757d;">${timeStr}</td>`;
+                }
+                html += '</tr>';
+            });
+
+            html += '</tbody></table></div>';
+
+            // Show which features each selector picked
+            html += '<details style="margin-top:15px;border:1px solid #dee2e6;">';
+            html += '<summary style="padding:12px;background:#f8f9fa;cursor:pointer;font-weight:600;color:#3498db;">Vybrané features jednotlivými selektormi</summary>';
+            html += '<div style="padding:15px;">';
+            allResults.forEach(r => {
+                if (r.indices === null) return; // skip baseline
+                const names = r.indices && featureNames.length > 0 
+                    ? r.indices.map(i => featureNames[i] || `[${i}]`).join(', ')
+                    : (r.indices || []).join(', ');
+                html += `<p><strong>${r.name}</strong> (${r.count} features): ${names || 'N/A'}</p>`;
+            });
+            html += '</div></details>';
+
+            resultsDiv.innerHTML = html;
         }
 
         function showStatus(type, message, elementId) {
@@ -1613,53 +2129,6 @@
                 const result = await pipeline.inspectProcessedData(10);
                 const data = convertWasmResult(result);
                 showDataModal('Spracované dáta (po výbere a preprocessingu)', data);
-            } catch (error) {
-                alert('Error: ' + error);
-            }
-        }
-
-        async function showFeatureSelectionInfo() {
-            try {
-                const result = await pipeline.getFeatureSelectionInfo();
-                const data = convertWasmResult(result);
-                
-                if (data.selector_name === 'None') {
-                    alert(data.message);
-                    return;
-                }
-
-                let html = `
-                    <div class="feature-info">
-                        <h4>Selector: ${data.selector_name}</h4>
-                        <p><strong>Metrika:</strong> ${data.metric_name}</p>
-                        <p><strong>Počet príznakov pred:</strong> ${data.total_features_before}</p>
-                        <p><strong>Počet príznakov po:</strong> ${data.total_features_after}</p>
-                        <p><strong>Redukcia:</strong> ${calculateFeatureReduction(data.total_features_before, data.total_features_after)}%</p>
-                    </div>
-
-                    <div class="feature-info">
-                        <h4>Ponechané príznaky (${data.kept_features.length})</h4>
-                        <div class="feature-list">
-                            ${data.kept_features.map((name, idx) => 
-                                formatFeatureBadge(name, data.kept_indices[idx], data.kept_scores[idx], data.metric_name, 'kept')
-                            ).join('')}
-                        </div>
-                    </div>
-
-                    <div class="feature-info">
-                        <h4>Odstránené príznaky (${data.dropped_features.length})</h4>
-                        <div class="feature-list">
-                            ${data.dropped_features.map((name, idx) => 
-                                formatFeatureBadge(name, data.dropped_indices[idx], data.dropped_scores[idx], data.metric_name, 'dropped')
-                            ).join('')}
-                        </div>
-                    </div>
-                `;
-
-                const modal = document.getElementById('dataModal');
-                document.getElementById('modalTitle').textContent = 'Detaily výberu príznakov';
-                document.getElementById('modalBody').innerHTML = html;
-                modal.classList.add('show');
             } catch (error) {
                 alert('Error: ' + error);
             }

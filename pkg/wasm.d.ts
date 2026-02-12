@@ -72,6 +72,15 @@ export class WasmMLPipeline {
     free(): void;
     [Symbol.dispose](): void;
     /**
+     * Analyzuje stĺpce dát a odporúča najlepšiu cieľovú premennú
+     * Pre každý stĺpec vypočíta priemernú absolútnu koreláciu s ostatnými stĺpcami
+     */
+    analyzeTargetCandidates(data: string, format: string): any;
+    /**
+     * Analyzuje cieľovú premennú pomocou zvoleného analyzátora
+     */
+    analyzeTargetWith(data: string, format: string, method: string): any;
+    /**
      * Vytvorí pipeline z JSON konfigurácie
      */
     buildFromConfig(config_json: any): any;
@@ -80,6 +89,11 @@ export class WasmMLPipeline {
      */
     buildFromPreset(preset_name: string, model: string, model_params: any, selector_params: any): any;
     /**
+     * Porovná viaceré feature selektory na dátach BEZ potreby pipeline.
+     * Umožňuje používateľovi preskúmať feature selection ešte pred vytvorením pipeline.
+     */
+    compareSelectors(data: string, target_column: string, format: string, selectors_json: any): any;
+    /**
      * Evaluácia (split dáta)
      */
     evaluate(_train_ratio: number): any;
@@ -87,6 +101,10 @@ export class WasmMLPipeline {
      * Získa zoznam dostupných procesorov
      */
     static getAvailableProcessors(): any;
+    /**
+     * Vráti zoznam dostupných analyzátorov cieľovej premennej
+     */
+    getAvailableTargetAnalyzers(): any;
     /**
      * Get feature selection details with names and scores
      */
@@ -99,6 +117,10 @@ export class WasmMLPipeline {
      * Získa parametre pre daný procesor
      */
     static getProcessorParams(processor_type: string): any;
+    /**
+     * Get detailed selection information (e.g., correlation matrix for correlation selector)
+     */
+    getSelectionDetails(): any;
     /**
      * Inspect uploaded data - returns first N rows with feature names
      */
@@ -121,6 +143,10 @@ export class WasmMLPipeline {
      */
     train(): any;
     /**
+     * Trénuje model s konkrétnymi feature indices (z porovnania selektorov)
+     */
+    trainWithFeatureIndices(train_ratio: number, indices_js: any): any;
+    /**
      * Trénuje model s train/test splitom a vracia evaluačné metriky
      */
     trainWithSplit(train_ratio: number): any;
@@ -131,27 +157,34 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 export interface InitOutput {
     readonly memory: WebAssembly.Memory;
     readonly __wbg_wasmmlpipeline_free: (a: number, b: number) => void;
+    readonly wasmmlpipeline_analyzeTargetCandidates: (a: number, b: number, c: number, d: number, e: number) => [number, number, number];
+    readonly wasmmlpipeline_analyzeTargetWith: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number, number];
     readonly wasmmlpipeline_buildFromConfig: (a: number, b: any) => [number, number, number];
     readonly wasmmlpipeline_buildFromPreset: (a: number, b: number, c: number, d: number, e: number, f: any, g: any) => [number, number, number];
+    readonly wasmmlpipeline_compareSelectors: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: any) => [number, number, number];
     readonly wasmmlpipeline_evaluate: (a: number, b: number) => [number, number, number];
     readonly wasmmlpipeline_getAvailableProcessors: () => any;
+    readonly wasmmlpipeline_getAvailableTargetAnalyzers: (a: number) => [number, number, number];
     readonly wasmmlpipeline_getFeatureSelectionInfo: (a: number) => [number, number, number];
     readonly wasmmlpipeline_getInfo: (a: number) => [number, number, number];
     readonly wasmmlpipeline_getProcessorParams: (a: number, b: number) => any;
+    readonly wasmmlpipeline_getSelectionDetails: (a: number) => [number, number, number];
     readonly wasmmlpipeline_inspectData: (a: number, b: number) => [number, number, number];
     readonly wasmmlpipeline_inspectProcessedData: (a: number, b: number) => [number, number, number];
     readonly wasmmlpipeline_loadData: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number, number];
     readonly wasmmlpipeline_new: () => number;
     readonly wasmmlpipeline_predict: (a: number, b: any) => [number, number, number];
     readonly wasmmlpipeline_train: (a: number) => [number, number, number];
+    readonly wasmmlpipeline_trainWithFeatureIndices: (a: number, b: number, c: any) => [number, number, number];
     readonly wasmmlpipeline_trainWithSplit: (a: number, b: number) => [number, number, number];
-    readonly __wbg_wasmdataloader_free: (a: number, b: number) => void;
+    readonly __wbg_csvloader_free: (a: number, b: number) => void;
     readonly __wbg_wasmfactory_free: (a: number, b: number) => void;
-    readonly wasmdataloader_createAuto: (a: number, b: number) => [number, number, number];
-    readonly wasmdataloader_getAvailableColumns: (a: number, b: number, c: number) => [number, number, number];
-    readonly wasmdataloader_loadData: (a: number, b: number, c: number, d: number, e: number) => [number, number, number];
-    readonly wasmdataloader_new: (a: number, b: number) => [number, number, number];
-    readonly wasmdataloader_validateFormat: (a: number, b: number, c: number) => [number, number];
+    readonly csvloader_get_headers: (a: number) => any;
+    readonly csvloader_get_training_data: (a: number, b: number, c: number) => [number, number, number];
+    readonly csvloader_len: (a: number) => number;
+    readonly csvloader_load_csv: (a: number, b: number, c: number) => [number, number];
+    readonly csvloader_load_csv_async: (a: number, b: number, c: number) => any;
+    readonly csvloader_new: () => number;
     readonly wasmfactory_getAvailableOptions: (a: number) => any;
     readonly wasmfactory_getCompatibleProcessors: (a: number, b: number, c: number) => any;
     readonly wasmfactory_getCompatibleSelectors: (a: number, b: number, c: number) => any;
@@ -160,13 +193,12 @@ export interface InitOutput {
     readonly wasmfactory_getProcessorParamDefinitions: (a: number, b: number, c: number) => any;
     readonly wasmfactory_getSelectorParams: (a: number, b: number, c: number) => any;
     readonly wasmfactory_new: () => number;
-    readonly __wbg_csvloader_free: (a: number, b: number) => void;
-    readonly csvloader_get_headers: (a: number) => any;
-    readonly csvloader_get_training_data: (a: number, b: number, c: number) => [number, number, number];
-    readonly csvloader_len: (a: number) => number;
-    readonly csvloader_load_csv: (a: number, b: number, c: number) => [number, number];
-    readonly csvloader_load_csv_async: (a: number, b: number, c: number) => any;
-    readonly csvloader_new: () => number;
+    readonly __wbg_wasmdataloader_free: (a: number, b: number) => void;
+    readonly wasmdataloader_createAuto: (a: number, b: number) => [number, number, number];
+    readonly wasmdataloader_getAvailableColumns: (a: number, b: number, c: number) => [number, number, number];
+    readonly wasmdataloader_loadData: (a: number, b: number, c: number, d: number, e: number) => [number, number, number];
+    readonly wasmdataloader_new: (a: number, b: number) => [number, number, number];
+    readonly wasmdataloader_validateFormat: (a: number, b: number, c: number) => [number, number];
     readonly wasm_bindgen__closure__destroy__h062d55d9c7b8c652: (a: number, b: number) => void;
     readonly wasm_bindgen__convert__closures_____invoke__h516edae654ab5801: (a: number, b: number, c: any, d: any) => void;
     readonly wasm_bindgen__convert__closures_____invoke__h8f27a5fbd1cc09f3: (a: number, b: number, c: any) => void;

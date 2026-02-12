@@ -2,10 +2,14 @@ use smartcore::linalg::basic::matrix::DenseMatrix;
 use smartcore::linalg::basic::arrays::Array;
 use super::FeatureSelector;
 use std::collections::HashSet;
+use std::cell::RefCell;
 
 pub struct CorrelationSelector 
 {
     threshold: f64,
+    correlation_matrix: RefCell<Option<Vec<Vec<f64>>>>,
+    target_correlations: RefCell<Option<Vec<f64>>>,
+    details_cache: RefCell<String>,
 }
 
 impl CorrelationSelector 
@@ -14,7 +18,10 @@ impl CorrelationSelector
     {
         Self 
         { 
-            threshold: 0.95 
+            threshold: 0.95,
+            correlation_matrix: RefCell::new(None),
+            target_correlations: RefCell::new(None),
+            details_cache: RefCell::new(String::new()),
         }
     }
 
@@ -70,42 +77,140 @@ impl FeatureSelector for CorrelationSelector
         Err("Param not found".into())
     }
 
-    fn get_selected_indices(&self, x: &DenseMatrix<f64>, _y: &[f64]) -> Vec<usize> 
+    fn get_selected_indices(&self, x: &DenseMatrix<f64>, y: &[f64]) -> Vec<usize> 
     {
         let shape = x.shape();
         let cols = shape.1;
         
-        let mut dropped = HashSet::new();
+        // Vypočítaj a ulož korelačnú maticu
+        let mut corr_matrix = vec![vec![0.0; cols]; cols];
+        let mut target_corr = Vec::new();
+        
+        // Krok 1: Vypočítaj koreláciu každého feature s cieľovou premennou
+        let mut feature_target_corr = Vec::new();
+        for i in 0..cols {
+            let col_i: Vec<f64> = (0..shape.0).map(|row| *x.get((row, i))).collect();
+            let corr = Self::pearson_correlation_vec(&col_i, y);
+            feature_target_corr.push((i, corr));
+            target_corr.push(corr);
+        }
+        
+        // Vypočítaj korelácie medzi features
+        for i in 0..cols {
+            let col_i: Vec<f64> = (0..shape.0).map(|row| *x.get((row, i))).collect();
+            for j in i..cols {
+                if i == j {
+                    corr_matrix[i][j] = 1.0;
+                } else {
+                    let col_j: Vec<f64> = (0..shape.0).map(|row| *x.get((row, j))).collect();
+                    let corr = Self::pearson_correlation_vec(&col_i, &col_j);
+                    corr_matrix[i][j] = corr;
+                    corr_matrix[j][i] = corr; // Symetrická matica
+                }
+            }
+        }
+        
+        // Ulož maticu pomocou RefCell
+        *self.correlation_matrix.borrow_mut() = Some(corr_matrix.clone());
+        *self.target_correlations.borrow_mut() = Some(target_corr);
+        
+        // Krok 2: Zoraď features podľa korelácie s cieľom (zostupne)
+        feature_target_corr.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+        
+        // Krok 3: Greedy selection
         let mut selected = Vec::new();
-
-        for i in 0..cols 
-        {
-            if dropped.contains(&i) 
-            { 
-                continue; 
+        let mut dropped = HashSet::new();
+        
+        for (feature_idx, _target_corr) in feature_target_corr {
+            if dropped.contains(&feature_idx) {
+                continue;
             }
             
-            selected.push(i);
-
-            // Extrakcia stĺpca i do Vec
-            let col_i: Vec<f64> = (0..shape.0).map(|row| *x.get((row, i))).collect();
-            for j in (i + 1)..cols 
-            {
-                if dropped.contains(&j) 
-                { 
-                    continue; 
+            selected.push(feature_idx);
+            
+            for j in 0..cols {
+                if j == feature_idx || dropped.contains(&j) || selected.contains(&j) {
+                    continue;
                 }
                 
-                // Extrakcia stĺpca j do Vec
-                let col_j: Vec<f64> = (0..shape.0).map(|row| *x.get((row, j))).collect();
-                let corr = Self::pearson_correlation_vec(&col_i, &col_j);
-
-                if corr > self.threshold 
-                {
+                let corr = corr_matrix[feature_idx][j];
+                
+                if corr.abs() > self.threshold {
                     dropped.insert(j);
                 }
             }
         }
+        
+        
+        // Vráť features v pôvodnom poradí
+        selected.sort();
+        
+        // Cache details - korelačná matica HTML
+        let mut html = String::from("<div style='margin:10px 0;'>");
+        html.push_str("<h4>Correlation Filter Selection</h4>");
+        html.push_str(&format!("<p>Threshold: <b>{:.2}</b> | Vybraných: <b>{}/{}</b></p>", self.threshold, selected.len(), cols));
+        
+        // Korelačná matica
+        html.push_str("<div style='overflow-x:auto;'>");
+        html.push_str("<table style='border-collapse:collapse;font-size:11px;'>");
+        html.push_str("<tr><th style='padding:4px;border:1px solid #ddd;'></th>");
+        for j in 0..cols {
+            let sel_mark = if selected.contains(&j) { "[+]" } else { "" };
+            html.push_str(&format!("<th style='padding:4px;border:1px solid #ddd;background:#f0f0f0;'>F{}{}</th>", j, sel_mark));
+        }
+        html.push_str("<th style='padding:4px;border:1px solid #ddd;background:#ffe6e6;'>Target</th></tr>");
+        
+        let target_corr = self.target_correlations.borrow();
+        let tc = target_corr.as_ref().unwrap();
+        for i in 0..cols {
+            let sel_mark = if selected.contains(&i) { "[+]" } else { "" };
+            html.push_str(&format!("<tr><th style='padding:4px;border:1px solid #ddd;background:#f0f0f0;'>F{}{}</th>", i, sel_mark));
+            for j in 0..cols {
+                let corr = corr_matrix[i][j];
+                let abs_corr = corr.abs();
+                let color = if i == j {
+                    "#e0e0e0".to_string()
+                } else if abs_corr > self.threshold {
+                    format!("rgba(231,76,60,{})", 0.3 + abs_corr * 0.4)
+                } else if abs_corr > 0.7 {
+                    format!("rgba(52,152,219,{})", 0.2 + abs_corr * 0.3)
+                } else {
+                    format!("rgba(149,165,166,{})", 0.1 + (1.0 - abs_corr) * 0.2)
+                };
+                html.push_str(&format!("<td style='padding:4px;border:1px solid #ddd;text-align:center;background:{};'>{:.3}</td>", color, corr));
+            }
+            let abs_t = tc[i].abs();
+            let tc_color = if abs_t > 0.7 { format!("rgba(52,152,219,{})", 0.3 + abs_t * 0.4) } else { "rgba(200,200,200,0.2)".to_string() };
+            html.push_str(&format!("<td style='padding:4px;border:1px solid #ddd;text-align:center;background:{};font-weight:bold;'>{:.3}</td>", tc_color, tc[i]));
+            html.push_str("</tr>");
+        }
+        html.push_str("</table></div>");
+        
+        // Legenda pre indexy
+        html.push_str("<div style='margin-top:8px;font-size:11px;color:#6c757d;'>");
+        html.push_str("<strong>Vysvetlivky:</strong> F0, F1, F2... označujú features podľa ich poradia v datasete. [+] = vybraný feature.");
+        html.push_str("</div>");
+        
+        // Legenda pre farby
+        html.push_str("<div style='margin-top:8px;font-size:11px;'>");
+        html.push_str("<span style='background:rgba(231,76,60,0.5);padding:2px 5px;margin-right:5px;'>Vysoká inter-feature korelácia (&gt; threshold)</span> ");
+        html.push_str("<span style='background:rgba(52,152,219,0.5);padding:2px 5px;margin-right:5px;'>Vysoká korelácia s cieľom</span> ");
+        html.push_str("<span style='background:rgba(149,165,166,0.3);padding:2px 5px;'>Nízka korelácia</span>");
+        html.push_str("</div>");
+        
+        // Dropped features info
+        if !dropped.is_empty() {
+            html.push_str("<div style='margin-top:8px;font-size:12px;'><b>Odstránené features (multikolinearita):</b> ");
+            let mut dropped_list: Vec<usize> = dropped.iter().cloned().collect();
+            dropped_list.sort();
+            for d in &dropped_list {
+                html.push_str(&format!("F{} ", d));
+            }
+            html.push_str("</div>");
+        }
+        html.push_str("</div>");
+        *self.details_cache.borrow_mut() = html;
+        
         selected
     }
 
@@ -115,30 +220,22 @@ impl FeatureSelector for CorrelationSelector
         self.extract_columns(x, &indices)
     }
     
-    fn get_feature_scores(&self, x: &DenseMatrix<f64>, _y: &[f64]) -> Option<Vec<(usize, f64)>> {
-        let shape = x.shape();
-        let cols = shape.1;
-        let mut scores = Vec::new();
-
-        for i in 0..cols {
-            let col_i: Vec<f64> = (0..shape.0).map(|row| *x.get((row, i))).collect();
-            let mut max_corr = 0.0;
-            
-            for j in 0..cols {
-                if i == j { continue; }
-                let col_j: Vec<f64> = (0..shape.0).map(|row| *x.get((row, j))).collect();
-                let corr = Self::pearson_correlation_vec(&col_i, &col_j).abs();
-                if corr > max_corr {
-                    max_corr = corr;
-                }
-            }
-            scores.push((i, max_corr));
+    fn get_feature_scores(&self, _x: &DenseMatrix<f64>, _y: &[f64]) -> Option<Vec<(usize, f64)>> {
+        let target_corr_opt = self.target_correlations.borrow().clone();
+        if let Some(target) = target_corr_opt {
+            let scores: Vec<(usize, f64)> = target.iter().enumerate().map(|(i, &corr)| (i, corr.abs())).collect();
+            Some(scores)
+        } else {
+            None
         }
-        Some(scores)
     }
     
     fn get_metric_name(&self) -> &str {
-        "Max Correlation"
+        "Target Correlation"
+    }
+    
+    fn get_selection_details(&self) -> String {
+        self.details_cache.borrow().clone()
     }
 }
 

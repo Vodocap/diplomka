@@ -7,6 +7,7 @@ mod wasm_api;
 mod models;
 mod processing;
 mod feature_selection_strategies;
+mod target_analysis;
 
 pub use data_loading::csv_loader::CsvLoader;
 pub use data_loading::{DataLoader, DataLoaderFactory, LoadedData, CsvDataLoader, JsonDataLoader};
@@ -20,6 +21,14 @@ pub use feature_selection_strategies::{
     InformationGainSelector,
     MutualInformationSelector,
     factory::FeatureSelectorFactory
+};
+pub use target_analysis::{
+    TargetAnalyzer,
+    TargetCandidate,
+    CorrelationAnalyzer as TargetCorrelationAnalyzer,
+    MutualInformationAnalyzer as TargetMIAnalyzer,
+    EntropyAnalyzer,
+    TargetAnalyzerFactory,
 };
 pub use evaluation::{ModelEvaluator, EvaluationReport};
 pub use pipeline::{MLPipeline, MLPipelineBuilder, MLPipelineDirector, CompatibilityRegistry};

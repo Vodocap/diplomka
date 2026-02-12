@@ -18,6 +18,12 @@ pub trait FeatureSelector
     fn get_metric_name(&self) -> &str {
         "Score"
     }
+    
+    /// Get detailed HTML about why each feature was selected/rejected.
+    /// Selectors cache this info during get_selected_indices and return it here.
+    fn get_selection_details(&self) -> String {
+        String::new()
+    }
 }
 
 pub mod variance_selector;

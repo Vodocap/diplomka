@@ -29,6 +29,12 @@ impl MLPipeline {
         self.selected_indices = Some(indices);
     }
 
+    /// Resetuje tréningový stav (pre opakované trénovanie s rôznymi features)
+    pub fn reset_training_state(&mut self) {
+        self.selected_indices = None;
+        self.expected_features = None;
+    }
+
     /// Spracuje dáta cez processor (ak existuje)
     pub fn preprocess(&self, data: &DenseMatrix<f64>) -> DenseMatrix<f64> {
         if let Some(ref processor) = self.processor {
@@ -49,7 +55,7 @@ impl MLPipeline {
     
     /// Vykoná feature selection pomocou cached indices (pre predikciu)
     fn select_features_cached(&self, x: &DenseMatrix<f64>) -> DenseMatrix<f64> {
-        if let (Some(_), Some(ref indices)) = (&self.selector, &self.selected_indices) {
+        if let Some(ref indices) = self.selected_indices {
             web_sys::console::log_1(&format!("✅ select_features_cached: input {}x{}, cached_indices: {:?}", 
                 x.shape().0, x.shape().1, indices).into());
             
@@ -79,8 +85,8 @@ impl MLPipeline {
                 result.shape().0, result.shape().1).into());
             result
         } else {
-            web_sys::console::log_1(&format!("⚠️ select_features_cached: NO SELECTION - selector: {}, indices: {}", 
-                self.selector.is_some(), self.selected_indices.is_some()).into());
+            web_sys::console::log_1(&format!("⚠️ select_features_cached: NO SELECTION - indices: {}", 
+                self.selected_indices.is_some()).into());
             x.clone()
         }
     }
@@ -117,8 +123,14 @@ impl MLPipeline {
             let selected = self.select_features_cached(&x);
             web_sys::console::log_1(&format!("🎯 after feature selection: {}x{}", selected.shape().0, selected.shape().1).into());
             selected
+        } else if self.selected_indices.is_some() {
+            // External indices set (e.g. from comparison training) - use them without a selector
+            web_sys::console::log_1(&"📌 Using externally set feature indices (no selector)".into());
+            let selected = self.select_features_cached(&x);
+            web_sys::console::log_1(&format!("🎯 after external feature selection: {}x{}", selected.shape().0, selected.shape().1).into());
+            selected
         } else {
-            web_sys::console::log_1(&"⚠️ NO selector - using x as-is".into());
+            web_sys::console::log_1(&"⚠️ NO selector and NO indices - using x as-is".into());
             x.clone()
         };
         

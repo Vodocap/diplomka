@@ -136,8 +136,8 @@ impl FeatureSelector for MutualInformationSelector
         html.push_str("<tr><th style='padding:4px;border:1px solid #ddd;'>Poradie</th><th style='padding:4px;border:1px solid #ddd;'>Feature</th><th style='padding:4px;border:1px solid #ddd;'>MI Score</th><th style='padding:4px;border:1px solid #ddd;'>Status</th></tr>");
         for (rank, (idx, score)) in scores.iter().enumerate() {
             let sel = rank < effective_k;
-            let bg = if sel { "rgba(0,200,0,0.15)" } else { "rgba(255,0,0,0.15)" };
-            let status = if sel { "✅ Vybraný" } else { "❌ Odstránený" };
+            let bg = if sel { "rgba(52,152,219,0.15)" } else { "rgba(189,195,199,0.15)" };
+            let status = if sel { "[+] Vybraný" } else { "[-] Odstránený" };
             html.push_str(&format!("<tr style='background:{}'><td style='padding:4px;border:1px solid #ddd;'>#{}</td><td style='padding:4px;border:1px solid #ddd;'>F{}</td><td style='padding:4px;border:1px solid #ddd;'>{:.4}</td><td style='padding:4px;border:1px solid #ddd;'>{}</td></tr>", bg, rank+1, idx, score, status));
         }
         html.push_str("</table></div>");

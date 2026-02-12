@@ -1682,9 +1682,9 @@ impl WasmMLPipeline {
                         .unwrap_or_default();
 
                     let (bg, icon) = if is_selected {
-                        ("#d1ecf1", "[+]")
+                        ("rgba(52,152,219,0.15)", "[+]")
                     } else {
-                        ("#fce4ec", "[-]")
+                        ("rgba(189,195,199,0.15)", "[-]")
                     };
                     cells.push_str(&format!(
                         "<td style='padding:8px;border:1px solid #dee2e6;text-align:center;background:{};'><strong>{}</strong>{}</td>",
@@ -1716,15 +1716,29 @@ impl WasmMLPipeline {
 
             // Legend
             html.push_str("<div style='margin-top:10px;font-size:12px;display:flex;gap:15px;flex-wrap:wrap;'>");
-            html.push_str("<span style='background:#d1ecf1;padding:3px 10px;'>[+] Vybraný</span>");
-            html.push_str("<span style='background:#fce4ec;padding:3px 10px;'>[-] Nevybraný</span>");
+            html.push_str("<span style='background:rgba(52,152,219,0.15);padding:3px 10px;'>[+] Vybraný</span>");
+            html.push_str("<span style='background:rgba(189,195,199,0.15);padding:3px 10px;'>[-] Nevybraný</span>");
             html.push_str("<span style='background:#c8e6c9;padding:3px 10px;'>100% zhoda</span>");
             html.push_str("<span style='background:#fff9c4;padding:3px 10px;'>&ge;50% zhoda</span>");
             html.push_str("<span style='background:#ffcdd2;padding:3px 10px;'>0% zhoda</span>");
+            html.push_str("<div style='color:#6c757d;padding:3px 10px;'><strong>Čísla v hranatých zátvorkách [0], [1], [2]...</strong> označujú poradie features v datasete</div>");
             html.push_str("</div>");
 
             // Per-selector details in collapsible sections
             html.push_str("<h4 style='color:#495057;margin:25px 0 10px;border-bottom:2px solid #dee2e6;padding-bottom:8px;'>Detaily jednotlivých selektorov</h4>");
+            
+            // Feature mapping table (shown once before all selectors)
+            html.push_str("<div style='margin-bottom:15px;padding:12px;background:#f8f9fa;border:1px solid #dee2e6;'>");
+            html.push_str("<strong style='color:#495057;margin-bottom:8px;display:block;'>Mapa features (index → názov stĺpca):</strong>");
+            html.push_str("<div style='display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;font-size:12px;'>");
+            for (idx, fname) in feature_names.iter().enumerate() {
+                html.push_str(&format!(
+                    "<div style='padding:4px 8px;background:white;border:1px solid #dee2e6;'><strong style='color:#3498db;'>F{}</strong>: {}</div>",
+                    idx, fname
+                ));
+            }
+            html.push_str("</div></div>");
+            
             for r in &valid_selectors {
                 let name = r["selector_name"].as_str().unwrap_or("");
                 let details = r["details_html"].as_str().unwrap_or("");

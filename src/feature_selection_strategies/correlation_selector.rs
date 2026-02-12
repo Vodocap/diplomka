@@ -147,7 +147,7 @@ impl FeatureSelector for CorrelationSelector
         
         // Cache details - korelačná matica HTML
         let mut html = String::from("<div style='margin:10px 0;'>");
-        html.push_str("<h4>Correlation Filter - Greedy Selection</h4>");
+        html.push_str("<h4>Correlation Filter Selection</h4>");
         html.push_str(&format!("<p>Threshold: <b>{:.2}</b> | Vybraných: <b>{}/{}</b></p>", self.threshold, selected.len(), cols));
         
         // Korelačná matica
@@ -171,26 +171,31 @@ impl FeatureSelector for CorrelationSelector
                 let color = if i == j {
                     "#e0e0e0".to_string()
                 } else if abs_corr > self.threshold {
-                    format!("rgba(255,0,0,{})", 0.3 + abs_corr * 0.4)
+                    format!("rgba(231,76,60,{})", 0.3 + abs_corr * 0.4)
                 } else if abs_corr > 0.7 {
-                    format!("rgba(255,165,0,{})", 0.2 + abs_corr * 0.3)
+                    format!("rgba(52,152,219,{})", 0.2 + abs_corr * 0.3)
                 } else {
-                    format!("rgba(0,200,0,{})", 0.1 + (1.0 - abs_corr) * 0.2)
+                    format!("rgba(149,165,166,{})", 0.1 + (1.0 - abs_corr) * 0.2)
                 };
                 html.push_str(&format!("<td style='padding:4px;border:1px solid #ddd;text-align:center;background:{};'>{:.3}</td>", color, corr));
             }
             let abs_t = tc[i].abs();
-            let tc_color = if abs_t > 0.7 { format!("rgba(0,128,255,{})", 0.3 + abs_t * 0.4) } else { "rgba(200,200,200,0.2)".to_string() };
+            let tc_color = if abs_t > 0.7 { format!("rgba(52,152,219,{})", 0.3 + abs_t * 0.4) } else { "rgba(200,200,200,0.2)".to_string() };
             html.push_str(&format!("<td style='padding:4px;border:1px solid #ddd;text-align:center;background:{};font-weight:bold;'>{:.3}</td>", tc_color, tc[i]));
             html.push_str("</tr>");
         }
         html.push_str("</table></div>");
         
-        // Legenda
+        // Legenda pre indexy
+        html.push_str("<div style='margin-top:8px;font-size:11px;color:#6c757d;'>");
+        html.push_str("<strong>Vysvetlivky:</strong> F0, F1, F2... označujú features podľa ich poradia v datasete. [+] = vybraný feature.");
+        html.push_str("</div>");
+        
+        // Legenda pre farby
         html.push_str("<div style='margin-top:8px;font-size:11px;'>");
-        html.push_str("<span style='background:rgba(255,0,0,0.5);padding:2px 5px;margin-right:5px;'>Vysoká inter-feature korelácia (&gt; threshold)</span> ");
-        html.push_str("<span style='background:rgba(0,128,255,0.5);padding:2px 5px;margin-right:5px;'>Vysoká korelácia s cieľom</span> ");
-        html.push_str("<span style='background:rgba(0,200,0,0.3);padding:2px 5px;'>Nízka korelácia</span>");
+        html.push_str("<span style='background:rgba(231,76,60,0.5);padding:2px 5px;margin-right:5px;'>Vysoká inter-feature korelácia (&gt; threshold)</span> ");
+        html.push_str("<span style='background:rgba(52,152,219,0.5);padding:2px 5px;margin-right:5px;'>Vysoká korelácia s cieľom</span> ");
+        html.push_str("<span style='background:rgba(149,165,166,0.3);padding:2px 5px;'>Nízka korelácia</span>");
         html.push_str("</div>");
         
         // Dropped features info

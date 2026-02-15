@@ -718,7 +718,7 @@ function __wbg_get_imports() {
                     const a = state0.a;
                     state0.a = 0;
                     try {
-                        return wasm_bindgen__convert__closures_____invoke__h516edae654ab5801(a, state0.b, arg0, arg1);
+                        return wasm_bindgen__convert__closures_____invoke__h76d7a7f4237f3c92(a, state0.b, arg0, arg1);
                     } finally {
                         state0.a = a;
                     }
@@ -808,8 +808,8 @@ function __wbg_get_imports() {
             console.warn(arg0);
         },
         __wbindgen_cast_0000000000000001: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { dtor_idx: 381, function: Function { arguments: [Externref], shim_idx: 382, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, wasm.wasm_bindgen__closure__destroy__h062d55d9c7b8c652, wasm_bindgen__convert__closures_____invoke__h8f27a5fbd1cc09f3);
+            // Cast intrinsic for `Closure(Closure { dtor_idx: 406, function: Function { arguments: [Externref], shim_idx: 407, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, wasm.wasm_bindgen__closure__destroy__h6c9d8563d4584f37, wasm_bindgen__convert__closures_____invoke__hc673461b9820d736);
             return ret;
         },
         __wbindgen_cast_0000000000000002: function(arg0) {
@@ -848,12 +848,12 @@ function __wbg_get_imports() {
     };
 }
 
-function wasm_bindgen__convert__closures_____invoke__h8f27a5fbd1cc09f3(arg0, arg1, arg2) {
-    wasm.wasm_bindgen__convert__closures_____invoke__h8f27a5fbd1cc09f3(arg0, arg1, arg2);
+function wasm_bindgen__convert__closures_____invoke__hc673461b9820d736(arg0, arg1, arg2) {
+    wasm.wasm_bindgen__convert__closures_____invoke__hc673461b9820d736(arg0, arg1, arg2);
 }
 
-function wasm_bindgen__convert__closures_____invoke__h516edae654ab5801(arg0, arg1, arg2, arg3) {
-    wasm.wasm_bindgen__convert__closures_____invoke__h516edae654ab5801(arg0, arg1, arg2, arg3);
+function wasm_bindgen__convert__closures_____invoke__h76d7a7f4237f3c92(arg0, arg1, arg2, arg3) {
+    wasm.wasm_bindgen__convert__closures_____invoke__h76d7a7f4237f3c92(arg0, arg1, arg2, arg3);
 }
 
 const CsvLoaderFinalization = (typeof FinalizationRegistry === 'undefined')

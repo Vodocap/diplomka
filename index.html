@@ -14,7 +14,7 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #2c3e50;
+            background: white;
             min-height: 100vh;
             padding: 20px;
         }
@@ -29,7 +29,7 @@
         }
 
         header {
-            background: #3498db;
+            background: #cc0000;
             color: white;
             padding: 30px;
             text-align: center;
@@ -64,10 +64,10 @@
         }
 
         h2 {
-            color: #3498db;
+            color: #cc0000;
             margin-bottom: 20px;
             font-size: 1.5em;
-            border-bottom: 2px solid #3498db;
+            border-bottom: 2px solid #cc0000;
             padding-bottom: 10px;
         }
 
@@ -104,7 +104,7 @@
 
         select:focus, input:focus, textarea:focus {
             outline: none;
-            border-color: #3498db;
+            border-color: #cc0000;
         }
 
         textarea {
@@ -114,7 +114,7 @@
         }
 
         button {
-            background: #3498db;
+            background: #cc0000;
             color: white;
             border: none;
             padding: 14px 28px;
@@ -129,7 +129,7 @@
 
         button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+            box-shadow: 0 5px 15px rgba(204, 0, 0, 0.4);
         }
 
         button:active {
@@ -142,11 +142,43 @@
         }
 
         .btn-secondary {
-            background: #6c757d;
+            background: #8b0000;
         }
 
         .btn-success {
-            background: #2980b9;
+            background: #cc0000;
+        }
+
+        /* Range slider styling */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: #ddd;
+            height: 6px;
+            border-radius: 3px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #cc0000;
+            cursor: pointer;
+            border: 2px solid #fff;
+            box-shadow: 0 0 2px rgba(0,0,0,0.3);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #cc0000;
+            cursor: pointer;
+            border: 2px solid #fff;
+            box-shadow: 0 0 2px rgba(0,0,0,0.3);
         }
 
         .info-box {
@@ -154,11 +186,11 @@
             padding: 15px;
             border-radius: 0px;
             margin-top: 15px;
-            border-left: 4px solid #3498db;
+            border-left: 4px solid #cc0000;
         }
 
         .info-box h3 {
-            color: #3498db;
+            color: #cc0000;
             margin-bottom: 10px;
         }
 
@@ -175,9 +207,9 @@
         }
 
         .status.success {
-            background: #d4edda;
-            border: 1px solid #c3e6cb;
-            color: #155724;
+            background: #ffe4e1;
+            border: 1px solid #ffcccc;
+            color: #8b0000;
             display: block;
         }
 
@@ -189,9 +221,9 @@
         }
 
         .status.info {
-            background: #d1ecf1;
-            border: 1px solid #bee5eb;
-            color: #0c5460;
+            background: #fff0f0;
+            border: 1px solid #ffdddd;
+            color: #cc0000;
             display: block;
         }
 
@@ -203,7 +235,7 @@
         }
 
         .option-badge {
-            background: #3498db;
+            background: #cc0000;
             color: white;
             padding: 8px 15px;
             border-radius: 0px;
@@ -240,8 +272,8 @@
         .processors-order {
             margin-top: 15px;
             padding: 10px;
-            background: #e8f4f8;
-            border: 2px solid #3498db;
+            background: #fff0f0;
+            border: 2px solid #cc0000;
             border-radius: 0px;
             min-height: 50px;
         }
@@ -256,7 +288,7 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            background: #3498db;
+            background: #cc0000;
             color: white;
             padding: 8px 12px;
             border-radius: 0px;
@@ -310,7 +342,7 @@
 
         .spinner {
             border: 5px solid #f3f3f3;
-            border-top: 5px solid #3498db;
+            border-top: 5px solid #cc0000;
             border-radius: 0px;
             width: 60px;
             height: 60px;
@@ -323,7 +355,7 @@
         }
 
         .metric-box {
-            background: #3498db;
+            background: #cc0000;
             padding: 20px;
             border-radius: 0px;
             text-align: center;
@@ -393,7 +425,7 @@
         }
 
         .modal-close:hover {
-            color: #000;
+            color: #cc0000;
         }
 
         .data-table {
@@ -411,7 +443,7 @@
         }
 
         .data-table th {
-            background: #3498db;
+            background: #cc0000;
             color: white;
             font-weight: 600;
             position: sticky;
@@ -483,14 +515,14 @@
             margin-top: 15px;
             padding: 15px;
             background: white;
-            border: 2px solid #3498db;
+            border: 2px solid #cc0000;
             border-radius: 0px;
             max-height: 600px;
             overflow-y: auto;
         }
 
         .target-recommendation h3 {
-            color: #3498db;
+            color: #cc0000;
             margin-bottom: 10px;
         }
 
@@ -499,28 +531,28 @@
             margin-top: 20px;
             padding: 15px;
             background: white;
-            border: 2px solid #3498db;
+            border: 2px solid #cc0000;
             border-radius: 0px;
             max-height: 600px;
             overflow: auto;
         }
 
         .selection-details-container h4 {
-            color: #3498db;
+            color: #cc0000;
             margin-bottom: 15px;
-            border-bottom: 2px solid #3498db;
+            border-bottom: 2px solid #cc0000;
             padding-bottom: 8px;
         }
 
         .btn-analyze {
-            background: #2980b9;
+            background: #cc0000;
             width: 100%;
             margin-top: 10px;
             font-size: 1em;
         }
 
         .btn-analyze:hover {
-            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+            box-shadow: 0 5px 15px rgba(204, 0, 0, 0.4);
         }
 
         /* Column stats table */
@@ -537,7 +569,7 @@
             text-align: center;
         }
         .column-stats th {
-            background: #3498db;
+            background: #cc0000;
             color: white;
             font-size: 0.9em;
         }
@@ -549,7 +581,7 @@
             cursor: pointer;
         }
         .column-stats tbody tr.selected-row {
-            background: #d1ecf1;
+            background: #ffe4e1;
             font-weight: bold;
         }
 
@@ -567,10 +599,10 @@
             transition: border-color 0.2s;
         }
         .selector-compare-card:hover {
-            border-color: #3498db;
+            border-color: #cc0000;
         }
         .selector-compare-card.active {
-            border-color: #3498db;
+            border-color: #cc0000;
             background: #f0f8ff;
         }
         .selector-compare-card .card-header {
@@ -587,7 +619,7 @@
         .selector-compare-card .card-header label {
             margin: 0;
             font-weight: bold;
-            color: #2c3e50;
+            color: #cc0000;
             cursor: pointer;
             font-size: 1em;
         }
@@ -650,12 +682,12 @@
             margin-bottom: -2px;
         }
         .target-method-tab:hover {
-            color: #3498db;
+            color: #cc0000;
         }
         .target-method-tab.active {
             background: white;
-            color: #3498db;
-            border-color: #3498db;
+            color: #cc0000;
+            border-color: #cc0000;
             border-bottom-color: white;
         }
         .target-method-content {
@@ -764,7 +796,7 @@
                     <label>Vyberte súbor:</label>
                     <input type="file" id="fileInput" accept=".csv,.json,.txt">
                     <div id="fileInfo" style="margin-top: 10px; font-size: 0.9em; color: #6c757d;"></div>
-                    <button type="button" onclick="downloadSampleCSV()" style="margin-top: 10px; padding: 8px 16px; font-size: 0.9em; background: #3498db;">
+                    <button type="button" onclick="downloadSampleCSV()" style="margin-top: 10px; padding: 8px 16px; font-size: 0.9em; background: #cc0000;">
                         Stiahnuť vzorový CSV súbor
                     </button>
                 </div>
@@ -773,7 +805,7 @@
                 <div id="parseStatus" class="status"></div>
 
                 <div id="targetSelectionArea" style="display: none; margin-top: 20px; padding-top: 20px; border-top: 2px solid #dee2e6;">
-                    <h3 style="color: #3498db; margin-bottom: 15px;">Výber cieľovej premennej</h3>
+                    <h3 style="color: #cc0000; margin-bottom: 15px;">Výber cieľovej premennej</h3>
 
                     <!-- Target method tabs -->
                     <div class="target-method-tabs">
@@ -818,7 +850,7 @@
                                 Spustiť analýzu
                             </button>
                         </div>
-                        <div id="targetMethodExplanation" style="font-size: 0.85em; color: #6c757d; padding: 8px; background: #f8f9fa; border-left: 3px solid #3498db; margin-bottom: 10px;"></div>
+                        <div id="targetMethodExplanation" style="font-size: 0.85em; color: #6c757d; padding: 8px; background: #f8f9fa; border-left: 3px solid #cc0000; margin-bottom: 10px;"></div>
                         <div id="analyzeTargetStatus" class="status"></div>
                     </div>
 
@@ -826,7 +858,7 @@
                         <label>Train/Test Split (% pre tréning):</label>
                         <div style="display: flex; align-items: center; gap: 10px;">
                             <input type="range" id="trainTestSplit" min="50" max="95" value="80" step="5" style="flex: 1;">
-                            <span id="splitValue" style="min-width: 60px; font-weight: bold; color: #3498db;">80%</span>
+                            <span id="splitValue" style="min-width: 60px; font-weight: bold; color: #cc0000;">80%</span>
                         </div>
                         <div style="font-size: 0.85em; color: #6c757d; margin-top: 5px;">
                             Train: <span id="trainPercent">80%</span> | Test: <span id="testPercent">20%</span>
@@ -873,7 +905,7 @@
                 <!-- Výsledky porovnania a trénovania -->
                 <div id="comparisonResultsArea" style="display: none; margin-top: 20px;">
                     <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 15px; flex-wrap: wrap;">
-                        <button id="trainAllSelectorsBtn" style="background: #27ae60; color: white; border: none; padding: 10px 20px; cursor: pointer; font-size: 14px;">
+                        <button id="trainAllSelectorsBtn" style="background: #cc0000; color: white; border: none; padding: 10px 20px; cursor: pointer; font-size: 14px;">
                             Natrénovať a porovnať všetky varianty
                         </button>
                         <span id="trainCompareStatus" style="font-size: 0.9em; color: #6c757d;"></span>
@@ -1737,7 +1769,7 @@
             const rows = lines.slice(1).map(l => l.split(',').map(v => v.trim()));
 
             let html = '<table class="column-stats"><thead><tr>';
-            html += '<th>Stĺpec</th><th>Typ</th><th>Unikátnych</th><th>Min</th><th>Max</th><th>Priemer</th><th>Odporúčanie</th>';
+            html += '<th>Premenná</th><th>Typ</th><th>Unikátnych</th><th>Min</th><th>Max</th><th>Priemer</th>';
             html += '</tr></thead><tbody>';
 
             columns.forEach((col, colIdx) => {
@@ -1777,7 +1809,6 @@
                 html += `<td>${min}</td>`;
                 html += `<td>${max}</td>`;
                 html += `<td>${mean}</td>`;
-                html += `<td><span style="font-size:0.85em;padding:2px 8px;background:${suggestion === 'Klasifikácia' ? '#d1ecf1' : suggestion === 'Regresia' ? '#e8f4f8' : '#f8f9fa'};">${suggestion}</span></td>`;
                 html += '</tr>';
             });
             html += '</tbody></table>';
@@ -1921,9 +1952,13 @@
                 document.getElementById('modalBody').innerHTML = result.comparison_html;
                 modal.classList.add('show');
 
-                // Show training area
-                document.getElementById('comparisonResultsArea').style.display = 'block';
-                document.getElementById('selectorTrainingResults').innerHTML = '';
+                // Attach event handlers for interactive elements in comparison HTML
+                const trainBtn = document.getElementById('trainFromComparisonBtn');
+                if (trainBtn) trainBtn.onclick = trainFromComparison;
+                const selectAllBtn = document.getElementById('featureMapSelectAll');
+                if (selectAllBtn) selectAllBtn.onclick = () => document.querySelectorAll('#userFeatureMap input[type=checkbox]').forEach(c => c.checked = true);
+                const deselectAllBtn = document.getElementById('featureMapDeselectAll');
+                if (deselectAllBtn) deselectAllBtn.onclick = () => document.querySelectorAll('#userFeatureMap input[type=checkbox]').forEach(c => c.checked = false);
 
                 showStatus('success', `Porovnanie dokončené: ${selectorConfigs.length} selektorov na ${result.total_features} príznakoch. Teraz môžete natrénovať model s vybranými features.`, 'compareSelectorStatus');
             } catch (error) {
@@ -1933,41 +1968,37 @@
             }
         }
 
-        // Train model with features selected by all compared selectors + baseline
-        async function trainAllSelectors() {
+        // Train model with features selected by all compared selectors + user selection
+        async function trainFromComparison() {
             const comparison = window._lastComparisonResult;
             if (!comparison || !comparison.selectors) {
-                showStatus('error', 'Najprv spustite porovnanie selektorov', 'compareSelectorStatus');
+                alert('Najprv spustite porovnanie selektorov');
                 return;
             }
             if (!pipeline || !window.pipelineBuilt) {
-                showStatus('error', 'Najprv vytvorte pipeline', 'compareSelectorStatus');
+                alert('Najprv vytvorte a nakonfigurujte pipeline (model)');
                 return;
             }
 
             const trainRatio = window.trainTestRatio || 0.8;
-            const resultsDiv = document.getElementById('selectorTrainingResults');
-            resultsDiv.innerHTML = '';
+            const resultsDiv = document.getElementById('comparisonTrainingResults');
+            const statusSpan = document.getElementById('comparisonTrainStatus');
 
-            showLoading(true);
-            document.getElementById('trainCompareStatus').textContent = 'Trénujem...';
+            // Collect user-selected features from checkboxes
+            const userIndices = [];
+            document.querySelectorAll('#userFeatureMap input[type=checkbox]:checked').forEach(cb => {
+                userIndices.push(parseInt(cb.dataset.featureIdx));
+            });
+            userIndices.sort((a, b) => a - b);
+
+            statusSpan.textContent = 'Trénujem varianty...';
+            resultsDiv.innerHTML = '<p style="color:#6c757d;font-style:italic;">Prebieha tréning...</p>';
 
             const allResults = [];
+            const featureNames = comparison.feature_names || [];
 
             try {
-                // First train baseline (all features, no selection)
-                try {
-                    const t0 = performance.now();
-                    const baseRaw = await pipeline.trainWithSplit(trainRatio);
-                    const baseTime = performance.now() - t0;
-                    const baseResult = convertWasmResult(baseRaw);
-                    allResults.push({ name: 'Všetky features (baseline)', result: baseResult, indices: null, count: comparison.total_features, timeMs: baseTime });
-                } catch (e) {
-                    console.error('Baseline training failed:', e);
-                    allResults.push({ name: 'Všetky features (baseline)', error: String(e), indices: null, count: comparison.total_features, timeMs: 0 });
-                }
-
-                // Rebuild pipeline for each selector's features
+                // 1. Each selector's selection
                 const selectors = Array.isArray(comparison.selectors) ? comparison.selectors : [];
                 for (const sel of selectors) {
                     const selData = (sel instanceof Map) ? Object.fromEntries(sel) : sel;
@@ -1975,42 +2006,66 @@
                         allResults.push({ name: selData.selector_name || selData.config_name, error: selData.error, indices: [], count: 0 });
                         continue;
                     }
-
                     const indices = selData.selected_indices || [];
                     if (indices.length === 0) {
-                        allResults.push({ name: selData.selector_name, error: 'Selektor nevybral žiadne features', indices: [], count: 0 });
+                        allResults.push({ name: selData.selector_name, error: 'Nevybral žiadne features', indices: [], count: 0 });
                         continue;
                     }
-
                     try {
                         const t0 = performance.now();
                         const trainRaw = await pipeline.trainWithFeatureIndices(trainRatio, indices);
                         const trainTime = performance.now() - t0;
                         const trainResult = convertWasmResult(trainRaw);
-                        allResults.push({ name: selData.selector_name || selData.config_name, result: trainResult, indices: indices, count: indices.length, timeMs: trainTime });
+                        allResults.push({ name: selData.selector_name, result: trainResult, indices, count: indices.length, timeMs: trainTime });
                     } catch (e) {
-                        console.error(`Training with ${selData.selector_name || selData.config_name} failed:`, e);
-                        allResults.push({ name: selData.selector_name || selData.config_name, error: String(e), indices: indices, count: indices.length, timeMs: 0 });
+                        allResults.push({ name: selData.selector_name, error: String(e), indices, count: indices.length });
                     }
                 }
 
-                // Display results as comparison table
-                renderTrainingComparison(allResults, comparison.total_features, comparison.feature_names || []);
+                // 2. Baseline - all features, no selection
+                try {
+                    const t0 = performance.now();
+                    const baseRaw = await pipeline.trainWithSplit(trainRatio);
+                    const baseTime = performance.now() - t0;
+                    const baseResult = convertWasmResult(baseRaw);
+                    allResults.push({ name: 'Bez selekcie (všetky features)', result: baseResult, indices: null, count: comparison.total_features, timeMs: baseTime });
+                } catch (e) {
+                    allResults.push({ name: 'Bez selekcie (všetky features)', error: String(e), indices: null, count: comparison.total_features });
+                }
+
+                // 3. User's custom selection
+                if (userIndices.length > 0) {
+                    try {
+                        const t0 = performance.now();
+                        const userRaw = await pipeline.trainWithFeatureIndices(trainRatio, userIndices);
+                        const userTime = performance.now() - t0;
+                        const userResult = convertWasmResult(userRaw);
+                        allResults.push({ name: 'Vlastný výber používateľa', result: userResult, indices: userIndices, count: userIndices.length, timeMs: userTime, isUser: true });
+                    } catch (e) {
+                        allResults.push({ name: 'Vlastný výber používateľa', error: String(e), indices: userIndices, count: userIndices.length, isUser: true });
+                    }
+                }
+
+                // Render results
+                renderTrainingComparison(allResults, comparison.total_features, featureNames, resultsDiv);
+                statusSpan.textContent = `Hotovo – ${allResults.length} variantov natrénovaných`;
                 document.getElementById('inspectProcessedBtn').disabled = false;
-                document.getElementById('trainCompareStatus').textContent = `Hotovo - ${allResults.length} variantov natrénovaných`;
             } catch (error) {
-                showStatus('error', `Chyba pri trénovaní: ${error}`, 'compareSelectorStatus');
-                document.getElementById('trainCompareStatus').textContent = '';
-            } finally {
-                showLoading(false);
+                statusSpan.textContent = `Chyba: ${error}`;
+                resultsDiv.innerHTML = `<p style="color:#e74c3c;">Chyba pri trénovaní: ${error}</p>`;
             }
+        }
+
+        // Legacy: Train model with features selected by all compared selectors + baseline
+        async function trainAllSelectors() {
+            trainFromComparison();
         }
 
 
 
         // Render training comparison table
-        function renderTrainingComparison(allResults, totalFeatures, featureNames) {
-            const resultsDiv = document.getElementById('selectorTrainingResults');
+        function renderTrainingComparison(allResults, totalFeatures, featureNames, targetDiv) {
+            const resultsDiv = targetDiv || document.getElementById('selectorTrainingResults');
             
             // Determine if classification or regression from first successful result
             const firstSuccess = allResults.find(r => r.result);
@@ -2027,24 +2082,24 @@
             }
             const isClassification = firstSuccess.result.evaluation_mode === 'classification';
 
-            let html = '<h3 style="margin-top:20px;margin-bottom:10px;color:#2c3e50;">Porovnanie výsledkov tréningu</h3>';
+            let html = '<h3 style="margin-top:20px;margin-bottom:10px;color:#cc0000;">Porovnanie výsledkov tréningu</h3>';
             html += '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:13px;">';
             html += '<thead><tr>';
-            html += '<th style="padding:10px 8px;border:1px solid #dee2e6;background:#3498db;color:white;text-align:left;">Metóda</th>';
-            html += '<th style="padding:10px 8px;border:1px solid #dee2e6;background:#3498db;color:white;text-align:center;">Features</th>';
+            html += '<th style="padding:10px 8px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:left;">Metóda</th>';
+            html += '<th style="padding:10px 8px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;">Features</th>';
             
             if (isClassification) {
-                html += '<th style="padding:10px 8px;border:1px solid #dee2e6;background:#3498db;color:white;text-align:center;">Accuracy</th>';
-                html += '<th style="padding:10px 8px;border:1px solid #dee2e6;background:#3498db;color:white;text-align:center;">F1 Score</th>';
-                html += '<th style="padding:10px 8px;border:1px solid #dee2e6;background:#3498db;color:white;text-align:center;">Precision</th>';
-                html += '<th style="padding:10px 8px;border:1px solid #dee2e6;background:#3498db;color:white;text-align:center;">Recall</th>';
+                html += '<th style="padding:10px 8px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;">Accuracy</th>';
+                html += '<th style="padding:10px 8px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;">F1 Score</th>';
+                html += '<th style="padding:10px 8px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;">Precision</th>';
+                html += '<th style="padding:10px 8px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;">Recall</th>';
             } else {
-                html += '<th style="padding:10px 8px;border:1px solid #dee2e6;background:#3498db;color:white;text-align:center;">R2</th>';
-                html += '<th style="padding:10px 8px;border:1px solid #dee2e6;background:#3498db;color:white;text-align:center;">RMSE</th>';
-                html += '<th style="padding:10px 8px;border:1px solid #dee2e6;background:#3498db;color:white;text-align:center;">MSE</th>';
-                html += '<th style="padding:10px 8px;border:1px solid #dee2e6;background:#3498db;color:white;text-align:center;">MAE</th>';
+                html += '<th style="padding:10px 8px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;">R2</th>';
+                html += '<th style="padding:10px 8px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;">RMSE</th>';
+                html += '<th style="padding:10px 8px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;">MSE</th>';
+                html += '<th style="padding:10px 8px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;">MAE</th>';
             }
-            html += '<th style="padding:10px 8px;border:1px solid #dee2e6;background:#3498db;color:white;text-align:center;">Cas tréningu</th>';
+            html += '<th style="padding:10px 8px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;">Cas tréningu</th>';
             html += '</tr></thead><tbody>';
 
             // Find best values for highlighting
@@ -2057,23 +2112,24 @@
 
             allResults.forEach((r, idx) => {
                 const isBaseline = r.indices === null;
+                const isUser = r.isUser === true;
                 const isBest = r.result && ((isClassification ? r.result.accuracy : r.result.r2_score) === bestMetric);
-                const bg = isBest ? 'background:#d1ecf1;' : (idx % 2 === 0 ? 'background:#f8f9fa;' : '');
+                const bg = isBest ? 'background:#ffe4e1;' : isUser ? 'background:#fff0f0;' : (idx % 2 === 0 ? 'background:#f8f9fa;' : '');
                 
                 html += `<tr style="${bg}">`;
-                html += `<td style="padding:8px;border:1px solid #dee2e6;font-weight:${isBaseline ? 'normal' : 'bold'};">${r.name}${isBest ? ' (najlepsi)' : ''}</td>`;
+                html += `<td style="padding:8px;border:1px solid #dee2e6;font-weight:${isBaseline ? 'normal' : 'bold'};${isUser ? 'color:#cc0000;' : ''}">${r.name}${isBest ? ' (najlepsi)' : ''}</td>`;
                 html += `<td style="padding:8px;border:1px solid #dee2e6;text-align:center;">${r.count}/${totalFeatures}</td>`;
 
                 if (r.error) {
                     html += `<td colspan="5" style="padding:8px;border:1px solid #dee2e6;color:#e74c3c;text-align:center;">${r.error}</td>`;
                 } else if (r.result) {
                     if (isClassification) {
-                        html += `<td style="padding:8px;border:1px solid #dee2e6;text-align:center;font-weight:bold;color:#2980b9;">${(r.result.accuracy * 100).toFixed(2)}%</td>`;
+                        html += `<td style="padding:8px;border:1px solid #dee2e6;text-align:center;font-weight:bold;color:#cc0000;">${(r.result.accuracy * 100).toFixed(2)}%</td>`;
                         html += `<td style="padding:8px;border:1px solid #dee2e6;text-align:center;">${r.result.f1_score.toFixed(4)}</td>`;
                         html += `<td style="padding:8px;border:1px solid #dee2e6;text-align:center;">${r.result.precision.toFixed(4)}</td>`;
                         html += `<td style="padding:8px;border:1px solid #dee2e6;text-align:center;">${r.result.recall.toFixed(4)}</td>`;
                     } else {
-                        html += `<td style="padding:8px;border:1px solid #dee2e6;text-align:center;font-weight:bold;color:#2980b9;">${r.result.r2_score.toFixed(4)}</td>`;
+                        html += `<td style="padding:8px;border:1px solid #dee2e6;text-align:center;font-weight:bold;color:#cc0000;">${r.result.r2_score.toFixed(4)}</td>`;
                         html += `<td style="padding:8px;border:1px solid #dee2e6;text-align:center;">${r.result.rmse.toFixed(4)}</td>`;
                         html += `<td style="padding:8px;border:1px solid #dee2e6;text-align:center;">${r.result.mse.toFixed(4)}</td>`;
                         html += `<td style="padding:8px;border:1px solid #dee2e6;text-align:center;">${r.result.mae.toFixed(4)}</td>`;
@@ -2088,14 +2144,15 @@
 
             // Show which features each selector picked
             html += '<details style="margin-top:15px;border:1px solid #dee2e6;">';
-            html += '<summary style="padding:12px;background:#f8f9fa;cursor:pointer;font-weight:600;color:#3498db;">Vybrané features jednotlivými selektormi</summary>';
+            html += '<summary style="padding:12px;background:#f8f9fa;cursor:pointer;font-weight:600;color:#cc0000;">Vybrané features jednotlivými variantmi</summary>';
             html += '<div style="padding:15px;">';
             allResults.forEach(r => {
                 if (r.indices === null) return; // skip baseline
                 const names = r.indices && featureNames.length > 0 
                     ? r.indices.map(i => featureNames[i] || `[${i}]`).join(', ')
                     : (r.indices || []).join(', ');
-                html += `<p><strong>${r.name}</strong> (${r.count} features): ${names || 'N/A'}</p>`;
+                const style = r.isUser ? 'color:#cc0000;' : '';
+                html += `<p style="${style}"><strong>${r.name}</strong> (${r.count} features): ${names || 'N/A'}</p>`;
             });
             html += '</div></details>';
 
@@ -2199,7 +2256,7 @@
     <div id="dataModal" class="modal">
         <div class="modal-content">
             <button class="modal-close" onclick="closeModal()">&times;</button>
-            <h2 id="modalTitle" style="color: #3498db; margin-bottom: 20px;"></h2>
+            <h2 id="modalTitle" style="color: #cc0000; margin-bottom: 20px;"></h2>
             <div id="modalBody"></div>
         </div>
     </div>

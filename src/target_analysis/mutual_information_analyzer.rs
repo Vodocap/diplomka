@@ -73,14 +73,14 @@ impl TargetAnalyzer for MutualInformationAnalyzer {
     }
 
     fn get_metric_name(&self) -> &str {
-        "Priem. MI"
+        "ΣMI"
     }
 
     fn get_metric_explanation(&self) -> &str {
-        "Priemerná vzájomná informácia (Mutual Information) tohto stĺpca so všetkými ostatnými. \
-        MI meria množstvo informácie, ktorú jedna premenná poskytuje o druhej. \
+        "Suma vzájomnej informácie (MI) s ostatnými premennými: Score_j = Σ MI(X_j, X_k). \
+        MI meria množstvo informácie, ktorú jedna premenná poskytuje o druhej (v nátoch). \
         Na rozdiel od korelácie zachytáva aj nelineárne závislosti. \
-        Vyššia hodnota = stĺpec je lepšie predvídateľný (lineárne aj nelineárne). \
+        Vyššia hodnota = premenná zdieľa viac informácie s ostatnými. \
         Používa KSG estimátor (Kraskov-Stögbauer-Grassberger) pre spojité dáta."
     }
 
@@ -105,6 +105,7 @@ impl TargetAnalyzer for MutualInformationAnalyzer {
             let mean = columns[col_idx].iter().sum::<f64>() / n as f64;
             let variance = columns[col_idx].iter().map(|v| (v - mean).powi(2)).sum::<f64>() / n as f64;
 
+            // Score_j = Σ MI(X_j, X_k)  (suma MI so všetkými ostatnými)
             let mut total_mi = 0.0f64;
             let mut max_mi = 0.0f64;
             for j in 0..num_cols {
@@ -112,34 +113,21 @@ impl TargetAnalyzer for MutualInformationAnalyzer {
                 total_mi += mi_matrix[col_idx][j];
                 if mi_matrix[col_idx][j] > max_mi { max_mi = mi_matrix[col_idx][j]; }
             }
-            let avg_mi = if num_cols > 1 { total_mi / (num_cols - 1) as f64 } else { 0.0 };
 
-            // Normalize score to 0-100 range
-            // MI doesn't have a fixed upper bound, so we use avg_mi directly
-            // and later normalize relative to the best one
             candidates.push(TargetCandidate {
                 column_index: col_idx,
                 column_name: headers[col_idx].clone(),
-                score: (avg_mi * 10000.0).round() / 10000.0,
+                score: (total_mi * 10000.0).round() / 10000.0,
                 unique_values: unique_count,
                 variance: (variance * 10000.0).round() / 10000.0,
                 suggested_type: stype,
                 extra_metrics: vec![
-                    ("avg_mi".to_string(), (avg_mi * 10000.0).round() / 10000.0),
+                    ("sum_mi".to_string(), (total_mi * 10000.0).round() / 10000.0),
                     ("max_mi".to_string(), (max_mi * 10000.0).round() / 10000.0),
                 ],
             });
         }
         candidates.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
-
-        // Normalize scores: best = 100
-        if let Some(max_score) = candidates.first().map(|c| c.score) {
-            if max_score > 0.0 {
-                for c in &mut candidates {
-                    c.score = (c.score / max_score * 100.0 * 10.0).round() / 10.0;
-                }
-            }
-        }
         candidates
     }
 

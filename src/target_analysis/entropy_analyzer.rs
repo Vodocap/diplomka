@@ -177,7 +177,7 @@ impl TargetAnalyzer for EntropyAnalyzer {
 
         let mut html = String::new();
         html.push_str("<h4 style='color:#495057;margin:20px 0 10px;border-bottom:2px solid #dee2e6;padding-bottom:8px;'>Matica normalizovaného Information Gain</h4>");
-        html.push_str("<p style='font-size:0.85em;color:#6c757d;margin-bottom:10px;'>Riadok = cieľová premenná, stĺpec = feature. Hodnota = IG(target|feature) / H(target)</p>");
+        html.push_str("<p style='font-size:0.85em;color:#6c757d;margin-bottom:10px;'>Riadok = cieľová premenná, stĺpec = príznak. Hodnota = IG(target|feature) / H(target)</p>");
         html.push_str("<div style='overflow-x:auto;'><table style='border-collapse:collapse;font-size:11px;'>");
         html.push_str("<tr><th style='padding:6px;border:1px solid #ddd;background:#f0f0f0;'>Target \\ Feature</th>");
         for h in headers {

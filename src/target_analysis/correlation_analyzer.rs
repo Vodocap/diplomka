@@ -2,9 +2,9 @@ use super::{TargetAnalyzer, TargetCandidate};
 use std::collections::HashSet;
 
 /// Analyzátor cieľovej premennej na základe Pearsonovej korelácie.
-/// Pre každý stĺpec vypočíta priemernú absolútnu koreláciu so všetkými
-/// ostatnými stĺpcami. Vyššie skóre = stĺpec je lepšie predvídateľný
-/// z ostatných stĺpcov (lineárne vzťahy).
+/// Pre každú premennú vypočíta sumu štvorcov korelácií so všetkými
+/// ostatnými premennými: Score_j = Σ r²_jk.
+/// Vyššie skóre = premenná má silnejšie lineárne väzby s ostatnými.
 pub struct CorrelationAnalyzer;
 
 impl CorrelationAnalyzer {
@@ -51,13 +51,14 @@ impl TargetAnalyzer for CorrelationAnalyzer {
     }
 
     fn get_metric_name(&self) -> &str {
-        "Priem. |korelácia|"
+        "Σr²"
     }
 
     fn get_metric_explanation(&self) -> &str {
-        "Priemerná absolútna Pearsonova korelácia tohto stĺpca so všetkými ostatnými stĺpcami. \
-        Vyššia hodnota znamená, že stĺpec má silnejšie lineárne vzťahy s ostatnými premennými, \
-        a teda je lepšie predvídateľný. Rozsah: 0 (žiadna korelácia) - 1 (perfektná korelácia). \
+        "Suma štvorcov Pearsonových korelácií s ostatnými premennými: Score_j = Σ r²_jk. \
+        Vyššia hodnota znamená silnejšie celkové lineárne väzby. \
+        Na rozdiel od priemeru |r| táto metrika penalizuje veľa slabých korelácií \
+        a zvýhodňuje premenné s niekoľkými silnými vzťahmi. \
         Obmedzenie: zachytáva len lineárne vzťahy."
     }
 
@@ -83,26 +84,25 @@ impl TargetAnalyzer for CorrelationAnalyzer {
             let mean = columns[col_idx].iter().sum::<f64>() / n as f64;
             let variance = columns[col_idx].iter().map(|v| (v - mean).powi(2)).sum::<f64>() / n as f64;
 
-            let mut total = 0.0f64;
+            // Score_j = Σ r²_jk  (suma štvorcov korelácií)
+            let mut sum_r2 = 0.0f64;
             let mut max_c = 0.0f64;
             for j in 0..num_cols {
                 if j == col_idx { continue; }
-                let ac = corr_matrix[col_idx][j].abs();
-                total += ac;
-                if ac > max_c { max_c = ac; }
+                let c = corr_matrix[col_idx][j];
+                sum_r2 += c * c;
+                if c.abs() > max_c { max_c = c.abs(); }
             }
-            let avg = if num_cols > 1 { total / (num_cols - 1) as f64 } else { 0.0 };
-            let score = avg * 100.0;
 
             candidates.push(TargetCandidate {
                 column_index: col_idx,
                 column_name: headers[col_idx].clone(),
-                score: (score * 10.0).round() / 10.0,
+                score: (sum_r2 * 10000.0).round() / 10000.0,
                 unique_values: unique_count,
                 variance: (variance * 10000.0).round() / 10000.0,
                 suggested_type: stype,
                 extra_metrics: vec![
-                    ("avg_correlation".to_string(), (avg * 10000.0).round() / 10000.0),
+                    ("sum_r2".to_string(), (sum_r2 * 10000.0).round() / 10000.0),
                     ("max_correlation".to_string(), (max_c * 10000.0).round() / 10000.0),
                 ],
             });

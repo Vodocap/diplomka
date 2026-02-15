@@ -69,9 +69,9 @@ impl FeatureSelector for VarianceSelector
         html.push_str("<table style='border-collapse:collapse;font-size:12px;width:100%;'>");
         html.push_str("<tr><th style='padding:4px;border:1px solid #ddd;'>Feature</th><th style='padding:4px;border:1px solid #ddd;'>Variance</th><th style='padding:4px;border:1px solid #ddd;'>Status</th></tr>");
         for (idx, var, sel) in &all_scores {
-            let bg = if *sel { "rgba(52,152,219,0.15)" } else { "rgba(189,195,199,0.15)" };
-            let status = if *sel { "[+] Vybraný" } else { "[-] Odstránený" };
-            html.push_str(&format!("<tr style='background:{}'><td style='padding:4px;border:1px solid #ddd;'>F{}</td><td style='padding:4px;border:1px solid #ddd;'>{:.4}</td><td style='padding:4px;border:1px solid #ddd;'>{}</td></tr>", bg, idx, var, status));
+            let bg = if *sel { "rgba(52,152,219,0.08)" } else { "rgba(189,195,199,0.08)" };
+            let status = if *sel { "<span style='color:#28a745;font-weight:bold;'>✓</span>" } else { "<span style='color:#6c757d;'>✗</span>" };
+            html.push_str(&format!("<tr style='background:{}'><td style='padding:4px;border:1px solid #ddd;'>F{}</td><td style='padding:4px;border:1px solid #ddd;'>{:.4}</td><td style='padding:4px;border:1px solid #ddd;text-align:center;'>{}</td></tr>", bg, idx, var, status));
         }
         html.push_str("</table></div>");
         *self.details_cache.borrow_mut() = html;

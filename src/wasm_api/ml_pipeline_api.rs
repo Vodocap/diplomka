@@ -1276,31 +1276,29 @@ impl WasmMLPipeline {
             let mean = col_values.iter().sum::<f64>() / n as f64;
             let variance = col_values.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / n as f64;
             
-            // Average abs correlation with other columns
-            let mut total = 0.0f64;
+            // Score_j = Σ r²_jk (sum of squared correlations)
+            let mut sum_r2 = 0.0f64;
             let mut max_c = 0.0f64;
             for j in 0..num_cols {
                 if j == col_idx { continue; }
-                let ac = corr_matrix[col_idx][j].abs();
-                total += ac;
-                if ac > max_c { max_c = ac; }
+                let c = corr_matrix[col_idx][j];
+                sum_r2 += c * c;
+                if c.abs() > max_c { max_c = c.abs(); }
             }
-            let avg = if num_cols > 1 { total / (num_cols - 1) as f64 } else { 0.0 };
             
             // Determine classification vs regression
             let is_cat = unique_count <= 10 || (unique_count as f64 / n as f64) < 0.05;
             let stype = if is_cat { "classification" } else { "regression" };
-            let score = avg * 100.0;
             
             candidates.push(serde_json::json!({
                 "column_index": col_idx,
                 "column_name": headers[col_idx],
                 "unique_values": unique_count,
                 "variance": (variance * 10000.0).round() / 10000.0,
-                "avg_correlation": (avg * 10000.0).round() / 10000.0,
+                "sum_r2": (sum_r2 * 10000.0).round() / 10000.0,
                 "max_correlation": (max_c * 10000.0).round() / 10000.0,
                 "suggested_type": stype,
-                "target_score": (score * 10.0).round() / 10.0
+                "target_score": (sum_r2 * 10000.0).round() / 10000.0
             }));
         }
         
@@ -1321,8 +1319,8 @@ impl WasmMLPipeline {
         // Ranking table
         html.push_str("<table style='width:100%;border-collapse:collapse;font-size:13px;margin-bottom:20px;'>");
         html.push_str("<thead><tr>");
-        for h in &["#", "Stĺpec", "Unikátnych hodnôt", "Priem. |korelácia|", "Max |korelácia|", "Odporúčaný typ", "Skóre prediktability"] {
-            html.push_str(&format!("<th style='padding:10px 8px;border:1px solid #dee2e6;background:#3498db;color:white;text-align:center;font-size:12px;'>{}</th>", h));
+        for h in &["#", "Premenná", "Unikátnych hodnôt", "Σr²", "Max |korelácia|"] {
+            html.push_str(&format!("<th style='padding:10px 8px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:12px;'>{}</th>", h));
         }
         html.push_str("</tr></thead><tbody>");
         
@@ -1332,16 +1330,14 @@ impl WasmMLPipeline {
                 1 | 2 => "background:#e8f4f8;",
                 _ => if rank % 2 == 0 { "background:#f8f9fa;" } else { "" },
             };
-            let type_icon = if cand["suggested_type"].as_str() == Some("classification") { "Klasifikácia" } else { "Regresia" };
+            let _type_icon = if cand["suggested_type"].as_str() == Some("classification") { "Klasifikácia" } else { "Regresia" };
             
             html.push_str(&format!("<tr style='{}'>", bg));
             html.push_str(&format!("<td style='padding:8px;border:1px solid #dee2e6;text-align:center;font-weight:bold;'>{}</td>", rank + 1));
             html.push_str(&format!("<td style='padding:8px;border:1px solid #dee2e6;font-weight:bold;'>{}</td>", cand["column_name"].as_str().unwrap_or("")));
             html.push_str(&format!("<td style='padding:8px;border:1px solid #dee2e6;text-align:center;'>{}</td>", cand["unique_values"]));
-            html.push_str(&format!("<td style='padding:8px;border:1px solid #dee2e6;text-align:center;'>{}</td>", cand["avg_correlation"]));
+            html.push_str(&format!("<td style='padding:8px;border:1px solid #dee2e6;text-align:center;'>{}</td>", cand["sum_r2"]));
             html.push_str(&format!("<td style='padding:8px;border:1px solid #dee2e6;text-align:center;'>{}</td>", cand["max_correlation"]));
-            html.push_str(&format!("<td style='padding:8px;border:1px solid #dee2e6;text-align:center;'>{}</td>", type_icon));
-            html.push_str(&format!("<td style='padding:8px;border:1px solid #dee2e6;text-align:center;font-weight:bold;color:#2980b9;font-size:1.1em;'>{}</td>", cand["target_score"]));
             html.push_str("</tr>");
         }
         html.push_str("</tbody></table>");
@@ -1382,15 +1378,8 @@ impl WasmMLPipeline {
         }
         
         // Recommendation box
-        let best_name = candidates[0]["column_name"].as_str().unwrap_or("");
-        let best_score = candidates[0]["target_score"].as_f64().unwrap_or(0.0);
-        let best_type = if candidates[0]["suggested_type"].as_str() == Some("classification") { "klasifikácia" } else { "regresia" };
-        html.push_str(&format!(
-            "<div style='margin-top:15px;padding:15px;background:#d1ecf1;border-left:4px solid #3498db;'>\
-            <strong>Odporúčanie:</strong> Najlepšia cieľová premenná je <strong>{}</strong> \
-            (skóre prediktability: <strong>{:.1}</strong>, odporúčaný typ: <strong>{}</strong>)\
-            </div>", best_name, best_score, best_type
-        ));
+        let _best_name = candidates[0]["column_name"].as_str().unwrap_or("");
+        let _best_score = candidates[0]["target_score"].as_f64().unwrap_or(0.0);
         html.push_str("</div>");
         
         let recommended_target = candidates[0]["column_name"].as_str().unwrap_or("").to_string();
@@ -1482,7 +1471,7 @@ impl WasmMLPipeline {
 
         // Metric explanation box
         html.push_str(&format!(
-            "<div style='margin-bottom:15px;padding:12px;background:#eaf2f8;border-left:4px solid #3498db;font-size:0.9em;'>\
+            "<div style='margin-bottom:15px;padding:12px;background:#ffe4e1;border-left:4px solid #cc0000;font-size:0.9em;'>\
             <strong>Metrika: {}</strong><br>\
             <span style='color:#495057;'>{}</span>\
             </div>",
@@ -1493,8 +1482,8 @@ impl WasmMLPipeline {
         // Ranking table
         html.push_str("<table style='width:100%;border-collapse:collapse;font-size:13px;margin-bottom:20px;'>");
         html.push_str("<thead><tr>");
-        for h in &["#", "Stĺpec", "Unikátnych hodnôt", "Variancia", analyzer.get_metric_name(), "Odporúčaný typ", "Skóre"] {
-            html.push_str(&format!("<th style='padding:10px 8px;border:1px solid #dee2e6;background:#3498db;color:white;text-align:center;font-size:12px;'>{}</th>", h));
+        for h in &["#", "Premenná", "Unikátnych hodnôt", analyzer.get_metric_name()] {
+            html.push_str(&format!("<th style='padding:10px 8px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:12px;'>{}</th>", h));
         }
         html.push_str("</tr></thead><tbody>");
 
@@ -1504,7 +1493,7 @@ impl WasmMLPipeline {
                 1 | 2 => "background:#e8f4f8;",
                 _ => if rank % 2 == 0 { "background:#f8f9fa;" } else { "" },
             };
-            let type_label = if cand.suggested_type == "classification" { "Klasifikácia" } else { "Regresia" };
+            let _type_label = if cand.suggested_type == "classification" { "Klasifikácia" } else { "Regresia" };
 
             // Main metric value from extra_metrics (first one)
             let metric_val = cand.extra_metrics.first().map(|(_, v)| format!("{:.4}", v)).unwrap_or_default();
@@ -1513,10 +1502,7 @@ impl WasmMLPipeline {
             html.push_str(&format!("<td style='padding:8px;border:1px solid #dee2e6;text-align:center;font-weight:bold;'>{}</td>", rank + 1));
             html.push_str(&format!("<td style='padding:8px;border:1px solid #dee2e6;font-weight:bold;'>{}</td>", cand.column_name));
             html.push_str(&format!("<td style='padding:8px;border:1px solid #dee2e6;text-align:center;'>{}</td>", cand.unique_values));
-            html.push_str(&format!("<td style='padding:8px;border:1px solid #dee2e6;text-align:center;'>{}</td>", cand.variance));
             html.push_str(&format!("<td style='padding:8px;border:1px solid #dee2e6;text-align:center;'>{}</td>", metric_val));
-            html.push_str(&format!("<td style='padding:8px;border:1px solid #dee2e6;text-align:center;'>{}</td>", type_label));
-            html.push_str(&format!("<td style='padding:8px;border:1px solid #dee2e6;text-align:center;font-weight:bold;color:#2980b9;font-size:1.1em;'>{:.1}</td>", cand.score));
             html.push_str("</tr>");
         }
         html.push_str("</tbody></table>");
@@ -1526,24 +1512,13 @@ impl WasmMLPipeline {
         if !details_html.is_empty() {
             html.push_str("<details style='margin-bottom:15px;border:1px solid #dee2e6;'>");
             html.push_str(&format!(
-                "<summary style='padding:12px;background:#f8f9fa;cursor:pointer;font-weight:600;color:#3498db;'>Detailná vizualizácia - {}</summary>",
+                "<summary style='padding:12px;background:#f8f9fa;cursor:pointer;font-weight:600;color:#cc0000;'>Detailná vizualizácia - {}</summary>",
                 analyzer.get_description()
             ));
             html.push_str(&format!("<div style='padding:15px;overflow:auto;max-height:500px;'>{}</div>", details_html));
             html.push_str("</details>");
         }
 
-        // Recommendation box
-        if let Some(best) = candidates.first() {
-            let best_type = if best.suggested_type == "classification" { "klasifikácia" } else { "regresia" };
-            html.push_str(&format!(
-                "<div style='margin-top:15px;padding:15px;background:#d1ecf1;border-left:4px solid #3498db;'>\
-                <strong>Odporúčanie ({}):</strong> Najlepšia cieľová premenná je <strong>{}</strong> \
-                (skóre: <strong>{:.1}</strong>, odporúčaný typ: <strong>{}</strong>)\
-                </div>",
-                analyzer.get_description(), best.column_name, best.score, best_type
-            ));
-        }
         html.push_str("</div>");
 
         // Structured result
@@ -1616,7 +1591,7 @@ impl WasmMLPipeline {
             let name = r["selector_name"].as_str().unwrap_or("");
             let err = r["error"].as_str();
             let count = r["selected_count"].as_u64().unwrap_or(0);
-            let border_color = if err.is_some() { "#e74c3c" } else { "#3498db" };
+            let border_color = if err.is_some() { "#e74c3c" } else { "#cc0000" };
             html.push_str(&format!(
                 "<div style='flex:1;min-width:180px;padding:15px;border:2px solid {};background:white;'>\
                 <div style='font-weight:bold;color:{};margin-bottom:8px;'>{}</div>",
@@ -1627,7 +1602,7 @@ impl WasmMLPipeline {
             } else {
                 let metric = r["metric_name"].as_str().unwrap_or("");
                 html.push_str(&format!(
-                    "<div style='font-size:1.5em;font-weight:bold;color:#2c3e50;'>{}/{}</div>\
+                    "<div style='font-size:1.5em;font-weight:bold;color:#cc0000;'>{}/{}</div>\
                     <div style='font-size:0.85em;color:#6c757d;'>vybraných features</div>\
                     <div style='font-size:0.8em;color:#6c757d;margin-top:4px;'>Metrika: {}</div>",
                     count, total_features, metric
@@ -1643,22 +1618,81 @@ impl WasmMLPipeline {
             .collect();
 
         if !valid_selectors.is_empty() {
+            // Interactive feature map with checkboxes and selector vote counts
+            let total_valid = valid_selectors.len();
+            let mut feature_votes: Vec<usize> = vec![0; total_features];
+            for r in &valid_selectors {
+                if let Some(arr) = r["selected_indices"].as_array() {
+                    for v in arr {
+                        if let Some(fi) = v.as_u64() {
+                            if (fi as usize) < total_features {
+                                feature_votes[fi as usize] += 1;
+                            }
+                        }
+                    }
+                }
+            }
+
+            html.push_str("<h4 style='color:#495057;margin:20px 0 10px;border-bottom:2px solid #dee2e6;padding-bottom:8px;'>Mapa features \u{2013} vyberte príznaky pre vlastný tréning</h4>");
+            html.push_str("<p style='font-size:12px;color:#6c757d;margin-bottom:10px;'>Zaškrtnite features, s ktorými chcete natrénovať model. Farba pozadia a indikátor bodiek ukazujú, koľko selektorov danú feature vybralo.</p>");
+            html.push_str("<div id='userFeatureMap' style='display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:6px;'>");
+
+            for (fidx, fname) in feature_names.iter().enumerate() {
+                let votes = feature_votes[fidx];
+                let bg = if total_valid > 0 && votes == total_valid { "#c8e6c9" }
+                    else if total_valid > 0 && votes * 2 >= total_valid { "#fff9c4" }
+                    else if votes > 0 { "#ffe0b2" }
+                    else { "#ffcdd2" };
+                let checked = if total_valid > 0 && votes * 2 >= total_valid { " checked" } else { "" };
+                let dots: String = (0..total_valid).map(|i| if i < votes { "\u{25cf}" } else { "\u{25cb}" }).collect();
+
+                html.push_str(&format!(
+                    "<label style='display:flex;align-items:center;gap:6px;padding:6px 10px;\
+                    background:{};border:1px solid #dee2e6;cursor:pointer;font-size:12px;\
+                    user-select:none;'>\
+                    <input type='checkbox' data-feature-idx='{}'{} \
+                    style='cursor:pointer;width:16px;height:16px;flex-shrink:0;'>\
+                    <span style='flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;\
+                    white-space:nowrap;'><strong style='color:#cc0000;'>F{}</strong>: {}</span>\
+                    <span style='flex-shrink:0;font-size:11px;color:#495057;\
+                    white-space:nowrap;font-weight:bold;'>{}/{} {}</span>\
+                    </label>",
+                    bg, fidx, checked, fidx, fname, votes, total_valid, dots
+                ));
+            }
+            html.push_str("</div>");
+
+            // Select all / deselect all
+            html.push_str("<div style='margin-top:8px;display:flex;gap:8px;font-size:12px;'>");
+            html.push_str("<button id='featureMapSelectAll' style='padding:4px 12px;cursor:pointer;font-size:12px;background:#f0f0f0;border:1px solid #ccc;'>Vybrať všetky</button>");
+            html.push_str("<button id='featureMapDeselectAll' style='padding:4px 12px;cursor:pointer;font-size:12px;background:#f0f0f0;border:1px solid #ccc;'>Odznačiť všetky</button>");
+            html.push_str("</div>");
+
+            // Train button + status
+            html.push_str("<div style='margin-top:15px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;'>");
+            html.push_str("<button id='trainFromComparisonBtn' style='background:#27ae60;color:white;border:none;padding:10px 20px;cursor:pointer;font-size:14px;font-weight:bold;'>Natrénovať a porovnať varianty</button>");
+            html.push_str("<span id='comparisonTrainStatus' style='font-size:0.9em;color:#6c757d;'></span>");
+            html.push_str("</div>");
+
+            // Training results placeholder
+            html.push_str("<div id='comparisonTrainingResults'></div>");
+
             html.push_str("<h4 style='color:#495057;margin:20px 0 10px;border-bottom:2px solid #dee2e6;padding-bottom:8px;'>Porovnávacia matica</h4>");
             html.push_str("<div style='overflow-x:auto;'>");
             html.push_str("<table style='width:100%;border-collapse:collapse;font-size:13px;'>");
 
             // Header
             html.push_str("<thead><tr>");
-            html.push_str("<th style='padding:10px;border:1px solid #dee2e6;background:#3498db;color:white;text-align:left;min-width:120px;position:sticky;left:0;z-index:1;'>Príznak</th>");
+            html.push_str("<th style='padding:10px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:left;min-width:120px;position:sticky;left:0;z-index:1;'>Príznak</th>");
             for r in &valid_selectors {
                 let name = r["selector_name"].as_str().unwrap_or("");
                 let count = r["selected_count"].as_u64().unwrap_or(0);
                 html.push_str(&format!(
-                    "<th style='padding:10px;border:1px solid #dee2e6;background:#3498db;color:white;text-align:center;min-width:100px;'>{}<br><small>({}/{})</small></th>",
+                    "<th style='padding:10px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;min-width:100px;'>{}<br><small>({}/{})</small></th>",
                     name, count, total_features
                 ));
             }
-            html.push_str("<th style='padding:10px;border:1px solid #dee2e6;background:#2c3e50;color:white;text-align:center;'>Zhoda</th>");
+            html.push_str("<th style='padding:10px;border:1px solid #dee2e6;background:#8b0000;color:white;text-align:center;'>Zhoda</th>");
             html.push_str("</tr></thead><tbody>");
 
             // Feature rows
@@ -1674,21 +1708,14 @@ impl WasmMLPipeline {
                     );
                     if is_selected { selected_by += 1; }
 
-                    // Score
-                    let score_text = r["score_map"].as_array()
-                        .and_then(|arr| arr.get(idx))
-                        .and_then(|v| v.as_f64())
-                        .map(|v| format!("<br><small style='color:#6c757d;'>{:.4}</small>", v))
-                        .unwrap_or_default();
-
                     let (bg, icon) = if is_selected {
-                        ("rgba(52,152,219,0.15)", "[+]")
+                        ("rgba(52,152,219,0.08)", "<span style='color:#28a745;font-weight:bold;'>✓</span>")
                     } else {
-                        ("rgba(189,195,199,0.15)", "[-]")
+                        ("rgba(189,195,199,0.08)", "<span style='color:#6c757d;'>✗</span>")
                     };
                     cells.push_str(&format!(
-                        "<td style='padding:8px;border:1px solid #dee2e6;text-align:center;background:{};'><strong>{}</strong>{}</td>",
-                        bg, icon, score_text
+                        "<td style='padding:8px;border:1px solid #dee2e6;text-align:center;background:{};'>{}</td>",
+                        bg, icon
                     ));
                 }
 
@@ -1716,8 +1743,8 @@ impl WasmMLPipeline {
 
             // Legend
             html.push_str("<div style='margin-top:10px;font-size:12px;display:flex;gap:15px;flex-wrap:wrap;'>");
-            html.push_str("<span style='background:rgba(52,152,219,0.15);padding:3px 10px;'>[+] Vybraný</span>");
-            html.push_str("<span style='background:rgba(189,195,199,0.15);padding:3px 10px;'>[-] Nevybraný</span>");
+            html.push_str("<span style='background:rgba(52,152,219,0.08);padding:3px 10px;border:1px solid #dee2e6;'><span style='color:#28a745;font-weight:bold;'>✓</span> Vybraný</span>");
+            html.push_str("<span style='background:rgba(189,195,199,0.08);padding:3px 10px;border:1px solid #dee2e6;'><span style='color:#6c757d;'>✗</span> Nevybraný</span>");
             html.push_str("<span style='background:#c8e6c9;padding:3px 10px;'>100% zhoda</span>");
             html.push_str("<span style='background:#fff9c4;padding:3px 10px;'>&ge;50% zhoda</span>");
             html.push_str("<span style='background:#ffcdd2;padding:3px 10px;'>0% zhoda</span>");
@@ -1727,25 +1754,13 @@ impl WasmMLPipeline {
             // Per-selector details in collapsible sections
             html.push_str("<h4 style='color:#495057;margin:25px 0 10px;border-bottom:2px solid #dee2e6;padding-bottom:8px;'>Detaily jednotlivých selektorov</h4>");
             
-            // Feature mapping table (shown once before all selectors)
-            html.push_str("<div style='margin-bottom:15px;padding:12px;background:#f8f9fa;border:1px solid #dee2e6;'>");
-            html.push_str("<strong style='color:#495057;margin-bottom:8px;display:block;'>Mapa features (index → názov stĺpca):</strong>");
-            html.push_str("<div style='display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;font-size:12px;'>");
-            for (idx, fname) in feature_names.iter().enumerate() {
-                html.push_str(&format!(
-                    "<div style='padding:4px 8px;background:white;border:1px solid #dee2e6;'><strong style='color:#3498db;'>F{}</strong>: {}</div>",
-                    idx, fname
-                ));
-            }
-            html.push_str("</div></div>");
-            
             for r in &valid_selectors {
                 let name = r["selector_name"].as_str().unwrap_or("");
                 let details = r["details_html"].as_str().unwrap_or("");
                 if !details.is_empty() {
                     html.push_str(&format!(
                         "<details style='margin-bottom:10px;border:1px solid #dee2e6;'>\
-                        <summary style='padding:12px;background:#f8f9fa;cursor:pointer;font-weight:600;color:#3498db;'>{} - Detailná analýza</summary>\
+                        <summary style='padding:12px;background:#f8f9fa;cursor:pointer;font-weight:600;color:#cc0000;'>{} - Detailná analýza</summary>\
                         <div style='padding:15px;overflow:auto;max-height:500px;'>{}</div>\
                         </details>",
                         name, details

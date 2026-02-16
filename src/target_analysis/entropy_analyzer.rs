@@ -157,7 +157,7 @@ impl TargetAnalyzer for EntropyAnalyzer {
 
     fn get_details_html(&self, columns: &[Vec<f64>], headers: &[String], _candidates: &[TargetCandidate]) -> String {
         let num_cols = columns.len();
-        if num_cols > 15 { return String::new(); }
+        if num_cols > 50 { return String::new(); }
 
         let binned: Vec<Vec<u64>> = columns.iter()
             .map(|col| Self::bin_values(col, self.num_bins))

@@ -78,7 +78,7 @@ impl TargetAnalyzer for MutualInformationAnalyzer {
 
     fn get_metric_explanation(&self) -> &str {
         "Suma vzájomnej informácie (MI) s ostatnými premennými: Score_j = Σ MI(X_j, X_k). \
-        MI meria množstvo informácie, ktorú jedna premenná poskytuje o druhej (v nátoch). \
+        MI meria množstvo informácie, ktorú jedna premenná poskytuje o druhej. \
         Na rozdiel od korelácie zachytáva aj nelineárne závislosti. \
         Vyššia hodnota = premenná zdieľa viac informácie s ostatnými. \
         Používa KSG estimátor (Kraskov-Stögbauer-Grassberger) pre spojité dáta."
@@ -133,7 +133,7 @@ impl TargetAnalyzer for MutualInformationAnalyzer {
 
     fn get_details_html(&self, columns: &[Vec<f64>], headers: &[String], _candidates: &[TargetCandidate]) -> String {
         let num_cols = columns.len();
-        if num_cols > 15 { return String::new(); }
+        if num_cols > 50 { return String::new(); }
 
         let mut mi_matrix = vec![vec![0.0f64; num_cols]; num_cols];
         for i in 0..num_cols {
@@ -179,9 +179,9 @@ impl TargetAnalyzer for MutualInformationAnalyzer {
         }
         html.push_str("</table></div>");
         html.push_str("<div style='margin-top:8px;font-size:11px;display:flex;gap:10px;flex-wrap:wrap;'>");
-        html.push_str("<span style='background:rgba(52,152,219,0.7);padding:2px 8px;color:white;'>Silná MI</span>");
-        html.push_str("<span style='background:rgba(46,204,113,0.4);padding:2px 8px;'>Stredná MI</span>");
-        html.push_str("<span style='background:rgba(200,200,200,0.3);padding:2px 8px;'>Slabá MI</span>");
+        html.push_str("<span style='background:rgba(52,152,219,0.7);padding:2px 8px;color:white;'>Vyššia</span>");
+        html.push_str("<span style='background:rgba(46,204,113,0.4);padding:2px 8px;'>Stredná</span>");
+        html.push_str("<span style='background:rgba(200,200,200,0.3);padding:2px 8px;'>Nižšia</span>");
         html.push_str("</div>");
         html
     }

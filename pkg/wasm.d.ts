@@ -81,6 +81,10 @@ export class WasmMLPipeline {
      */
     analyzeTargetWith(data: string, format: string, method: string): any;
     /**
+     * Aplikuje procesor na konkrétny stĺpec v CSV dátach a vráti upravené CSV
+     */
+    applyProcessorToColumn(data: string, column_name: string, processor_type: string, params_json: any): any;
+    /**
      * Vytvorí pipeline z JSON konfigurácie
      */
     buildFromConfig(config_json: any): any;
@@ -94,6 +98,10 @@ export class WasmMLPipeline {
      */
     compareSelectors(data: string, target_column: string, format: string, selectors_json: any): any;
     /**
+     * Vymaže stĺpec z CSV dát
+     */
+    deleteColumn(data: string, column_name: string): any;
+    /**
      * Evaluácia (split dáta)
      */
     evaluate(_train_ratio: number): any;
@@ -105,6 +113,10 @@ export class WasmMLPipeline {
      * Vráti zoznam dostupných analyzátorov cieľovej premennej
      */
     getAvailableTargetAnalyzers(): any;
+    /**
+     * Vráti všetky dáta vo formáte vhodnom pre editor (všetky riadky, všetky stĺpce)
+     */
+    getEditableData(data: string, format: string): any;
     /**
      * Get feature selection details with names and scores
      */
@@ -139,6 +151,14 @@ export class WasmMLPipeline {
      */
     predict(input: any): any;
     /**
+     * Nahradí všetky výskyty hodnoty v stĺpci (Replace All)
+     */
+    replaceAllInColumn(data: string, column_name: string, search_value: string, replace_value: string): any;
+    /**
+     * Zmení hodnotu konkrétnej bunky v CSV
+     */
+    setCellValue(data: string, row_idx: number, column_name: string, new_value: string): any;
+    /**
      * Trénuje model
      */
     train(): any;
@@ -159,12 +179,15 @@ export interface InitOutput {
     readonly __wbg_wasmmlpipeline_free: (a: number, b: number) => void;
     readonly wasmmlpipeline_analyzeTargetCandidates: (a: number, b: number, c: number, d: number, e: number) => [number, number, number];
     readonly wasmmlpipeline_analyzeTargetWith: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number, number];
+    readonly wasmmlpipeline_applyProcessorToColumn: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: any) => [number, number, number];
     readonly wasmmlpipeline_buildFromConfig: (a: number, b: any) => [number, number, number];
     readonly wasmmlpipeline_buildFromPreset: (a: number, b: number, c: number, d: number, e: number, f: any, g: any) => [number, number, number];
     readonly wasmmlpipeline_compareSelectors: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: any) => [number, number, number];
+    readonly wasmmlpipeline_deleteColumn: (a: number, b: number, c: number, d: number, e: number) => [number, number, number];
     readonly wasmmlpipeline_evaluate: (a: number, b: number) => [number, number, number];
     readonly wasmmlpipeline_getAvailableProcessors: () => any;
     readonly wasmmlpipeline_getAvailableTargetAnalyzers: (a: number) => [number, number, number];
+    readonly wasmmlpipeline_getEditableData: (a: number, b: number, c: number, d: number, e: number) => [number, number, number];
     readonly wasmmlpipeline_getFeatureSelectionInfo: (a: number) => [number, number, number];
     readonly wasmmlpipeline_getInfo: (a: number) => [number, number, number];
     readonly wasmmlpipeline_getProcessorParams: (a: number, b: number) => any;
@@ -174,11 +197,14 @@ export interface InitOutput {
     readonly wasmmlpipeline_loadData: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number, number];
     readonly wasmmlpipeline_new: () => number;
     readonly wasmmlpipeline_predict: (a: number, b: any) => [number, number, number];
+    readonly wasmmlpipeline_replaceAllInColumn: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number) => [number, number, number];
+    readonly wasmmlpipeline_setCellValue: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number, number];
     readonly wasmmlpipeline_train: (a: number) => [number, number, number];
     readonly wasmmlpipeline_trainWithFeatureIndices: (a: number, b: number, c: any) => [number, number, number];
     readonly wasmmlpipeline_trainWithSplit: (a: number, b: number) => [number, number, number];
     readonly __wbg_csvloader_free: (a: number, b: number) => void;
     readonly __wbg_wasmdataloader_free: (a: number, b: number) => void;
+    readonly __wbg_wasmfactory_free: (a: number, b: number) => void;
     readonly csvloader_get_headers: (a: number) => any;
     readonly csvloader_get_training_data: (a: number, b: number, c: number) => [number, number, number];
     readonly csvloader_len: (a: number) => number;
@@ -190,7 +216,6 @@ export interface InitOutput {
     readonly wasmdataloader_loadData: (a: number, b: number, c: number, d: number, e: number) => [number, number, number];
     readonly wasmdataloader_new: (a: number, b: number) => [number, number, number];
     readonly wasmdataloader_validateFormat: (a: number, b: number, c: number) => [number, number];
-    readonly __wbg_wasmfactory_free: (a: number, b: number) => void;
     readonly wasmfactory_getAvailableOptions: (a: number) => any;
     readonly wasmfactory_getCompatibleProcessors: (a: number, b: number, c: number) => any;
     readonly wasmfactory_getCompatibleSelectors: (a: number, b: number, c: number) => any;

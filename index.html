@@ -696,6 +696,228 @@
         .target-method-content.active {
             display: block;
         }
+
+        /* Data Editor Modal Styles */
+        .editor-modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            animation: fadeIn 0.3s;
+        }
+
+        .editor-modal.show {
+            display: flex;
+            align-items: stretch;
+            justify-content: center;
+        }
+
+        .editor-modal-content {
+            background-color: white;
+            margin: 20px;
+            border-radius: 0px;
+            width: 100%;
+            max-width: 95vw;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+
+        .editor-header {
+            background: #cc0000;
+            color: white;
+            padding: 15px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .editor-header h2 {
+            color: white;
+            border-bottom: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .editor-toolbar {
+            background: #f8f9fa;
+            padding: 12px 20px;
+            border-bottom: 2px solid #dee2e6;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            flex-shrink: 0;
+        }
+
+        .editor-toolbar select, .editor-toolbar input {
+            padding: 8px 10px;
+            border: 2px solid #dee2e6;
+            font-size: 0.9em;
+            width: auto;
+			min-width: 140px;
+        }
+
+        .editor-toolbar button {
+            padding: 8px 16px;
+            font-size: 0.85em;
+            margin: 0;
+        }
+
+        .editor-toolbar .toolbar-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            padding: 5px 10px;
+            background: white;
+            border: 1px solid #dee2e6;
+        }
+
+        .editor-toolbar .toolbar-group label {
+            margin: 0;
+            font-size: 0.85em;
+            white-space: nowrap;
+        }
+
+        .editor-body {
+            flex: 1;
+            overflow: auto;
+            padding: 0;
+        }
+
+        .editor-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85em;
+        }
+
+        .editor-table th {
+            background: #cc0000;
+            color: white;
+            padding: 10px 8px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            font-weight: 600;
+            text-align: center;
+            border: 1px solid #a00;
+            white-space: nowrap;
+            cursor: pointer;
+        }
+
+        .editor-table th.selected-col {
+            background: #8b0000;
+            box-shadow: inset 0 -3px 0 #ffcc00;
+        }
+
+        .editor-table td.selected-col-cell {
+            background: #fff3cd !important;
+            border-left: 1px solid #ffc107;
+            border-right: 1px solid #ffc107;
+        }
+
+        .editor-table th .col-actions {
+            display: flex;
+            gap: 4px;
+            margin-top: 4px;
+            justify-content: center;
+        }
+
+        .editor-table th .col-actions button {
+            padding: 2px 6px;
+            font-size: 0.75em;
+            background: rgba(255,255,255,0.3);
+            border: 1px solid rgba(255,255,255,0.5);
+            color: white;
+            margin: 0;
+        }
+
+        .editor-table th .col-actions button:hover {
+            background: rgba(255,255,255,0.5);
+        }
+
+        .editor-table td {
+            border: 1px solid #dee2e6;
+            padding: 6px 8px;
+            text-align: center;
+        }
+
+        .editor-table td.editable:hover {
+            background: #ffe4e1;
+            cursor: pointer;
+        }
+
+        .editor-table td input {
+            width: 100%;
+            padding: 4px;
+            border: 2px solid #cc0000;
+            text-align: center;
+            font-size: 0.9em;
+        }
+
+        .editor-table tbody tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .editor-table tbody tr:hover {
+            background: #e9ecef;
+        }
+
+        .editor-table td.row-num {
+            background: #f0f0f0;
+            font-weight: bold;
+            color: #6c757d;
+            width: 40px;
+        }
+
+        .editor-footer {
+            background: #f8f9fa;
+            padding: 10px 20px;
+            border-top: 2px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .editor-footer .status-text {
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+
+        /* Processor params in editor */
+        .editor-proc-params {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .editor-proc-params .param-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .editor-proc-params .param-item label {
+            font-size: 0.8em;
+            margin: 0;
+            white-space: nowrap;
+        }
+
+        .editor-proc-params .param-item select,
+        .editor-proc-params .param-item input {
+            padding: 4px 6px;
+            font-size: 0.85em;
+            width: auto;
+            min-width: 80px;
+        }
     </style>
 </head>
 <body>
@@ -713,25 +935,12 @@
             <!-- Výber Komponenty -->
             <div class="section">
                 <h2>1. Výber Pipeline</h2>
-                
-                <div class="form-group">
-                    <label>Predpripravený Preset:</label>
-                    <select id="presetSelect">
-                        <option value="">-- Vlastná konfigurácia --</option>
-                    </select>
-                </div>
 
                 <div class="form-group">
                     <label>Model:</label>
                     <select id="modelSelect">
                         <option value="">-- Vyberte model --</option>
                     </select>
-                </div>
-
-                <div class="form-group">
-                    <label>Data Processors (voliteľné, v poradí):</label>
-                    <div id="processorCheckboxes" class="checkbox-group"></div>
-                    <div id="selectedProcessorsOrder" class="processors-order"></div>
                 </div>
 
                 <div class="form-group">
@@ -870,6 +1079,9 @@
                 </div>
 
                 <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button id="editDataBtn" disabled style="flex: 1; min-width: 150px; background: #27ae60;">
+                        Upraviť dáta
+                    </button>
                     <button id="inspectDataBtn" disabled style="flex: 1; min-width: 150px;">
                         Zobraziť dáta
                     </button>
@@ -954,6 +1166,12 @@
         window.downloadSampleCSV = downloadSampleCSV;
         window.closeModal = closeModal;
         window.switchTargetTab = switchTargetTab;
+        window.closeDataEditor = closeDataEditor;
+        window.editorApplyProcessor = editorApplyProcessor;
+        window.editorDeleteColumn = editorDeleteColumn;
+        window.editorReplaceAll = editorReplaceAll;
+        window.editorApplyAndClose = editorApplyAndClose;
+        window.updateEditorProcessorParams = updateEditorProcessorParams;
 
         // Helper functions
         function calculateFeatureReduction(before, after) {
@@ -1095,35 +1313,6 @@
                 modelSelect.appendChild(opt);
             });
 
-            // Vytvoríme checkboxy pre procesory
-            const processorCheckboxes = document.getElementById('processorCheckboxes');
-            availableOptions.processors.forEach(p => {
-                const item = document.createElement('div');
-                item.className = 'checkbox-item';
-                
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.id = `proc_${p.name}`;
-                checkbox.value = p.name;
-                checkbox.addEventListener('change', updateProcessorOrder);
-                
-                const label = document.createElement('label');
-                label.htmlFor = `proc_${p.name}`;
-                label.textContent = `${p.name} - ${p.description}`;
-                
-                item.appendChild(checkbox);
-                item.appendChild(label);
-                processorCheckboxes.appendChild(item);
-            });
-
-            const presetSelect = document.getElementById('presetSelect');
-            availableOptions.presets.forEach(p => {
-                const opt = document.createElement('option');
-                opt.value = p.name;
-                opt.textContent = `${p.name} - ${p.description}`;
-                presetSelect.appendChild(opt);
-            });
-
             displayInfo();
         }
 
@@ -1154,122 +1343,13 @@
             });
         }
 
-        // Zoznam vybraných procesorov v poradí
-        let selectedProcessors = [];
-
-        function updateProcessorOrder() {
-            const checkboxes = document.querySelectorAll('#processorCheckboxes input[type="checkbox"]');
-            const orderDiv = document.getElementById('selectedProcessorsOrder');
-            
-            // Aktualizuj selectedProcessors podľa checkboxov
-            const currentChecked = Array.from(checkboxes)
-                .filter(cb => cb.checked)
-                .map(cb => cb.value);
-            
-            // Pridaj nové procesory na koniec
-            currentChecked.forEach(proc => {
-                if (!selectedProcessors.includes(proc)) {
-                    selectedProcessors.push(proc);
-                }
-            });
-            
-            // Odstráň odškrtnuté procesory
-            selectedProcessors = selectedProcessors.filter(proc => currentChecked.includes(proc));
-            
-            // Vyrenderuj chips
-            orderDiv.innerHTML = '';
-            selectedProcessors.forEach((proc, idx) => {
-                const chipContainer = document.createElement('div');
-                chipContainer.style.marginBottom = '10px';
-                
-                const chip = document.createElement('div');
-                chip.className = 'processor-chip';
-                
-                if (idx > 0) {
-                    const moveUpBtn = document.createElement('button');
-                    moveUpBtn.className = 'move-btn';
-                    moveUpBtn.textContent = '↑';
-                    moveUpBtn.onclick = () => moveProcessor(idx, idx - 1);
-                    chip.appendChild(moveUpBtn);
-                }
-                
-                if (idx < selectedProcessors.length - 1) {
-                    const moveDownBtn = document.createElement('button');
-                    moveDownBtn.className = 'move-btn';
-                    moveDownBtn.textContent = '↓';
-                    moveDownBtn.onclick = () => moveProcessor(idx, idx + 1);
-                    chip.appendChild(moveDownBtn);
-                }
-                
-                const label = document.createElement('span');
-                label.textContent = proc;
-                chip.appendChild(label);
-                
-                const removeBtn = document.createElement('button');
-                removeBtn.className = 'remove-btn';
-                removeBtn.textContent = '×';
-                removeBtn.onclick = () => {
-                    document.getElementById(`proc_${proc}`).checked = false;
-                    updateProcessorOrder();
-                };
-                chip.appendChild(removeBtn);
-                
-                chipContainer.appendChild(chip);
-                
-                // Načítaj a zobraz parametre procesora
-                const paramDefs = factory.getProcessorParamDefinitions(proc);
-                if (paramDefs && paramDefs.length > 0) {
-                    const paramsDiv = document.createElement('div');
-                    paramsDiv.style.marginLeft = '20px';
-                    paramsDiv.style.marginTop = '5px';
-                    
-                    paramDefs.forEach(param => {
-                        const paramDiv = document.createElement('div');
-                        paramDiv.style.marginBottom = '5px';
-                        
-                        const paramLabel = document.createElement('label');
-                        paramLabel.textContent = `${param.description}: `;
-                        paramLabel.style.fontSize = '0.9em';
-                        
-                        const paramInput = document.createElement('input');
-                        paramInput.type = param.param_type === 'number' ? 'number' : 'text';
-                        paramInput.value = param.default_value;
-                        paramInput.id = `param_${proc}_${param.name}`;
-                        paramInput.style.width = '80px';
-                        paramInput.style.marginLeft = '5px';
-                        
-                        if (param.min !== null && param.min !== undefined) {
-                            paramInput.min = param.min;
-                        }
-                        if (param.max !== null && param.max !== undefined) {
-                            paramInput.max = param.max;
-                        }
-                        
-                        paramDiv.appendChild(paramLabel);
-                        paramDiv.appendChild(paramInput);
-                        paramsDiv.appendChild(paramDiv);
-                    });
-                    
-                    chipContainer.appendChild(paramsDiv);
-                }
-                
-                orderDiv.appendChild(chipContainer);
-            });
-        }
-
-        function moveProcessor(fromIdx, toIdx) {
-            const temp = selectedProcessors[fromIdx];
-            selectedProcessors[fromIdx] = selectedProcessors[toIdx];
-            selectedProcessors[toIdx] = temp;
-            updateProcessorOrder();
-        }
-
         function setupEventListeners() {
             document.getElementById('buildPipelineBtn').onclick = buildPipeline;
             document.getElementById('parseDataBtn').onclick = parseData;
             document.getElementById('confirmTargetBtn').onclick = confirmTarget;
             document.getElementById('inspectDataBtn').onclick = inspectData;
             document.getElementById('inspectProcessedBtn').onclick = inspectProcessedData;
+            document.getElementById('editDataBtn').onclick = openDataEditor;
             document.getElementById('analyzeTargetBtn').onclick = analyzeTargets;
             document.getElementById('compareSelectorBtn').onclick = compareSelectors;
             document.getElementById('selectAllSelectorsBtn').onclick = toggleAllSelectors;
@@ -1304,54 +1384,17 @@
                     }
                 }
             };
-            
-            document.getElementById('presetSelect').onchange = function() {
-                const preset = this.value;
-                const isCustom = !preset;
-                
-                document.getElementById('modelSelect').disabled = !isCustom;
-                // Processor checkboxy ostanú vždy enabled
-                document.getElementById('evalModeSelect').disabled = !isCustom;
-                
-                if (preset) {
-                    // Získaj detaily presetu a zobraz relevantné parametre
-                    const presetDetails = factory.getPresetDetails(preset);
-                    if (presetDetails) {
-                        // Zobraz polia pre model ak je definovaný
-                        if (presetDetails.model) {
-                            updateModelParams(presetDetails.model);
-                        } else {
-                            hideAllParamFields();
-                        }
-                    }
-                } else {
-                    hideAllParamFields();
-                }
-            };
 
             document.getElementById('modelSelect').onchange = function() {
                 updateModelParams(this.value);
             };
+
+            // Update editor processor params when processor changes
+            document.getElementById('editorProcessorSelect').onchange = function() {
+                updateEditorProcessorParams(this.value);
+            };
         }
         
-        function checkBinningRequirement(selectorName) {
-            if (!selectorName || !availableOptions) return;
-            
-            const selectorInfo = availableOptions.selectors.find(s => s.name === selectorName);
-            if (selectorInfo && selectorInfo.requires_binning) {
-                // Skontroluj či je binner v selectedProcessors
-                if (!selectedProcessors.includes('binner')) {
-                    const binnerCheckbox = document.getElementById('proc_binner');
-                    if (binnerCheckbox && !binnerCheckbox.checked) {
-                        binnerCheckbox.checked = true;
-                        updateProcessorOrder();
-                        
-                        alert('Information Gain vyžaduje diskrétne dáta.\n\nAutomaticky bol pridaný Binner processor do pipeline.\n\nAk chcete použiť vlastné binning nastavenie, upravte poradie procesorov.');
-                    }
-                }
-            }
-        }
-
         function hideAllParamFields() {
             document.getElementById('modelParamsContainer').style.display = 'none';
             document.getElementById('knnKGroup').style.display = 'none';
@@ -1382,114 +1425,56 @@
             try {
                 showLoading(true);
                 
-                const preset = document.getElementById('presetSelect').value;
                 const model = document.getElementById('modelSelect').value;
-                const processors = selectedProcessors;
                 const evalMode = document.getElementById('evalModeSelect').value;
 
-                console.log('=== BUILD PIPELINE START ===');
-                console.log('Preset:', preset);
-                console.log('Model:', model);
-                console.log('Processors:', processors);
-                console.log('EvalMode:', evalMode);
+                if (!model) throw new Error('Vyberte model');
 
-                let result;
-
-                if (preset) {
-                    // Použiť preset - zozbierať parametre
-                    const presetDetails = factory.getPresetDetails(preset);
-                    console.log('Preset Details:', presetDetails);
-                    
-                    const modelParams = [];
-
-                    // Zozbierať model parametre ak sú viditeľné
-                    const knnK = document.getElementById('knnK').value;
-                    if (knnK && presetDetails.model === 'knn') {
-                        modelParams.push(['k', knnK]);
-                    }
-
-                    const treeMaxDepth = document.getElementById('treeMaxDepth').value;
-                    if (treeMaxDepth && presetDetails.model === 'tree') {
-                        modelParams.push(['max_depth', treeMaxDepth]);
-                    }
-
-                    const presetModel = presetDetails.model || model || 'knn';
-                    
-                    result = await pipeline.buildFromPreset(
-                        preset, 
-                        presetModel,
-                        modelParams.length > 0 ? modelParams : null,
-                        null
-                    );
-                } else {
-                    // Vlastná konfigurácia
-                    if (!model) throw new Error('Vyberte model');
-
-                    // Validácia evaluation_mode vs model
-                    if (evalMode) {
-                        if (model === 'linreg' && evalMode === 'classification') {
-                            showStatus('error', 'Upozornenie: Lineárna regresia (linreg) vyžaduje evaluation_mode = "regression", nie "classification".', 'pipelineStatus');
-                            if (!confirm('Vybrali ste nekompatibilný evaluation_mode.\n\nModel: Lineárna Regresia (linreg)\nEvaluation Mode: classification\n\nMal by byť: regression\n\nChcete pokračovať?')) {
-                                return;
-                            }
-                        }
-                        if (model === 'logreg' && evalMode === 'regression') {
-                            showStatus('error', 'Upozornenie: Logistická regresia (logreg) vyžaduje evaluation_mode = "classification", nie "regression".', 'pipelineStatus');
-                            if (!confirm('Vybrali ste nekompatibilný evaluation_mode.\n\nModel: Logistická Regresia (logreg)\nEvaluation Mode: regression\n\nMal by byť: classification\n\nChcete pokračovať?')) {
-                                return;
-                            }
+                // Validácia evaluation_mode vs model
+                if (evalMode) {
+                    if (model === 'linreg' && evalMode === 'classification') {
+                        showStatus('error', 'Upozornenie: Lineárna regresia (linreg) vyžaduje evaluation_mode = "regression", nie "classification".', 'pipelineStatus');
+                        if (!confirm('Vybrali ste nekompatibilný evaluation_mode.\n\nModel: Lineárna Regresia (linreg)\nEvaluation Mode: classification\n\nMal by byť: regression\n\nChcete pokračovať?')) {
+                            return;
                         }
                     }
-
-                    // Zozbierať parametre
-                    const modelParams = [];
-
-                    const knnK = document.getElementById('knnK').value;
-                    if (knnK && model === 'knn') {
-                        modelParams.push(['k', knnK]);
-                    }
-
-                    const treeMaxDepth = document.getElementById('treeMaxDepth').value;
-                    if (treeMaxDepth && model === 'tree') {
-                        modelParams.push(['max_depth', treeMaxDepth]);
-                    }
-
-                    // Zozbierať parametre procesorov z dynamických inputov
-                    const processorParams = [];
-                    processors.forEach(proc => {
-                        const paramDefs = factory.getProcessorParamDefinitions(proc);
-                        if (paramDefs && paramDefs.length > 0) {
-                            paramDefs.forEach(paramDef => {
-                                const inputId = `param_${proc}_${paramDef.name}`;
-                                const input = document.getElementById(inputId);
-                                if (input && input.value) {
-                                    processorParams.push([proc, paramDef.name, input.value]);
-                                }
-                            });
+                    if (model === 'logreg' && evalMode === 'regression') {
+                        showStatus('error', 'Upozornenie: Logistická regresia (logreg) vyžaduje evaluation_mode = "classification", nie "regression".', 'pipelineStatus');
+                        if (!confirm('Vybrali ste nekompatibilný evaluation_mode.\n\nModel: Logistická Regresia (logreg)\nEvaluation Mode: regression\n\nMal by byť: classification\n\nChcete pokračovať?')) {
+                            return;
                         }
-                    });
-
-                    const config = {
-                        model: model,
-                        processors: processors.length > 0 ? processors : [],
-                        processor: null,
-                        selector: null,
-                        evaluation_mode: evalMode || null,
-                        model_params: modelParams.length > 0 ? modelParams : null,
-                        selector_params: null,
-                        processor_params: processorParams.length > 0 ? processorParams : null
-                    };
-
-                    result = await pipeline.buildFromConfig(config);
+                    }
                 }
+
+                // Zozbierať parametre
+                const modelParams = [];
+
+                const knnK = document.getElementById('knnK').value;
+                if (knnK && model === 'knn') {
+                    modelParams.push(['k', knnK]);
+                }
+
+                const treeMaxDepth = document.getElementById('treeMaxDepth').value;
+                if (treeMaxDepth && model === 'tree') {
+                    modelParams.push(['max_depth', treeMaxDepth]);
+                }
+
+                const config = {
+                    model: model,
+                    processors: [],
+                    processor: null,
+                    selector: null,
+                    evaluation_mode: evalMode || null,
+                    model_params: modelParams.length > 0 ? modelParams : null,
+                    selector_params: null,
+                    processor_params: null
+                };
+
+                const result = await pipeline.buildFromConfig(config);
                 
                 document.getElementById('currentPipelineInfo').style.display = 'block';
                 document.getElementById('currentModel').textContent = result.model_name;
-                
-                const processorText = result.processors && result.processors.length > 0 
-                    ? result.processors.join(' → ') 
-                    : 'Žiadny';
-                document.getElementById('currentProcessor').textContent = processorText;
+                document.getElementById('currentProcessor').textContent = 'Dáta upravené manuálne';
                 document.getElementById('currentEvalMode').textContent = result.evaluation_mode;
                 
                 window.pipelineBuilt = true;
@@ -1609,6 +1594,7 @@
                 document.getElementById('targetSelectionArea').style.display = 'block';
                 document.getElementById('inspectDataBtn').disabled = true;
                 document.getElementById('inspectProcessedBtn').disabled = true;
+                document.getElementById('editDataBtn').disabled = false;
 
                 // Show feature exploration section and populate selector cards
                 document.getElementById('featureExplorationSection').style.display = 'block';
@@ -2247,6 +2233,382 @@
             if (event.target === modal) {
                 closeModal();
             }
+            const editorModal = document.getElementById('dataEditorModal');
+            if (event.target === editorModal) {
+                closeDataEditor();
+            }
+        }
+
+        // ======================================================================
+        // Data Editor Functions
+        // ======================================================================
+
+        // Stores the current working CSV data in the editor
+        let editorCurrentCSV = null;
+
+        function openDataEditor() {
+            if (!window.rawDataString || window.dataFormat !== 'csv') {
+                alert('Editor dát je dostupný len pre CSV formát. Najprv načítajte CSV dáta.');
+                return;
+            }
+
+            editorCurrentCSV = window.rawDataString;
+            const modal = document.getElementById('dataEditorModal');
+            modal.classList.add('show');
+
+            // Populate processor select
+            populateEditorProcessors();
+
+            // Render the table
+            renderEditorTable();
+        }
+
+        function closeDataEditor() {
+            document.getElementById('dataEditorModal').classList.remove('show');
+        }
+
+        function editorApplyAndClose() {
+            if (editorCurrentCSV) {
+                // Update the raw data
+                window.rawDataString = editorCurrentCSV;
+
+                // Update text area if visible
+                const textArea = document.getElementById('dataInput');
+                if (textArea) {
+                    textArea.value = editorCurrentCSV;
+                }
+
+                // Re-parse data with updated text
+                reparseAfterEdit();
+            }
+            closeDataEditor();
+        }
+
+        async function reparseAfterEdit() {
+            try {
+                const format = window.dataFormat;
+                const data = window.rawDataString;
+
+                dataLoader = new WasmDataLoaderClass(format);
+                const columns = await dataLoader.getAvailableColumns(data);
+                window.parsedColumns = columns;
+
+                const targetSelect = document.getElementById('targetColumnSelect');
+                const prevTarget = targetSelect.value;
+                targetSelect.innerHTML = '';
+                columns.forEach(col => {
+                    const opt = document.createElement('option');
+                    opt.value = col;
+                    opt.textContent = col;
+                    targetSelect.appendChild(opt);
+                });
+                // Restore previous target if still exists
+                if (columns.includes(prevTarget)) {
+                    targetSelect.value = prevTarget;
+                }
+
+                buildColumnStatsTable(data, columns, format);
+
+                showStatus('success', `Dáta aktualizované: ${columns.length} stĺpcov.`, 'parseStatus');
+            } catch (error) {
+                showStatus('error', `Chyba pri aktualizácii: ${error}`, 'parseStatus');
+            }
+        }
+
+        function populateEditorProcessors() {
+            const select = document.getElementById('editorProcessorSelect');
+            select.innerHTML = '<option value="">-- Vyberte procesor --</option>';
+            if (availableOptions && availableOptions.processors) {
+                availableOptions.processors.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.name;
+                    opt.textContent = `${p.name} - ${p.description}`;
+                    select.appendChild(opt);
+                });
+            }
+            // Clear params
+            document.getElementById('editorProcessorParams').innerHTML = '';
+        }
+
+        function updateEditorProcessorParams(processorName) {
+            const paramsDiv = document.getElementById('editorProcessorParams');
+            paramsDiv.innerHTML = '';
+
+            if (!processorName) return;
+
+            const paramDefs = factory.getProcessorParamDefinitions(processorName);
+            if (!paramDefs || paramDefs.length === 0) return;
+
+            paramDefs.forEach(param => {
+                const item = document.createElement('div');
+                item.className = 'param-item';
+
+                const label = document.createElement('label');
+                label.textContent = param.description + ':';
+                item.appendChild(label);
+
+                if (param.options && param.options.length > 0) {
+                    const sel = document.createElement('select');
+                    sel.id = `editor_param_${param.name}`;
+                    param.options.forEach(opt => {
+                        const o = document.createElement('option');
+                        o.value = opt;
+                        o.textContent = opt;
+                        if (opt === param.default_value) o.selected = true;
+                        sel.appendChild(o);
+                    });
+                    item.appendChild(sel);
+                } else {
+                    const input = document.createElement('input');
+                    input.type = param.param_type === 'number' ? 'number' : 'text';
+                    input.value = param.default_value;
+                    input.id = `editor_param_${param.name}`;
+                    if (param.min !== null && param.min !== undefined) input.min = param.min;
+                    if (param.max !== null && param.max !== undefined) input.max = param.max;
+                    item.appendChild(input);
+                }
+
+                paramsDiv.appendChild(item);
+            });
+        }
+
+        function renderEditorTable() {
+            const container = document.getElementById('editorTableContainer');
+            if (!editorCurrentCSV) {
+                container.innerHTML = '<p style="padding: 30px; color: #6c757d; text-align: center;">Žiadne dáta</p>';
+                return;
+            }
+
+            try {
+                const rawResult = pipeline.getEditableData(editorCurrentCSV, 'csv');
+                const result = convertWasmResult(rawResult);
+                if (!result || !result.headers || !result.rows) {
+                    container.innerHTML = '<p style="padding: 30px; color: #dc3545; text-align: center;">Chyba pri spracovaní dát</p>';
+                    return;
+                }
+                const headers = result.headers;
+                const rows = result.rows;
+
+                // Update column select  
+                const colSelect = document.getElementById('editorColumnSelect');
+                const prevCol = colSelect.value;
+                colSelect.innerHTML = '';
+                headers.forEach(h => {
+                    const opt = document.createElement('option');
+                    opt.value = h;
+                    opt.textContent = h;
+                    colSelect.appendChild(opt);
+                });
+                if (headers.includes(prevCol)) {
+                    colSelect.value = prevCol;
+                }
+
+                // Build table - klikateľné hlavičky stĺpcov
+                let html = '<table class="editor-table"><thead><tr>';
+                html += '<th style="width:40px;">#</th>';
+                headers.forEach((h, idx) => {
+                    const escapedH = h.replace(/'/g, "\\'");
+                    const isSelected = colSelect.value === h;
+                    html += `<th class="col-header${isSelected ? ' selected-col' : ''}" 
+                                onclick="editorSelectColumn('${escapedH}')" 
+                                title="Kliknite pre výber stĺpca">${h}</th>`;
+                });
+                html += '</tr></thead><tbody>';
+
+                const maxShow = Math.min(rows.length, 200);
+                const selectedCol = colSelect.value;
+                for (let i = 0; i < maxShow; i++) {
+                    html += '<tr>';
+                    html += `<td class="row-num">${i + 1}</td>`;
+                    const row = rows[i];
+                    headers.forEach((h, colIdx) => {
+                        const val = row[colIdx] || '';
+                        const isSelectedCol = h === selectedCol;
+                        html += `<td class="editable${isSelectedCol ? ' selected-col-cell' : ''}" ondblclick="editorEditCell(this, ${i}, '${h.replace(/'/g, "\\'")}')">
+                            ${val}
+                        </td>`;
+                    });
+                    html += '</tr>';
+                }
+
+                html += '</tbody></table>';
+
+                if (rows.length > maxShow) {
+                    html += `<p style="padding: 10px; color: #6c757d; text-align: center; font-style: italic;">
+                        Zobrazených ${maxShow} z ${rows.length} riadkov
+                    </p>`;
+                }
+
+                container.innerHTML = html;
+                updateEditorStatus(`${headers.length} stĺpcov, ${rows.length} riadkov`);
+            } catch (error) {
+                container.innerHTML = `<p style="padding: 30px; color: #e74c3c; text-align: center;">Chyba: ${error}</p>`;
+            }
+        }
+
+        function editorSelectColumn(colName) {
+            const colSelect = document.getElementById('editorColumnSelect');
+            colSelect.value = colName;
+            // Zvýrazni vybraný stĺpec v tabuľke
+            document.querySelectorAll('.col-header').forEach(th => {
+                th.classList.toggle('selected-col', th.textContent.trim() === colName);
+            });
+            document.querySelectorAll('.editor-table td.editable').forEach(td => {
+                td.classList.remove('selected-col-cell');
+            });
+            // Zvýrazni bunkám vybraného stĺpca
+            const headers = Array.from(document.querySelectorAll('.col-header'));
+            const colIdx = headers.findIndex(th => th.textContent.trim() === colName);
+            if (colIdx >= 0) {
+                document.querySelectorAll('.editor-table tbody tr').forEach(tr => {
+                    const tds = tr.querySelectorAll('td.editable');
+                    if (tds[colIdx]) {
+                        tds[colIdx].classList.add('selected-col-cell');
+                    }
+                });
+            }
+            // Zobraziť panel procesorov a aktualizovať label
+            document.getElementById('editorProcessorPanel').style.display = 'flex';
+            document.getElementById('editorSelectedColLabel').textContent = `Stĺpec: ${colName}`;
+            updateEditorStatus(`Vybraný stĺpec: ${colName}`);
+        }
+        window.editorSelectColumn = editorSelectColumn;
+
+        window.editorEditCell = editorEditCell;
+
+        function editorEditCell(td, rowIdx, colName) {
+            // Already editing
+            if (td.querySelector('input')) return;
+
+            const currentValue = td.textContent.trim();
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = currentValue;
+            td.textContent = '';
+            td.appendChild(input);
+            input.focus();
+            input.select();
+
+            const finishEdit = async () => {
+                const newValue = input.value.trim();
+                if (newValue !== currentValue) {
+                    try {
+                        const rawResult = pipeline.setCellValue(editorCurrentCSV, rowIdx, colName, newValue);
+                        const result = convertWasmResult(rawResult);
+                        editorCurrentCSV = result.csv;
+                        td.textContent = newValue;
+                        updateEditorStatus(`Bunka [${rowIdx + 1}, ${colName}] zmenená`);
+                    } catch (error) {
+                        td.textContent = currentValue;
+                        updateEditorStatus(`Chyba: ${error}`);
+                    }
+                } else {
+                    td.textContent = currentValue;
+                }
+            };
+
+            input.onblur = finishEdit;
+            input.onkeydown = (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    input.blur();
+                }
+                if (e.key === 'Escape') {
+                    td.textContent = currentValue;
+                }
+            };
+        }
+
+        async function editorApplyProcessor() {
+            const colName = document.getElementById('editorColumnSelect').value;
+            const processorType = document.getElementById('editorProcessorSelect').value;
+
+            if (!colName) {
+                updateEditorStatus('Vyberte stĺpec');
+                return;
+            }
+            if (!processorType) {
+                updateEditorStatus('Vyberte procesor');
+                return;
+            }
+
+            try {
+                // Collect params - VŽDY zaradiť parametre (aj s default hodnotami)
+                const params = [];
+                const paramDefs = factory.getProcessorParamDefinitions(processorType);
+                if (paramDefs && paramDefs.length > 0) {
+                    paramDefs.forEach(param => {
+                        const input = document.getElementById(`editor_param_${param.name}`);
+                        if (input) {
+                            // Zaradiť vždy, aj keď je prázdne (bude sa používať default)
+                            params.push([param.name, input.value || param.default_value || '']);
+                        }
+                    });
+                }
+
+                const rawResult = pipeline.applyProcessorToColumn(
+                    editorCurrentCSV,
+                    colName,
+                    processorType,
+                    params.length > 0 ? params : null
+                );
+                const result = convertWasmResult(rawResult);
+
+                editorCurrentCSV = result.csv;
+                renderEditorTable();
+                updateEditorStatus(`Procesor "${processorType}" aplikovaný na stĺpec "${colName}" (${result.rows_affected} riadkov)`);
+            } catch (error) {
+                updateEditorStatus(`Chyba: ${error}`);
+            }
+        }
+
+        async function editorDeleteColumn() {
+            const colName = document.getElementById('editorColumnSelect').value;
+            if (!colName) {
+                updateEditorStatus('Vyberte stĺpec na vymazanie');
+                return;
+            }
+
+            if (!confirm(`Naozaj chcete vymazať stĺpec "${colName}"?`)) return;
+
+            try {
+                const rawResult = pipeline.deleteColumn(editorCurrentCSV, colName);
+                const result = convertWasmResult(rawResult);
+                editorCurrentCSV = result.csv;
+                renderEditorTable();
+                updateEditorStatus(`Stĺpec "${colName}" vymazaný, zostáva ${result.remaining_columns} stĺpcov`);
+            } catch (error) {
+                updateEditorStatus(`Chyba: ${error}`);
+            }
+        }
+
+        async function editorReplaceAll() {
+            const colName = document.getElementById('editorColumnSelect').value;
+            const searchVal = document.getElementById('editorSearchValue').value;
+            const replaceVal = document.getElementById('editorReplaceValue').value;
+
+            if (!colName) {
+                updateEditorStatus('Vyberte stĺpec');
+                return;
+            }
+            if (searchVal === '') {
+                updateEditorStatus('Zadajte hodnotu na vyhľadanie');
+                return;
+            }
+
+            try {
+                const rawResult = pipeline.replaceAllInColumn(editorCurrentCSV, colName, searchVal, replaceVal);
+                const result = convertWasmResult(rawResult);
+                editorCurrentCSV = result.csv;
+                renderEditorTable();
+                updateEditorStatus(`Nahradených ${result.replaced_count} výskytov "${searchVal}" → "${replaceVal}" v stĺpci "${colName}"`);
+            } catch (error) {
+                updateEditorStatus(`Chyba: ${error}`);
+            }
+        }
+
+        function updateEditorStatus(text) {
+            document.getElementById('editorStatusText').textContent = text;
         }
 
         initApp();
@@ -2258,6 +2620,59 @@
             <button class="modal-close" onclick="closeModal()">&times;</button>
             <h2 id="modalTitle" style="color: #cc0000; margin-bottom: 20px;"></h2>
             <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <!-- Data Editor Modal -->
+    <div id="dataEditorModal" class="editor-modal">
+        <div class="editor-modal-content">
+            <div class="editor-header">
+                <h2>Editor dát</h2>
+                <span style="opacity: 0.8; font-size: 0.85em;">Kliknite na hlavičku stĺpca pre výber | Dvojklik na bunku pre úpravu</span>
+                <button onclick="closeDataEditor()" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.5); color: white; padding: 8px 16px; font-size: 1em;">&times; Zavrieť</button>
+            </div>
+
+            <!-- Skrytý select pre interné sledovanie vybraného stĺpca -->
+            <select id="editorColumnSelect" style="display:none;"></select>
+
+            <!-- Procesor panel - zobrazí sa po kliknutí na stĺpec -->
+            <div id="editorProcessorPanel" class="editor-toolbar" style="display: none;">
+                <div class="toolbar-group">
+                    <label><strong id="editorSelectedColLabel">--</strong></label>
+                </div>
+                <div class="toolbar-group">
+                    <label>Procesor:</label>
+                    <select id="editorProcessorSelect" onchange="updateEditorProcessorParams(this.value)"></select>
+                </div>
+                <div id="editorProcessorParams" class="editor-proc-params"></div>
+                <button id="editorApplyProcessorBtn" onclick="editorApplyProcessor()" style="background: #27ae60;">Aplikovať</button>
+                <button id="editorDeleteColumnBtn" onclick="editorDeleteColumn()" style="background: #e74c3c;">Vymazať stĺpec</button>
+
+                <div style="flex: 1;"></div>
+
+                <!-- Replace All -->
+                <div class="toolbar-group">
+                    <label>Nájsť:</label>
+                    <input type="text" id="editorSearchValue" placeholder="hodnota" style="min-width: 80px;">
+                </div>
+                <div class="toolbar-group">
+                    <label>Nahradiť:</label>
+                    <input type="text" id="editorReplaceValue" placeholder="nová hodnota" style="min-width: 80px;">
+                </div>
+                <button onclick="editorReplaceAll()">Nahradiť v stĺpci</button>
+            </div>
+
+            <div class="editor-body" id="editorTableContainer">
+                <p style="padding: 30px; color: #6c757d; text-align: center;">Načítavanie dát...</p>
+            </div>
+
+            <div class="editor-footer">
+                <span class="status-text" id="editorStatusText">Kliknite na hlavičku stĺpca pre výber</span>
+                <div>
+                    <button onclick="editorApplyAndClose()" style="background: #27ae60;">Použiť zmeny a zavrieť</button>
+                    <button onclick="closeDataEditor()" class="btn-secondary">Zrušiť</button>
+                </div>
+            </div>
         </div>
     </div>
 

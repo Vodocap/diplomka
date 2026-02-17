@@ -304,6 +304,27 @@ export class WasmMLPipeline {
         return takeFromExternrefTable0(ret[0]);
     }
     /**
+     * Aplikuje procesor na konkrétny stĺpec v CSV dátach a vráti upravené CSV
+     * @param {string} data
+     * @param {string} column_name
+     * @param {string} processor_type
+     * @param {any} params_json
+     * @returns {any}
+     */
+    applyProcessorToColumn(data, column_name, processor_type, params_json) {
+        const ptr0 = passStringToWasm0(data, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(column_name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ptr2 = passStringToWasm0(processor_type, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len2 = WASM_VECTOR_LEN;
+        const ret = wasm.wasmmlpipeline_applyProcessorToColumn(this.__wbg_ptr, ptr0, len0, ptr1, len1, ptr2, len2, params_json);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return takeFromExternrefTable0(ret[0]);
+    }
+    /**
      * Vytvorí pipeline z JSON konfigurácie
      * @param {any} config_json
      * @returns {any}
@@ -357,6 +378,23 @@ export class WasmMLPipeline {
         return takeFromExternrefTable0(ret[0]);
     }
     /**
+     * Vymaže stĺpec z CSV dát
+     * @param {string} data
+     * @param {string} column_name
+     * @returns {any}
+     */
+    deleteColumn(data, column_name) {
+        const ptr0 = passStringToWasm0(data, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(column_name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ret = wasm.wasmmlpipeline_deleteColumn(this.__wbg_ptr, ptr0, len0, ptr1, len1);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return takeFromExternrefTable0(ret[0]);
+    }
+    /**
      * Evaluácia (split dáta)
      * @param {number} _train_ratio
      * @returns {any}
@@ -382,6 +420,23 @@ export class WasmMLPipeline {
      */
     getAvailableTargetAnalyzers() {
         const ret = wasm.wasmmlpipeline_getAvailableTargetAnalyzers(this.__wbg_ptr);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return takeFromExternrefTable0(ret[0]);
+    }
+    /**
+     * Vráti všetky dáta vo formáte vhodnom pre editor (všetky riadky, všetky stĺpce)
+     * @param {string} data
+     * @param {string} format
+     * @returns {any}
+     */
+    getEditableData(data, format) {
+        const ptr0 = passStringToWasm0(data, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(format, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ret = wasm.wasmmlpipeline_getEditableData(this.__wbg_ptr, ptr0, len0, ptr1, len1);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
         }
@@ -488,6 +543,50 @@ export class WasmMLPipeline {
      */
     predict(input) {
         const ret = wasm.wasmmlpipeline_predict(this.__wbg_ptr, input);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return takeFromExternrefTable0(ret[0]);
+    }
+    /**
+     * Nahradí všetky výskyty hodnoty v stĺpci (Replace All)
+     * @param {string} data
+     * @param {string} column_name
+     * @param {string} search_value
+     * @param {string} replace_value
+     * @returns {any}
+     */
+    replaceAllInColumn(data, column_name, search_value, replace_value) {
+        const ptr0 = passStringToWasm0(data, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(column_name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ptr2 = passStringToWasm0(search_value, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len2 = WASM_VECTOR_LEN;
+        const ptr3 = passStringToWasm0(replace_value, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len3 = WASM_VECTOR_LEN;
+        const ret = wasm.wasmmlpipeline_replaceAllInColumn(this.__wbg_ptr, ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return takeFromExternrefTable0(ret[0]);
+    }
+    /**
+     * Zmení hodnotu konkrétnej bunky v CSV
+     * @param {string} data
+     * @param {number} row_idx
+     * @param {string} column_name
+     * @param {string} new_value
+     * @returns {any}
+     */
+    setCellValue(data, row_idx, column_name, new_value) {
+        const ptr0 = passStringToWasm0(data, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(column_name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ptr2 = passStringToWasm0(new_value, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len2 = WASM_VECTOR_LEN;
+        const ret = wasm.wasmmlpipeline_setCellValue(this.__wbg_ptr, ptr0, len0, row_idx, ptr1, len1, ptr2, len2);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
         }
@@ -808,7 +907,7 @@ function __wbg_get_imports() {
             console.warn(arg0);
         },
         __wbindgen_cast_0000000000000001: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { dtor_idx: 406, function: Function { arguments: [Externref], shim_idx: 407, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
+            // Cast intrinsic for `Closure(Closure { dtor_idx: 432, function: Function { arguments: [Externref], shim_idx: 433, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
             const ret = makeMutClosure(arg0, arg1, wasm.wasm_bindgen__closure__destroy__h6c9d8563d4584f37, wasm_bindgen__convert__closures_____invoke__hc673461b9820d736);
             return ret;
         },

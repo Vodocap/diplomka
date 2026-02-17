@@ -113,7 +113,7 @@ impl TargetAnalyzer for CorrelationAnalyzer {
 
     fn get_details_html(&self, columns: &[Vec<f64>], headers: &[String], _candidates: &[TargetCandidate]) -> String {
         let num_cols = columns.len();
-        if num_cols > 15 { return String::new(); }
+        if num_cols > 50 { return String::new(); }
 
         // Correlation matrix
         let mut corr_matrix = vec![vec![0.0f64; num_cols]; num_cols];

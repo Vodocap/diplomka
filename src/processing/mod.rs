@@ -78,6 +78,8 @@ pub mod outlier_clipper;
 pub mod log_transformer;
 pub mod power_transformer;
 pub mod selective_processor;
+pub mod time_converter;
+pub mod extra_processors;
 
 pub use scaler::StandardScaler;
 pub use binner::Binner;
@@ -92,3 +94,5 @@ pub use outlier_clipper::{OutlierClipper, ClippingMethod};
 pub use log_transformer::{LogTransformer, LogBase};
 pub use power_transformer::{PowerTransformer, TransformMethod};
 pub use selective_processor::SelectiveProcessor;
+pub use time_converter::TimeConverter;
+pub use extra_processors::{CommaToDotProcessor, ThousandsSeparatorRemover, OrdinalEncoder, FrequencyEncoder, TargetEncoder};

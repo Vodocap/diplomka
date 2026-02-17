@@ -65,11 +65,16 @@ impl CsvDataLoader {
     }
 
     /// Konvertuje string hodnoty na f64 s lepším error handlingom
-    fn parse_numeric_value(&self, val: &str, column: &str, row: usize) -> Result<f64, String> {
-        val.parse::<f64>()
+    fn parse_numeric_value(&self, val: &str, _column: &str, _row: usize) -> Result<f64, String> {
+        let trimmed = val.trim();
+        if trimmed.is_empty() {
+            return Ok(0.0);
+        }
+        trimmed.parse::<f64>()
+            .or_else(|_| trimmed.replace(',', ".").parse::<f64>())
             .map_err(|_| format!(
                 "Hodnota '{}' v stĺpci '{}' (riadok {}) nie je číslo",
-                val, column, row + 1
+                val, _column, _row + 1
             ))
     }
 }

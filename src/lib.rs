@@ -12,7 +12,8 @@ mod target_analysis;
 pub use data_loading::csv_loader::CsvLoader;
 pub use data_loading::{DataLoader, DataLoaderFactory, LoadedData, CsvDataLoader, JsonDataLoader};
 pub use models::{IModel, LinRegWrapper, KnnWrapper, LogRegWrapper, TreeWrapper, factory::ModelFactory};
-pub use processing::{DataProcessor, StandardScaler, Binner, OneHotEncoder, factory::ProcessorFactory};
+pub use processing::{DataProcessor, StandardScaler, Binner, OneHotEncoder, factory::ProcessorFactory, TimeConverter,
+    CommaToDotProcessor, ThousandsSeparatorRemover, OrdinalEncoder, FrequencyEncoder, TargetEncoder};
 pub use feature_selection_strategies::{
     FeatureSelector, 
     VarianceSelector, 

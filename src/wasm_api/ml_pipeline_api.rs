@@ -1553,10 +1553,593 @@ impl WasmMLPipeline {
 
         Ok(serde_wasm_bindgen::to_value(&result).unwrap())
     }
+
+    // ======================================================================
+    // Data Editor WASM API methods
+    // ======================================================================
+
+    /// Vráti všetky dáta vo formáte vhodnom pre editor (všetky riadky, všetky stĺpce)
+    #[wasm_bindgen(js_name = getEditableData)]
+    pub fn get_editable_data(&self, data: &str, format: &str) -> Result<JsValue, JsValue> {
+        if format != "csv" {
+            return Err(JsValue::from_str("Editor dát je podporovaný len pre CSV formát"));
+        }
+
+        let lines: Vec<&str> = data.lines().filter(|l| !l.trim().is_empty()).collect();
+        if lines.is_empty() {
+            return Err(JsValue::from_str("Prázdne dáta"));
+        }
+
+        let headers: Vec<String> = lines[0].split(',').map(|s| s.trim().to_string()).collect();
+        let mut rows: Vec<Vec<String>> = Vec::new();
+
+        for line in &lines[1..] {
+            let vals: Vec<String> = line.split(',').map(|s| s.trim().to_string()).collect();
+            rows.push(vals);
+        }
+
+        let result = serde_json::json!({
+            "headers": headers,
+            "rows": rows,
+            "total_rows": rows.len(),
+            "total_cols": headers.len()
+        });
+
+        Ok(serde_wasm_bindgen::to_value(&result).unwrap())
+    }
+
+    /// Aplikuje procesor na konkrétny stĺpec v CSV dátach a vráti upravené CSV
+    #[wasm_bindgen(js_name = applyProcessorToColumn)]
+    pub fn apply_processor_to_column(
+        &self,
+        data: &str,
+        column_name: &str,
+        processor_type: &str,
+        params_json: JsValue,
+    ) -> Result<JsValue, JsValue> {
+        use crate::processing::ProcessorFactory;
+
+        let lines: Vec<&str> = data.lines().filter(|l| !l.trim().is_empty()).collect();
+        if lines.len() < 2 {
+            return Err(JsValue::from_str("Nedostatok dát"));
+        }
+
+        let headers: Vec<String> = lines[0].split(',').map(|s| s.trim().to_string()).collect();
+        let col_idx = headers.iter().position(|h| h == column_name)
+            .ok_or_else(|| JsValue::from_str(&format!("Stĺpec '{}' nebol nájdený", column_name)))?;
+
+        // Parse rows
+        let mut all_values: Vec<Vec<String>> = Vec::new();
+        for line in &lines[1..] {
+            let mut vals: Vec<String> = line.split(',').map(|s| s.trim().to_string()).collect();
+            while vals.len() < headers.len() {
+                vals.push(String::new());
+            }
+            all_values.push(vals);
+        }
+
+        let n = all_values.len();
+        if n == 0 {
+            return Err(JsValue::from_str("Žiadne hodnoty v stĺpci"));
+        }
+
+        // === Textové procesory (pracujú priamo na reťazcoch) ===
+        if processor_type == "comma_to_dot" {
+            for row in all_values.iter_mut() {
+                if col_idx < row.len() {
+                    row[col_idx] = row[col_idx].replace(',', ".");
+                }
+            }
+            return self.rebuild_csv_result(&headers, &all_values, column_name, processor_type, n);
+        }
+
+        if processor_type == "thousands_separator_remover" {
+            for row in all_values.iter_mut() {
+                if col_idx < row.len() {
+                    // Odstráni čiarky, ktoré slúžia ako oddeľovače tisícov
+                    // Vzor: 1,000 alebo 1,000,000
+                    row[col_idx] = row[col_idx].replace(',', "");
+                }
+            }
+            return self.rebuild_csv_result(&headers, &all_values, column_name, processor_type, n);
+        }
+
+        // === Time converter - parsuje HH:MM:SS reťazce ===
+        if processor_type == "time_converter" {
+            // Parsujeme parametre
+            let mut input_format = "seconds".to_string();
+            let mut output_unit = "seconds".to_string();
+            if !params_json.is_null() && !params_json.is_undefined() {
+                let params: Vec<(String, String)> = serde_wasm_bindgen::from_value(params_json)
+                    .unwrap_or_default();
+                for (key, value) in &params {
+                    match key.as_str() {
+                        "input_format" => input_format = value.clone(),
+                        "output_unit" => output_unit = value.clone(),
+                        _ => {}
+                    }
+                }
+            }
+
+            for row in all_values.iter_mut() {
+                if col_idx >= row.len() { continue; }
+                let trimmed = row[col_idx].trim().to_string();
+                if trimmed.is_empty() { continue; }
+
+                // Parsuj hodnotu na sekundy podľa vstupného formátu
+                let seconds = match input_format.as_str() {
+                    "hh:mm:ss" | "hhmmss" => {
+                        Self::parse_time_string(&trimmed)
+                    },
+                    "hh:mm" | "hhmm" => {
+                        let parts: Vec<&str> = trimmed.split(':').collect();
+                        if parts.len() == 2 {
+                            let h: f64 = parts[0].parse().unwrap_or(0.0);
+                            let m: f64 = parts[1].parse().unwrap_or(0.0);
+                            Some(h * 3600.0 + m * 60.0)
+                        } else {
+                            trimmed.parse::<f64>().ok().map(|v| v * 3600.0 / 100.0)
+                        }
+                    },
+                    "mm:ss" | "mmss" => {
+                        let parts: Vec<&str> = trimmed.split(':').collect();
+                        if parts.len() == 2 {
+                            let m: f64 = parts[0].parse().unwrap_or(0.0);
+                            let s: f64 = parts[1].parse().unwrap_or(0.0);
+                            Some(m * 60.0 + s)
+                        } else {
+                            trimmed.parse::<f64>().ok().map(|v| v * 60.0 / 100.0)
+                        }
+                    },
+                    "minutes" | "m" => trimmed.parse::<f64>().ok().map(|v| v * 60.0),
+                    "hours" | "h" => trimmed.parse::<f64>().ok().map(|v| v * 3600.0),
+                    _ => trimmed.parse::<f64>().ok(), // seconds
+                };
+
+                if let Some(sec) = seconds {
+                    let result = match output_unit.as_str() {
+                        "minutes" | "m" => sec / 60.0,
+                        "hours" | "h" => sec / 3600.0,
+                        _ => sec, // seconds
+                    };
+                    row[col_idx] = Self::format_number(result);
+                }
+            }
+            return self.rebuild_csv_result(&headers, &all_values, column_name, processor_type, n);
+        }
+
+        // === Enkódovacie procesory (string-level) ===
+        let encoding_processors = ["onehot_encoder", "label_encoder", "ordinal_encoder", "frequency_encoder", "target_encoder"];
+        if encoding_processors.contains(&processor_type) {
+            // Zozbieraj textové hodnoty stĺpca
+            let col_strings: Vec<String> = all_values.iter()
+                .map(|row| row.get(col_idx).cloned().unwrap_or_default().trim().to_string())
+                .collect();
+
+            match processor_type {
+                "onehot_encoder" => {
+                    // Zisti unikátne hodnoty (v poradí výskytu)
+                    let mut unique_vals: Vec<String> = Vec::new();
+                    for v in &col_strings {
+                        if !unique_vals.contains(v) {
+                            unique_vals.push(v.clone());
+                        }
+                    }
+
+                    // Vytvor nové hlavičky: nahraď pôvodný stĺpec novými
+                    let mut new_headers: Vec<String> = Vec::new();
+                    let mut ohe_start = 0;
+                    for (i, h) in headers.iter().enumerate() {
+                        if i == col_idx {
+                            ohe_start = new_headers.len();
+                            for uv in &unique_vals {
+                                let col_name = if uv.is_empty() {
+                                    format!("{}_empty", column_name)
+                                } else {
+                                    format!("{}_{}", column_name, uv)
+                                };
+                                new_headers.push(col_name);
+                            }
+                        } else {
+                            new_headers.push(h.clone());
+                        }
+                    }
+
+                    // Prepíš riadky
+                    let mut new_all_values: Vec<Vec<String>> = Vec::new();
+                    for (i, row) in all_values.iter().enumerate() {
+                        let mut new_row: Vec<String> = Vec::new();
+                        for (j, val) in row.iter().enumerate() {
+                            if j == col_idx {
+                                for uv in &unique_vals {
+                                    if col_strings[i] == *uv {
+                                        new_row.push("1".to_string());
+                                    } else {
+                                        new_row.push("0".to_string());
+                                    }
+                                }
+                            } else {
+                                new_row.push(val.clone());
+                            }
+                        }
+                        new_all_values.push(new_row);
+                    }
+
+                    return self.rebuild_csv_result(&new_headers, &new_all_values, column_name, processor_type, n);
+                },
+                "label_encoder" => {
+                    // Priraď každej unikátnej hodnote číslo 0, 1, 2...
+                    let mut label_map: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+                    let mut counter = 0usize;
+                    for v in &col_strings {
+                        if !label_map.contains_key(v) {
+                            label_map.insert(v.clone(), counter);
+                            counter += 1;
+                        }
+                    }
+                    for (i, row) in all_values.iter_mut().enumerate() {
+                        if col_idx < row.len() {
+                            let label = label_map.get(&col_strings[i]).unwrap();
+                            row[col_idx] = label.to_string();
+                        }
+                    }
+                },
+                "ordinal_encoder" => {
+                    // Získaj sort_mode z parametrov
+                    let mut sort_mode = "alphabetical".to_string();
+                    if !params_json.is_null() && !params_json.is_undefined() {
+                        let params: Vec<(String, String)> = serde_wasm_bindgen::from_value(params_json)
+                            .unwrap_or_default();
+                        for (key, value) in &params {
+                            if key == "sort_mode" {
+                                sort_mode = value.clone();
+                            }
+                        }
+                    }
+
+                    let mut unique_vals: Vec<String> = Vec::new();
+                    for v in &col_strings {
+                        if !unique_vals.contains(v) {
+                            unique_vals.push(v.clone());
+                        }
+                    }
+                    if sort_mode == "alphabetical" {
+                        unique_vals.sort();
+                    }
+                    // Priraď poradie
+                    let ordinal_map: std::collections::HashMap<String, usize> = unique_vals.iter()
+                        .enumerate().map(|(i, v)| (v.clone(), i)).collect();
+                    for (i, row) in all_values.iter_mut().enumerate() {
+                        if col_idx < row.len() {
+                            let ord = ordinal_map.get(&col_strings[i]).unwrap();
+                            row[col_idx] = ord.to_string();
+                        }
+                    }
+                },
+                "frequency_encoder" => {
+                    let total = col_strings.len() as f64;
+                    let mut freq_map: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+                    for v in &col_strings {
+                        *freq_map.entry(v.clone()).or_insert(0) += 1;
+                    }
+                    for (i, row) in all_values.iter_mut().enumerate() {
+                        if col_idx < row.len() {
+                            let count = *freq_map.get(&col_strings[i]).unwrap() as f64;
+                            row[col_idx] = Self::format_number(count / total);
+                        }
+                    }
+                },
+                "target_encoder" => {
+                    // Target encoder bez target stĺpca → fallback na frequency encoder
+                    let total = col_strings.len() as f64;
+                    let mut freq_map: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+                    for v in &col_strings {
+                        *freq_map.entry(v.clone()).or_insert(0) += 1;
+                    }
+                    for (i, row) in all_values.iter_mut().enumerate() {
+                        if col_idx < row.len() {
+                            let count = *freq_map.get(&col_strings[i]).unwrap() as f64;
+                            row[col_idx] = Self::format_number(count / total);
+                        }
+                    }
+                },
+                _ => {}
+            }
+
+            return self.rebuild_csv_result(&headers, &all_values, column_name, processor_type, n);
+        }
+
+        // === Numerické procesory (DenseMatrix) ===
+        // Extrahuj stĺpec ako f64
+        let mut col_values: Vec<f64> = Vec::with_capacity(n);
+        let mut nan_indices: Vec<usize> = Vec::new();
+
+        for (i, row) in all_values.iter().enumerate() {
+            let trimmed = row.get(col_idx).map(|v| v.trim()).unwrap_or("");
+            if trimmed.is_empty() {
+                col_values.push(0.0); // placeholder
+                nan_indices.push(i);
+            } else {
+                match trimmed.parse::<f64>() {
+                    Ok(v) => col_values.push(v),
+                    Err(_) => {
+                        col_values.push(0.0);
+                        nan_indices.push(i);
+                    }
+                }
+            }
+        }
+
+        // Pre fit/transform vylúčime NaN riadky (ponecháme len platné)
+        let valid_values: Vec<f64> = col_values.iter().enumerate()
+            .filter(|(i, _)| !nan_indices.contains(i))
+            .map(|(_, v)| *v)
+            .collect();
+
+        if valid_values.is_empty() {
+            return Err(JsValue::from_str("Žiadne platné numerické hodnoty v stĺpci"));
+        }
+
+        // Vytvor maticu len z platných hodnôt pre fit
+        let valid_matrix_data: Vec<Vec<f64>> = valid_values.iter().map(|v| vec![*v]).collect();
+        let valid_matrix = DenseMatrix::from_2d_vec(&valid_matrix_data)
+            .map_err(|e| JsValue::from_str(&format!("Chyba pri vytváraní matice: {:?}", e)))?;
+
+        // Vytvor procesor BEZ SelectiveProcessor wrappera (raw)!
+        let mut processor = ProcessorFactory::create_raw(processor_type)
+            .map_err(|e| JsValue::from_str(&e))?;
+
+        // Aplikuj parametre
+        if !params_json.is_null() && !params_json.is_undefined() {
+            let params: Vec<(String, String)> = serde_wasm_bindgen::from_value(params_json)
+                .unwrap_or_default();
+            for (key, value) in params {
+                let _ = processor.set_param(&key, &value);
+            }
+        }
+
+        // Fit na platné hodnoty
+        processor.fit(&valid_matrix);
+
+        // Transform celý stĺpec (vrátane pôvodne NaN)
+        let full_matrix_data: Vec<Vec<f64>> = col_values.iter().map(|v| vec![*v]).collect();
+        let full_matrix = DenseMatrix::from_2d_vec(&full_matrix_data)
+            .map_err(|e| JsValue::from_str(&format!("Chyba: {:?}", e)))?;
+        let result_matrix = processor.transform(&full_matrix);
+
+        // Aktualizuj hodnoty v stĺpci
+        for (i, row) in all_values.iter_mut().enumerate() {
+            if col_idx < row.len() {
+                if nan_indices.contains(&i) {
+                    // Ponechaj prázdne bunky prázdne
+                    row[col_idx] = String::new();
+                } else {
+                    let new_val = *result_matrix.get((i, 0));
+                    row[col_idx] = Self::format_number(new_val);
+                }
+            }
+        }
+
+        self.rebuild_csv_result(&headers, &all_values, column_name, processor_type, n)
+    }
+
+    /// Vymaže stĺpec z CSV dát
+    #[wasm_bindgen(js_name = deleteColumn)]
+    pub fn delete_column(&self, data: &str, column_name: &str) -> Result<JsValue, JsValue> {
+        let lines: Vec<&str> = data.lines().filter(|l| !l.trim().is_empty()).collect();
+        if lines.is_empty() {
+            return Err(JsValue::from_str("Prázdne dáta"));
+        }
+
+        let headers: Vec<String> = lines[0].split(',').map(|s| s.trim().to_string()).collect();
+        let col_idx = headers.iter().position(|h| h == column_name)
+            .ok_or_else(|| JsValue::from_str(&format!("Stĺpec '{}' nebol nájdený", column_name)))?;
+
+        if headers.len() <= 1 {
+            return Err(JsValue::from_str("Nemôžete vymazať posledný stĺpec"));
+        }
+
+        // Rebuild CSV without the column
+        let new_headers: Vec<&str> = headers.iter()
+            .enumerate()
+            .filter(|(i, _)| *i != col_idx)
+            .map(|(_, h)| h.as_str())
+            .collect();
+
+        let mut csv = new_headers.join(",");
+        csv.push('\n');
+
+        for line in &lines[1..] {
+            let mut vals: Vec<String> = line.split(',').map(|s| s.trim().to_string()).collect();
+            // Pad to match header count
+            while vals.len() < headers.len() {
+                vals.push(String::new());
+            }
+            let new_vals: Vec<&str> = vals.iter()
+                .enumerate()
+                .filter(|(i, _)| *i != col_idx)
+                .map(|(_, v)| v.as_str())
+                .collect();
+            csv.push_str(&new_vals.join(","));
+            csv.push('\n');
+        }
+
+        let result = serde_json::json!({
+            "csv": csv,
+            "deleted_column": column_name,
+            "remaining_columns": new_headers.len()
+        });
+
+        Ok(serde_wasm_bindgen::to_value(&result).unwrap())
+    }
+
+    /// Zmení hodnotu konkrétnej bunky v CSV
+    #[wasm_bindgen(js_name = setCellValue)]
+    pub fn set_cell_value(
+        &self,
+        data: &str,
+        row_idx: usize,
+        column_name: &str,
+        new_value: &str,
+    ) -> Result<JsValue, JsValue> {
+        let lines: Vec<&str> = data.lines().filter(|l| !l.trim().is_empty()).collect();
+        if lines.is_empty() {
+            return Err(JsValue::from_str("Prázdne dáta"));
+        }
+
+        let headers: Vec<String> = lines[0].split(',').map(|s| s.trim().to_string()).collect();
+        let col_idx = headers.iter().position(|h| h == column_name)
+            .ok_or_else(|| JsValue::from_str(&format!("Stĺpec '{}' nebol nájdený", column_name)))?;
+
+        if row_idx + 1 >= lines.len() {
+            return Err(JsValue::from_str("Riadok mimo rozsah"));
+        }
+
+        // Rebuild CSV with modified cell
+        let mut csv = headers.join(",");
+        csv.push('\n');
+
+        for (i, line) in lines[1..].iter().enumerate() {
+            let mut vals: Vec<String> = line.split(',').map(|s| s.trim().to_string()).collect();
+            // Pad to match header count
+            while vals.len() < headers.len() {
+                vals.push(String::new());
+            }
+            if i == row_idx && col_idx < vals.len() {
+                vals[col_idx] = new_value.to_string();
+            }
+            // Only keep as many values as there are headers
+            vals.truncate(headers.len());
+            csv.push_str(&vals.join(","));
+            csv.push('\n');
+        }
+
+        let result = serde_json::json!({
+            "csv": csv,
+            "row": row_idx,
+            "column": column_name,
+            "new_value": new_value
+        });
+
+        Ok(serde_wasm_bindgen::to_value(&result).unwrap())
+    }
+
+    /// Nahradí všetky výskyty hodnoty v stĺpci (Replace All)
+    #[wasm_bindgen(js_name = replaceAllInColumn)]
+    pub fn replace_all_in_column(
+        &self,
+        data: &str,
+        column_name: &str,
+        search_value: &str,
+        replace_value: &str,
+    ) -> Result<JsValue, JsValue> {
+        let lines: Vec<&str> = data.lines().filter(|l| !l.trim().is_empty()).collect();
+        if lines.is_empty() {
+            return Err(JsValue::from_str("Prázdne dáta"));
+        }
+
+        let headers: Vec<String> = lines[0].split(',').map(|s| s.trim().to_string()).collect();
+        let col_idx = headers.iter().position(|h| h == column_name)
+            .ok_or_else(|| JsValue::from_str(&format!("Stĺpec '{}' nebol nájdený", column_name)))?;
+
+        let mut replaced_count = 0;
+        let mut csv = headers.join(",");
+        csv.push('\n');
+
+        for line in &lines[1..] {
+            let mut vals: Vec<String> = line.split(',').map(|s| s.trim().to_string()).collect();
+            // Pad to match header count
+            while vals.len() < headers.len() {
+                vals.push(String::new());
+            }
+            if col_idx < vals.len() && vals[col_idx] == search_value {
+                vals[col_idx] = replace_value.to_string();
+                replaced_count += 1;
+            }
+            // Only keep as many values as there are headers
+            vals.truncate(headers.len());
+            csv.push_str(&vals.join(","));
+            csv.push('\n');
+        }
+
+        let result = serde_json::json!({
+            "csv": csv,
+            "column": column_name,
+            "search_value": search_value,
+            "replace_value": replace_value,
+            "replaced_count": replaced_count
+        });
+
+        Ok(serde_wasm_bindgen::to_value(&result).unwrap())
+    }
 }
 
 // Helper methods (not exported to WASM)
 impl WasmMLPipeline {
+    /// Parsuje HH:MM:SS alebo HH:MM formát na sekundy
+    fn parse_time_string(time_str: &str) -> Option<f64> {
+        let parts: Vec<&str> = time_str.split(':').collect();
+        match parts.len() {
+            2 => {
+                // HH:MM or MM:SS
+                let a: f64 = parts[0].parse().ok()?;
+                let b: f64 = parts[1].parse().ok()?;
+                Some(a * 3600.0 + b * 60.0)
+            },
+            3 => {
+                // HH:MM:SS or HH:MM:SS.s
+                let hours: f64 = parts[0].parse().ok()?;
+                let minutes: f64 = parts[1].parse().ok()?;
+                let seconds: f64 = parts[2].parse().ok()?;
+                Some(hours * 3600.0 + minutes * 60.0 + seconds)
+            },
+            _ => None,
+        }
+    }
+
+    /// Formátuje číslo pre CSV výstup
+    fn format_number(val: f64) -> String {
+        if val.is_nan() || val.is_infinite() {
+            return String::new();
+        }
+        // Ak je celé číslo, formátuj bez zbytočných desatinných miest
+        if val.fract() == 0.0 && val.abs() < 1e15 {
+            format!("{:.0}", val)
+        } else {
+            // Zaokrúhli na 6 desatinných miest, odstráň koncové nuly
+            let formatted = format!("{:.6}", val);
+            let trimmed = formatted.trim_end_matches('0').trim_end_matches('.');
+            trimmed.to_string()
+        }
+    }
+
+    /// Postaví CSV výsledok z headers a values
+    fn rebuild_csv_result(
+        &self,
+        headers: &[String],
+        all_values: &[Vec<String>],
+        column_name: &str,
+        processor_type: &str,
+        rows_affected: usize,
+    ) -> Result<JsValue, JsValue> {
+        let mut csv = headers.join(",");
+        csv.push('\n');
+        for row in all_values {
+            let truncated: Vec<&str> = row.iter().take(headers.len()).map(|s| s.as_str()).collect();
+            csv.push_str(&truncated.join(","));
+            csv.push('\n');
+        }
+
+        let result = serde_json::json!({
+            "csv": csv,
+            "column": column_name,
+            "processor": processor_type,
+            "rows_affected": rows_affected
+        });
+
+        Ok(serde_wasm_bindgen::to_value(&result).unwrap())
+    }
+
     fn pearson_corr(x: &[f64], y: &[f64]) -> f64 {
         let n = x.len() as f64;
         if n == 0.0 { return 0.0; }

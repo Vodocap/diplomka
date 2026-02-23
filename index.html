@@ -1149,6 +1149,7 @@
         // Make functions globally available for inline handlers
         window.downloadSampleCSV = downloadSampleCSV;
         window.closeModal = closeModal;
+        window.switchTargetTab = switchTargetTab;
         window.closeDataEditor = closeDataEditor;
         window.editorApplyProcessor = editorApplyProcessor;
         window.editorDeleteColumn = editorDeleteColumn;
@@ -1333,8 +1334,7 @@
             document.getElementById('inspectDataBtn').onclick = inspectData;
             document.getElementById('inspectProcessedBtn').onclick = inspectProcessedData;
             document.getElementById('editDataBtn').onclick = openDataEditor;
-            document.getElementById('compareTargetAnalyzersBtn').onclick = compareTargetAnalyzers;
-            document.getElementById('selectAllAnalyzersBtn').onclick = toggleAllAnalyzers;
+            document.getElementById('analyzeTargetBtn').onclick = analyzeTargets;
             document.getElementById('compareSelectorBtn').onclick = compareSelectors;
             document.getElementById('selectAllSelectorsBtn').onclick = toggleAllSelectors;
             document.getElementById('trainAllSelectorsBtn').onclick = trainAllSelectors;

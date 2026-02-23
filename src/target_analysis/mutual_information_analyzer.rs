@@ -1,46 +1,61 @@
 use super::{TargetAnalyzer, TargetCandidate};
 use statrs::function::gamma::digamma;
 use std::collections::HashSet;
+use std::cell::RefCell;
 
 /// Analyzátor cieľovej premennej na základe Mutual Information (KSG estimátor).
 /// Zachytáva aj nelineárne vzťahy medzi premennými, na rozdiel od korelácie.
 pub struct MutualInformationAnalyzer {
     k_neighbors: usize,
+    /// Cache pre MI maticu - aby sme ju nemuseli prerátavať v get_details_html()
+    mi_cache: RefCell<Option<Vec<Vec<f64>>>>,
 }
 
 impl MutualInformationAnalyzer {
     pub fn new() -> Self {
-        Self { k_neighbors: 3 }
+        Self { 
+            k_neighbors: 3,
+            mi_cache: RefCell::new(None),
+        }
     }
 
-    /// KSG estimátor vzájomnej informácie medzi dvoma spojitými premennými
+    /// Optimalizovaný KSG estimátor - použije prealokované buffery
     fn estimate_mi_ksg(x: &[f64], y: &[f64], k: usize) -> f64 {
         let n = x.len();
         if n <= k { return 0.0; }
 
-        let mut nx_vec = vec![0usize; n];
-        let mut ny_vec = vec![0usize; n];
+        // Prealokujeme buffery pre zrýchlenie
+        let mut distances = Vec::with_capacity(n - 1);
+        let mut nx_vec = Vec::with_capacity(n);
+        let mut ny_vec = Vec::with_capacity(n);
 
         for i in 0..n {
-            let mut distances: Vec<f64> = Vec::with_capacity(n - 1);
+            distances.clear();
+            
+            // Optimalizácia: jednoduché absolútne vzdialenosti
             for j in 0..n {
                 if i == j { continue; }
                 let dx = (x[i] - x[j]).abs();
                 let dy = (y[i] - y[j]).abs();
                 distances.push(dx.max(dy));
             }
-            distances.sort_by(|a, b| a.partial_cmp(b).unwrap());
+            
+            // Partial sort - iba k-tý element (rýchlejšie ako full sort)
+            distances.select_nth_unstable_by(k - 1, |a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
             let epsilon = distances[k - 1];
 
             let mut nx = 0usize;
             let mut ny = 0usize;
+            
+            // Počítame susedov v epsilon-okolí
             for j in 0..n {
                 if i == j { continue; }
                 if (x[i] - x[j]).abs() < epsilon { nx += 1; }
                 if (y[i] - y[j]).abs() < epsilon { ny += 1; }
             }
-            nx_vec[i] = nx;
-            ny_vec[i] = ny;
+            
+            nx_vec.push(nx);
+            ny_vec.push(ny);
         }
 
         let psi_k = digamma(k as f64);
@@ -51,6 +66,28 @@ impl MutualInformationAnalyzer {
         }
         mean_psi /= n as f64;
         (psi_k - mean_psi + psi_n).max(0.0)
+    }
+
+    /// Vypočíta MI maticu pre všetky páry stĺpcov s cachovaním
+    fn compute_mi_matrix(&self, columns: &[Vec<f64>]) -> Vec<Vec<f64>> {
+        let num_cols = columns.len();
+        
+        // Adaptive k_neighbors: pre veľké datasety použijeme menšie k
+        let n = columns[0].len();
+        let k = if n > 1000 { 2 } else if n > 500 { 3 } else { self.k_neighbors };
+        
+        let mut mi_matrix = vec![vec![0.0f64; num_cols]; num_cols];
+        
+        // Počítame len hornú trojuholníkovú maticu (symetrická)
+        for i in 0..num_cols {
+            for j in (i+1)..num_cols {
+                let mi = Self::estimate_mi_ksg(&columns[i], &columns[j], k);
+                mi_matrix[i][j] = mi;
+                mi_matrix[j][i] = mi; // Symetria
+            }
+        }
+        
+        mi_matrix
     }
 
     fn classify_column(values: &[f64], n: usize) -> (usize, String) {
@@ -88,15 +125,11 @@ impl TargetAnalyzer for MutualInformationAnalyzer {
         let num_cols = columns.len();
         let n = if num_cols > 0 { columns[0].len() } else { return vec![]; };
 
-        // Pre-compute MI for all pairs
-        let mut mi_matrix = vec![vec![0.0f64; num_cols]; num_cols];
-        for i in 0..num_cols {
-            for j in (i+1)..num_cols {
-                let mi = Self::estimate_mi_ksg(&columns[i], &columns[j], self.k_neighbors);
-                mi_matrix[i][j] = mi;
-                mi_matrix[j][i] = mi;
-            }
-        }
+        // Vypočítame MI maticu a uložíme do cache
+        let mi_matrix = self.compute_mi_matrix(columns);
+        
+        // Uložíme do cache pre get_details_html()
+        *self.mi_cache.borrow_mut() = Some(mi_matrix.clone());
 
         let mut candidates = Vec::new();
         for col_idx in 0..num_cols {
@@ -135,14 +168,12 @@ impl TargetAnalyzer for MutualInformationAnalyzer {
         let num_cols = columns.len();
         if num_cols > 50 { return String::new(); }
 
-        let mut mi_matrix = vec![vec![0.0f64; num_cols]; num_cols];
-        for i in 0..num_cols {
-            for j in (i+1)..num_cols {
-                let mi = Self::estimate_mi_ksg(&columns[i], &columns[j], self.k_neighbors);
-                mi_matrix[i][j] = mi;
-                mi_matrix[j][i] = mi;
-            }
-        }
+        // Použijeme cache ak existuje, inak vypočítame znova
+        let mi_matrix = if let Some(cached) = self.mi_cache.borrow().as_ref() {
+            cached.clone()
+        } else {
+            self.compute_mi_matrix(columns)
+        };
 
         // Find max MI for color scaling
         let max_mi = mi_matrix.iter()

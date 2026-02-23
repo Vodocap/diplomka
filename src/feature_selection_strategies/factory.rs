@@ -5,8 +5,8 @@ use super::{
     ChiSquareSelector,
     InformationGainSelector,
     MutualInformationSelector,
-    CombinedAnalysisSelector,
-    SmcSelector
+    SmcSelector,
+    SynergyVNSSelector
 };
 
 /// Factory pre vytváranie feature selektorov podľa názvu
@@ -21,8 +21,8 @@ impl FeatureSelectorFactory {
             "chi_square" | "chi2" => Ok(Box::new(ChiSquareSelector::new())),
             "information_gain" | "infogain" => Ok(Box::new(InformationGainSelector::new())),
             "mutual_information" | "mi" => Ok(Box::new(MutualInformationSelector::new())),
-            "combined_analysis" | "combined" => Ok(Box::new(CombinedAnalysisSelector::new())),
             "smc" => Ok(Box::new(SmcSelector::new())),
+            "synergy_vns" | "vns" => Ok(Box::new(SynergyVNSSelector::new())),
             _ => Err(format!("Neznámy feature selektor: {}", selector_type)),
         }
     }
@@ -35,8 +35,8 @@ impl FeatureSelectorFactory {
             "chi_square",
             "information_gain",
             "mutual_information",
-            "combined_analysis",
             "smc",
+            "synergy_vns",
         ]
     }
 
@@ -48,8 +48,8 @@ impl FeatureSelectorFactory {
             "chi_square" => Some("Chi-Square Test - testuje nezávislosť medzi features a targetom (len klasifikácia)"),
             "information_gain" => Some("Information Gain - meria redukciu entropie (Pozor: vyžaduje Binner processor!)"),
             "mutual_information" => Some("Mutual Information (KSG) - meria vzájomnú závislosť (funguje na spojitých dátach)"),
-            "combined_analysis" => Some("Combined Analysis - Pearson + Spearman + MI spolu s interpretáciou a odporúčaním modelu"),
             "smc" => Some("SMC (Squared Multiple Correlation) - meria príspevok features k predikcii targetu cez drop v R²"),
+            "synergy_vns" => Some("Synergy VNS - Variable Neighborhood Search optimalizujúci synergiu medzi features (MI + synergy - redundancy)"),
             _ => None,
         }
     }
@@ -67,8 +67,8 @@ impl FeatureSelectorFactory {
             "chi_square" => vec!["classification"],
             "information_gain" => vec!["classification"],
             "mutual_information" => vec!["regression", "classification"],
-            "combined_analysis" => vec!["regression", "classification"],
             "smc" => vec!["regression", "classification"],
+            "synergy_vns" => vec!["regression", "classification"],
             _ => vec![],
         }
     }
@@ -78,7 +78,8 @@ impl FeatureSelectorFactory {
         match selector_type {
             "variance" => vec!["threshold"],
             "correlation" => vec!["threshold"],
-            "chi_square" | "information_gain" | "mutual_information" | "combined_analysis" | "smc" => vec!["num_features"],
+            "chi_square" | "information_gain" | "mutual_information" | "smc" => vec!["num_features"],
+            "synergy_vns" => vec!["num_features", "max_iterations", "k_max", "alpha", "beta", "gamma", "initial_solution"],
             _ => vec![],
         }
     }

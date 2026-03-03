@@ -50,6 +50,7 @@ pub mod information_gain_selector;
 pub mod mutual_information_selector;
 pub mod smc_selector;
 pub mod synergy_vns_selector;
+pub mod synergy_sa_selector;
 pub mod factory;
 
 pub use variance_selector::VarianceSelector;
@@ -59,4 +60,5 @@ pub use information_gain_selector::InformationGainSelector;
 pub use mutual_information_selector::MutualInformationSelector;
 pub use smc_selector::SmcSelector;
 pub use synergy_vns_selector::SynergyVNSSelector;
+pub use synergy_sa_selector::SynergySASelector;
 // FeatureSelectorFactory removed - not used directly

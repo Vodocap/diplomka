@@ -9,6 +9,7 @@ mod processing;
 mod feature_selection_strategies;
 mod target_analysis;
 mod embedded;
+pub mod mi_estimator;
 
 pub use data_loading::csv_loader::CsvLoader;
 pub use data_loading::{DataLoader, DataLoaderFactory, LoadedData, CsvDataLoader, JsonDataLoader};

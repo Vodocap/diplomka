@@ -6,7 +6,8 @@ use super::{
     InformationGainSelector,
     MutualInformationSelector,
     SmcSelector,
-    SynergyVNSSelector
+    SynergyVNSSelector,
+    SynergySASelector
 };
 
 /// Factory pre vytváranie feature selektorov podľa názvu
@@ -23,6 +24,7 @@ impl FeatureSelectorFactory {
             "mutual_information" | "mi" => Ok(Box::new(MutualInformationSelector::new())),
             "smc" => Ok(Box::new(SmcSelector::new())),
             "synergy_vns" | "vns" => Ok(Box::new(SynergyVNSSelector::new())),
+            "synergy_sa" | "sa" => Ok(Box::new(SynergySASelector::new())),
             _ => Err(format!("Neznámy feature selektor: {}", selector_type)),
         }
     }
@@ -37,6 +39,7 @@ impl FeatureSelectorFactory {
             "mutual_information",
             "smc",
             "synergy_vns",
+            "synergy_sa",
         ]
     }
 
@@ -50,6 +53,7 @@ impl FeatureSelectorFactory {
             "mutual_information" => Some("Mutual Information (KSG) - meria vzájomnú závislosť (funguje na spojitých dátach)"),
             "smc" => Some("SMC (Squared Multiple Correlation) - meria príspevok features k predikcii targetu cez drop v R²"),
             "synergy_vns" => Some("Synergy VNS - Variable Neighborhood Search optimalizujúci synergiu medzi features (MI + synergy - redundancy)"),
+            "synergy_sa" => Some("Synergy SA - Simulated Annealing optimalizujúci synergiu features. Prijíma aj horšie riešenia → lepšie uniká z lokálnych optím."),
             _ => None,
         }
     }
@@ -69,6 +73,7 @@ impl FeatureSelectorFactory {
             "mutual_information" => vec!["regression", "classification"],
             "smc" => vec!["regression", "classification"],
             "synergy_vns" => vec!["regression", "classification"],
+            "synergy_sa" => vec!["regression", "classification"],
             _ => vec![],
         }
     }
@@ -80,6 +85,7 @@ impl FeatureSelectorFactory {
             "correlation" => vec!["threshold"],
             "chi_square" | "information_gain" | "mutual_information" | "smc" => vec!["num_features"],
             "synergy_vns" => vec!["num_features", "max_iterations", "k_max", "alpha", "beta", "gamma", "initial_solution"],
+            "synergy_sa" => vec!["num_features", "max_iterations", "initial_temp", "cooling_rate", "min_temp", "reheat_interval", "alpha", "beta", "gamma", "initial_solution"],
             _ => vec![],
         }
     }

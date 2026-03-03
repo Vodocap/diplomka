@@ -661,6 +661,18 @@
             padding: 6px 10px;
             font-size: 0.9em;
         }
+        .selector-compare-card .card-params .param-desc {
+            font-size: 0.78em;
+            color: #6c757d;
+            margin-top: 2px;
+            margin-bottom: 6px;
+            line-height: 1.3;
+        }
+        .selector-compare-card .card-params select {
+            width: 100%;
+            padding: 6px 10px;
+            font-size: 0.9em;
+        }
 
         /* Target method tabs */
         .target-method-tabs {
@@ -743,6 +755,142 @@
             border-bottom: none;
             margin: 0;
             padding: 0;
+        }
+
+        /* Heatmap Matrix Fullscreen Modal */
+        .heatmap-toolbar {
+            background: #f8f9fa;
+            padding: 10px 25px;
+            border-bottom: 2px solid #dee2e6;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-shrink: 0;
+            flex-wrap: wrap;
+        }
+        .heatmap-toolbar label {
+            font-weight: 600;
+            font-size: 13px;
+            color: #495057;
+        }
+        .heatmap-toolbar .htb-group {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+        .heatmap-toolbar button {
+            padding: 6px 14px;
+            font-size: 12px;
+            border: 2px solid #dee2e6;
+            background: white;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.15s;
+        }
+        .heatmap-toolbar button.active {
+            background: #cc0000;
+            color: white;
+            border-color: #cc0000;
+        }
+        .heatmap-toolbar button:hover:not(.active) {
+            background: #e9ecef;
+        }
+        .heatmap-container {
+            flex: 1;
+            overflow: auto;
+            padding: 15px;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+        }
+        .heatmap-table {
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+        .heatmap-table th {
+            padding: 4px 6px;
+            background: #f1f3f5;
+            border: 1px solid #dee2e6;
+            font-size: 10px;
+            position: sticky;
+            z-index: 2;
+            white-space: nowrap;
+            max-width: 90px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .heatmap-table th.corner {
+            position: sticky;
+            left: 0;
+            top: 0;
+            z-index: 3;
+            background: #e9ecef;
+        }
+        .heatmap-table th.col-header {
+            top: 0;
+            writing-mode: vertical-lr;
+            text-orientation: mixed;
+            transform: rotate(180deg);
+            height: 100px;
+            vertical-align: bottom;
+            padding: 6px 4px;
+        }
+        .heatmap-table th.row-header {
+            left: 0;
+            text-align: right;
+            padding-right: 8px;
+        }
+        .heatmap-table td {
+            padding: 0;
+            border: 1px solid rgba(255,255,255,0.3);
+            text-align: center;
+            cursor: pointer;
+            transition: outline 0.1s;
+            min-width: 28px;
+            height: 28px;
+            font-size: 0;
+        }
+        .heatmap-table td:hover {
+            outline: 2px solid #333;
+            outline-offset: -1px;
+            z-index: 1;
+            position: relative;
+        }
+        .heatmap-table td.show-values {
+            font-size: 9px;
+            font-weight: 600;
+            min-width: 42px;
+        }
+        .heatmap-tooltip {
+            position: fixed;
+            background: rgba(0,0,0,0.88);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 3000;
+            display: none;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        .heatmap-legend {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 25px 10px;
+            border-top: 1px solid #dee2e6;
+            background: #f8f9fa;
+            flex-shrink: 0;
+            font-size: 11px;
+            color: #495057;
+        }
+        .heatmap-legend .lg-bar {
+            height: 14px;
+            flex: 1;
+            max-width: 300px;
+            border-radius: 3px;
+            border: 1px solid #dee2e6;
         }
 
         .editor-toolbar {
@@ -1016,38 +1164,14 @@
                 <div id="targetSelectionArea" style="display: none; margin-top: 20px; padding-top: 20px; border-top: 2px solid #dee2e6;">
                     <h3 style="color: #cc0000; margin-bottom: 15px;">Výber cieľovej premennej</h3>
                     
-                    <p style="color: #6c757d; margin-bottom: 15px;">
-                        Porovnajte rôzne metódy analýzy cieľovej premennej. Mapa premenných ukáže zhodu medzi metódami.
-                    </p>
-
-                    <!-- Target analyzer method cards -->
-                    <div id="targetAnalyzerGrid" class="selector-compare-grid">
-                        <!-- Dynamicky generované karty analyzérov -->
+                    <div class="form-group">
+                        <label>Cieľová premenná (target):</label>
+                        <select id="targetColumnSelect" style="width: 100%; padding: 10px; border: 2px solid #cc0000; border-radius: 4px; font-size: 1em; background: white;">
+                            <option value="">-- Vyberte cieľovú premennú --</option>
+                        </select>
                     </div>
 
-                    <div style="margin-top: 20px; display: flex; gap: 10px; align-items: center;">
-                        <button id="compareTargetAnalyzersBtn" style="flex: 0 0 auto;">
-                            Porovnať vybrané metódy
-                        </button>
-                        <button id="selectAllAnalyzersBtn" class="btn-secondary" style="flex: 0 0 auto; padding: 10px 20px;">
-                            Vybrať všetky
-                        </button>
-                        <span id="compareTargetStatus" style="font-size: 0.9em; color: #6c757d;"></span>
-                    </div>
-                    <div id="compareTargetAnalyzersStatus" class="status"></div>
-
-                    <!-- Results: Target variable map -->
-                    <div id="targetComparisonResultsArea" style="display: none; margin-top: 20px;">
-                        <h4 style="color: #495057; margin-bottom: 10px;">Mapa premenných - vyberte cieľovú premennú</h4>
-                        <p style="font-size: 12px; color: #6c757d; margin-bottom: 10px;">
-                            Kliknite na premennú pre výber. Farba a bodky ukazujú, koľko metód ju označilo medzi top kandidátmi.
-                        </p>
-                        <div id="targetVariableMap"></div>
-                    </div>
-
-                    <input type="hidden" id="targetColumnSelect" value="">
-
-                    <div class="form-group" style="margin-top: 20px;">
+                    <div class="form-group">
                         <label>Train/Test Split (% pre tréning):</label>
                         <div style="display: flex; align-items: center; gap: 10px;">
                             <input type="range" id="trainTestSplit" min="50" max="95" value="80" step="5" style="flex: 1;">
@@ -1060,6 +1184,46 @@
 
                     <button id="confirmTargetBtn">Potvrdiť výber a načítať do pipeline</button>
                     <div id="dataStatus" class="status"></div>
+
+                    <!-- Optional: Target analysis -->
+                    <details style="margin-top: 20px; border-top: 1px solid #dee2e6; padding-top: 15px;">
+                        <summary style="cursor: pointer; font-weight: 600; color: #495057; padding: 8px 0;">
+                            Voliteľné: Analýza cieľovej premennej (pomôže s výberom)
+                        </summary>
+                        <div style="margin-top: 15px;">
+                            <p style="color: #6c757d; margin-bottom: 15px;">
+                                Porovnajte rôzne metódy analýzy cieľovej premennej. Mapa premenných ukáže zhodu medzi metódami.
+                            </p>
+
+                            <!-- Target analyzer method cards -->
+                            <div id="targetAnalyzerGrid" class="selector-compare-grid">
+                                <!-- Dynamicky generované karty analyzérov -->
+                            </div>
+
+                            <div style="margin-top: 20px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                                <button id="compareTargetAnalyzersBtn" style="flex: 0 0 auto;">
+                                    Porovnať vybrané metódy
+                                </button>
+                                <button id="showMatrixBtnTarget" style="flex: 0 0 auto; background: #2c3e50; color: white; border: none; padding: 10px 20px; cursor: pointer; font-size: 14px;">
+                                    Matica korelácií / MI
+                                </button>
+                                <button id="selectAllAnalyzersBtn" class="btn-secondary" style="flex: 0 0 auto; padding: 10px 20px;">
+                                    Vybrať všetky
+                                </button>
+                                <span id="compareTargetStatus" style="font-size: 0.9em; color: #6c757d;"></span>
+                            </div>
+                            <div id="compareTargetAnalyzersStatus" class="status"></div>
+
+                            <!-- Results: Target variable map -->
+                            <div id="targetComparisonResultsArea" style="display: none; margin-top: 20px;">
+                                <h4 style="color: #495057; margin-bottom: 10px;">Mapa premenných - vyberte cieľovú premennú</h4>
+                                <p style="font-size: 12px; color: #6c757d; margin-bottom: 10px;">
+                                    Kliknite na premennú pre výber. Farba a bodky ukazujú, koľko metód ju označilo medzi top kandidátmi.
+                                </p>
+                                <div id="targetVariableMap"></div>
+                            </div>
+                        </div>
+                    </details>
                 </div>
 
                 <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
@@ -1087,9 +1251,12 @@
                     <!-- Dynamicky generované karty selektorov -->
                 </div>
 
-                <div style="margin-top: 20px; display: flex; gap: 10px; align-items: center;">
+                <div style="margin-top: 20px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                     <button id="compareSelectorBtn" style="flex: 0 0 auto;">
                         Porovnať vybrané selektory
+                    </button>
+                    <button id="showMatrixBtn" style="flex: 0 0 auto; background: #2c3e50; color: white; border: none; padding: 10px 20px; cursor: pointer; font-size: 14px;">
+                        Matica korelácií / MI
                     </button>
                     <button id="selectAllSelectorsBtn" class="btn-secondary" style="flex: 0 0 auto; padding: 10px 20px;">
                         Vybrať všetky
@@ -1149,7 +1316,6 @@
         // Make functions globally available for inline handlers
         window.downloadSampleCSV = downloadSampleCSV;
         window.closeModal = closeModal;
-        window.switchTargetTab = switchTargetTab;
         window.closeDataEditor = closeDataEditor;
         window.editorApplyProcessor = editorApplyProcessor;
         window.editorDeleteColumn = editorDeleteColumn;
@@ -1184,103 +1350,43 @@
         }
 
         async function initApp() {
+            
             try {
                 showLoading(true);
-                
-                // Diagnostika pre GitHub Pages
-                console.log('=== WASM INITIALIZATION DEBUG ===');
-                console.log('Current URL:', window.location.href);
-                console.log('Base URI:', document.baseURI);
-                console.log('Origin:', window.location.origin);
-                console.log('Pathname:', window.location.pathname);
-                
-                // Auto-detect base path for GitHub Pages
-                const basePath = document.baseURI.endsWith('/') ? document.baseURI : document.baseURI + '/';
-                const wasmPath = new URL('./pkg/wasm.js', basePath).href;
-                console.log('Trying to load WASM from:', wasmPath);
                 
                 let wasmModule;
                 try {
                     wasmModule = await import('./pkg/wasm.js');
-                    console.log('✓ WASM module loaded successfully');
                 } catch (importError) {
-                    console.error('✗ Failed to import WASM module:', importError);
-                    console.error('Import error details:', {
-                        message: importError.message,
-                        name: importError.name,
-                        stack: importError.stack
-                    });
-                    throw new Error(`Nepodarilo sa načítať WASM modul z ./pkg/wasm.js\n\nChyba: ${importError.message}\n\nSkontrolujte:\n1. Či existuje súbor pkg/wasm.js\n2. Či je GitHub Pages správne nasadený\n3. Konzolu prehliadača pre ďalšie chyby`);
+                    throw importError;
                 }
                 
                 const init = wasmModule.default || wasmModule.init;
                 const WasmFactory = wasmModule.WasmFactory;
                 const WasmMLPipeline = wasmModule.WasmMLPipeline;
-                WasmDataLoaderClass = wasmModule.WasmDataLoader; // Uložíme do globálnej premennej
-
-                console.log('WASM exports:', {
-                    init: typeof init,
-                    WasmFactory: typeof WasmFactory,
-                    WasmMLPipeline: typeof WasmMLPipeline,
-                    WasmDataLoader: typeof WasmDataLoaderClass,
-                    allExports: Object.keys(wasmModule)
-                });
+                WasmDataLoaderClass = wasmModule.WasmDataLoader;
 
                 if (!init || !WasmFactory) {
-                    throw new Error('WASM module exports not found (wasm.js or pkg missing)');
+                    throw new Error('WASM module exports not found');
                 }
 
-                console.log('Initializing WASM...');
                 await init();
-                console.log('✓ WASM initialized');
 
                 factory = new WasmFactory();
                 pipeline = new WasmMLPipeline();
-                console.log('✓ Factory and Pipeline created');
-
-                console.log('Fetching available options...');
                 availableOptions = factory.getAvailableOptions();
-                console.log('✓ Available options:', availableOptions);
                 
                 if (!availableOptions || !availableOptions.models || availableOptions.models.length === 0) {
-                    throw new Error('Žiadne modely/selektory neboli načítané z WASM Factory. WASM modul môže byť nesprávne skompilovaný.');
+                    throw new Error('Žiadne modely neboli načítané z WASM Factory.');
                 }
 
-                console.log('Populating UI options...');
                 populateOptions();
-                console.log('✓ UI populated');
-                
-                console.log('Setting up event listeners...');
                 setupEventListeners();
-                console.log('✓ Event listeners ready');
-
-                console.log('=== INITIALIZATION COMPLETE ===');
                 showStatus('info', 'Aplikácia pripravená!', 'parseStatus');
             } catch (error) {
-                console.error('=== INIT ERROR ===');
                 console.error('Init error:', error);
-                console.error('Error stack:', error.stack);
                 const message = (error && error.message) ? error.message : String(error);
-                showStatus('error', `Chyba pri načítaní WASM: ${message}\n\nOtvorte Developer Console (F12) pre viac detailov.`, 'parseStatus');
-                
-                // Zobrazenie viditeľného erroru na stránke
-                document.body.innerHTML += `
-                    <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-                                background: #f8d7da; border: 3px solid #f5c6cb; padding: 30px; 
-                                border-radius: 10px; max-width: 600px; z-index: 9999; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
-                        <h2 style="color: #721c24; margin-bottom: 15px;">Chyba inicializácie WASM</h2>
-                        <p style="color: #721c24; margin-bottom: 10px;"><strong>Chyba:</strong> ${message}</p>
-                        <p style="color: #721c24; font-size: 0.9em;">Otvorte Developer Console (F12) pre viac informácií.</p>
-                        <hr style="margin: 15px 0; border-color: #f5c6cb;">
-                        <p style="color: #721c24; font-size: 0.85em;">
-                            <strong>Možné príčiny:</strong><br>
-                            • WASM súbory neboli správne nasadené na GitHub Pages<br>
-                            • Nesprávne MIME typy pre .wasm súbory<br>
-                            • CORS problémy pri načítaní modulov<br>
-                            • Cesta k pkg/wasm.js je nesprávna
-                        </p>
-                    </div>
-                `;
+                showStatus('error', `Chyba pri načítaní WASM: ${message}`, 'parseStatus');
             } finally {
                 showLoading(false);
             }
@@ -1334,8 +1440,10 @@
             document.getElementById('inspectDataBtn').onclick = inspectData;
             document.getElementById('inspectProcessedBtn').onclick = inspectProcessedData;
             document.getElementById('editDataBtn').onclick = openDataEditor;
-            document.getElementById('analyzeTargetBtn').onclick = analyzeTargets;
+            document.getElementById('compareTargetAnalyzersBtn').onclick = compareTargetAnalyzers;
             document.getElementById('compareSelectorBtn').onclick = compareSelectors;
+            document.getElementById('showMatrixBtn').onclick = openHeatmapModal;
+            document.getElementById('showMatrixBtnTarget').onclick = openHeatmapModal;
             document.getElementById('selectAllSelectorsBtn').onclick = toggleAllSelectors;
             document.getElementById('trainAllSelectorsBtn').onclick = trainAllSelectors;
             
@@ -1566,6 +1674,21 @@
                 // Target selection now via comparison map
 
                 document.getElementById('targetSelectionArea').style.display = 'block';
+                
+                // Populate target column dropdown
+                const targetSelect = document.getElementById('targetColumnSelect');
+                targetSelect.innerHTML = '<option value="">-- Vyberte cie\u013eov\u00fa premenn\u00fa --</option>';
+                columns.forEach(col => {
+                    const opt = document.createElement('option');
+                    opt.value = col;
+                    opt.textContent = col;
+                    targetSelect.appendChild(opt);
+                });
+                // Pre-select last column as default (common convention)
+                if (columns.length > 0) {
+                    targetSelect.value = columns[columns.length - 1];
+                }
+                
                 document.getElementById('inspectDataBtn').disabled = false;
                 document.getElementById('inspectProcessedBtn').disabled = true;
                 document.getElementById('editDataBtn').disabled = false;
@@ -1928,6 +2051,22 @@
                 
                 titleEl.textContent = `${result.metric_name} - ${result.method_description}`;
                 content.innerHTML = result.html;
+
+                // Add fullscreen matrix button for correlation/MI analyzers
+                if (method === 'correlation' || method === 'mutual_information') {
+                    const fsBtn = document.createElement('button');
+                    fsBtn.textContent = '🔍 Zobraziť maticu na celú obrazovku';
+                    fsBtn.style.cssText = 'margin:15px 0; padding:10px 20px; background:#2c3e50; color:white; border:none; cursor:pointer; font-size:13px; border-radius:4px;';
+                    fsBtn.onclick = () => {
+                        closeAnalyzerDetailsModal();
+                        const mode = method === 'correlation' ? 'correlation' : 'mi';
+                        openHeatmapModal().then(() => {
+                            if (mode === 'mi') switchHeatmapMatrix('mi');
+                        });
+                    };
+                    content.insertBefore(fsBtn, content.firstChild);
+                }
+
                 modal.classList.add('show');
             } catch (error) {
                 alert(`Chyba pri načítaní detailov: ${error}`);
@@ -2039,17 +2178,82 @@
                     params.forEach(p => {
                         let defaultVal = '';
                         let label = p;
+                        let description = '';
+                        let inputType = 'number';
+                        let selectOptions = null;
+
+                        // Common params
                         if (p === 'num_features') {
                             defaultVal = '5';
                             label = 'Počet features';
+                            description = 'Koľko features chcete vybrať z celkového počtu.';
                         } else if (p === 'threshold') {
                             defaultVal = sel.name === 'correlation' ? '0.95' : '0.01';
                             label = 'Prahová hodnota';
+                            description = sel.name === 'correlation'
+                                ? 'Features s koreláciou nad touto hodnotou budú odstránené.'
+                                : 'Minimálna variancia – features pod touto hodnotou budú vylúčené.';
                         }
-                        paramsHtml += `<div class="form-group" style="margin-bottom:8px;">
-                            <label>${label} (${p}):</label>
-                            <input type="number" step="any" value="${defaultVal}" id="compare_param_${sel.name}_${p}">
-                        </div>`;
+                        // VNS / SA specific params
+                        else if (p === 'max_iterations') {
+                            defaultVal = '100';
+                            label = 'Max iterácií';
+                            description = 'Počet iterácií algoritmu. Viac = presnejší výsledok, ale dlhší výpočet.';
+                        } else if (p === 'k_max') {
+                            defaultVal = '4';
+                            label = 'K max (neighborhoods)';
+                            description = 'Počet typov susedstiev vo VNS (1-4). Väčší = dôkladnejšie prehľadávanie.';
+                        } else if (p === 'alpha') {
+                            defaultVal = '0.7';
+                            label = 'Alpha (α) – relevancia';
+                            description = 'Váha individuálnej MI každého feature s targetom. Vyššia α = uprednostňujú sa features s vysokou závislosťou na target.';
+                        } else if (p === 'beta') {
+                            defaultVal = '0.2';
+                            label = 'Beta (β) – synergia';
+                            description = 'Váha synergie medzi features. Vyššia β = hľadajú sa features, ktoré spolu nesú viac informácie ako jednotlivo.';
+                        } else if (p === 'gamma') {
+                            defaultVal = '0.3';
+                            label = 'Gamma (γ) – penalizácia redundancie';
+                            description = 'Penalizácia za redundanciu medzi features. Vyššia γ = vylúčia sa features, ktoré nesú rovnakú informáciu.';
+                        } else if (p === 'initial_solution') {
+                            defaultVal = 'greedy';
+                            label = 'Počiatočné riešenie';
+                            description = 'Greedy = začne s top features podľa MI. Random = náhodný začiatok (väčšia diverzita).';
+                            selectOptions = ['greedy', 'random'];
+                        }
+                        // SA specific params
+                        else if (p === 'initial_temp') {
+                            defaultVal = '1.0';
+                            label = 'Počiatočná teplota';
+                            description = 'Štartová teplota SA. Vyššia = väčšia šanca prijať horšie riešenie na začiatku (lepšia explorácia).';
+                        } else if (p === 'cooling_rate') {
+                            defaultVal = '0.95';
+                            label = 'Rýchlosť chladnutia';
+                            description = 'Koeficient chladnutia (0-1). Bližšie k 1 = pomalšie chladnutie, dôkladnejšie prehľadávanie.';
+                        } else if (p === 'min_temp') {
+                            defaultVal = '0.001';
+                            label = 'Minimálna teplota';
+                            description = 'Teplota, pod ktorou sa algoritmus zastaví. Nižšia = dlhší beh.';
+                        } else if (p === 'reheat_interval') {
+                            defaultVal = '50';
+                            label = 'Reheat interval';
+                            description = 'Po koľkých iteráciách sa teplota čiastočne zvýši (escape z lokálneho minima).';
+                        }
+
+                        if (selectOptions) {
+                            const opts = selectOptions.map(o => `<option value="${o}" ${o === defaultVal ? 'selected' : ''}>${o}</option>`).join('');
+                            paramsHtml += `<div class="form-group" style="margin-bottom:8px;">
+                                <label>${label} (${p}):</label>
+                                <select id="compare_param_${sel.name}_${p}">${opts}</select>
+                                ${description ? `<div class="param-desc">${description}</div>` : ''}
+                            </div>`;
+                        } else {
+                            paramsHtml += `<div class="form-group" style="margin-bottom:8px;">
+                                <label>${label} (${p}):</label>
+                                <input type="${inputType}" step="any" value="${defaultVal}" id="compare_param_${sel.name}_${p}">
+                                ${description ? `<div class="param-desc">${description}</div>` : ''}
+                            </div>`;
+                        }
                     });
                 }
 
@@ -2244,10 +2448,10 @@
                 document.querySelectorAll('#selectorCompareGrid .selector-compare-card.active').forEach(card => {
                     const name = card.id.replace('compare_card_', '');
                     const params = [];
-                    card.querySelectorAll('.card-params input').forEach(input => {
-                        const paramName = input.id.replace(`compare_param_${name}_`, '');
-                        if (input.value) {
-                            params.push([paramName, input.value]);
+                    card.querySelectorAll('.card-params input, .card-params select').forEach(el => {
+                        const paramName = el.id.replace(`compare_param_${name}_`, '');
+                        if (el.value) {
+                            params.push([paramName, el.value]);
                         }
                     });
                     selectorConfigs.push({ name, params });
@@ -3087,6 +3291,259 @@
             document.getElementById('editorStatusText').textContent = text;
         }
 
+        // Setup UI event listeners that don't depend on WASM (radio buttons, etc.)  
+        function setupBasicListeners() {
+            // Escape key closes modals
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    const hm = document.getElementById('heatmapModal');
+                    if (hm && hm.classList.contains('show')) { closeHeatmapModal(); return; }
+                    const ad = document.getElementById('analyzerDetailsModal');
+                    if (ad && ad.classList.contains('show')) { closeAnalyzerDetailsModal(); return; }
+                    const de = document.getElementById('dataEditorModal');
+                    if (de && de.classList.contains('show')) { closeDataEditor(); return; }
+                    const dm = document.getElementById('dataModal');
+                    if (dm && dm.classList.contains('show')) { closeModal(); return; }
+                }
+            });
+
+            // Data input method radio buttons - these must work even if WASM fails
+            const radioText = document.getElementById('dataInputText');
+            const radioFile = document.getElementById('dataInputFile');
+            if (radioText) radioText.onchange = toggleDataInputMethod;
+            if (radioFile) radioFile.onchange = toggleDataInputMethod;
+
+            // File input change listener
+            const fileInput = document.getElementById('fileInput');
+            if (fileInput) {
+                fileInput.onchange = function(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const fileInfo = document.getElementById('fileInfo');
+                        fileInfo.textContent = `Vybraný súbor: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+                        const ext = file.name.split('.').pop().toLowerCase();
+                        if (ext === 'csv') {
+                            document.getElementById('dataFormatSelect').value = 'csv';
+                        } else if (ext === 'json') {
+                            document.getElementById('dataFormatSelect').value = 'json';
+                        }
+                    }
+                };
+            }
+
+            // Train/Test split slider
+            const splitSlider = document.getElementById('trainTestSplit');
+            if (splitSlider) {
+                splitSlider.oninput = function(e) {
+                    const trainPercent = parseInt(e.target.value);
+                    const testPercent = 100 - trainPercent;
+                    document.getElementById('splitValue').textContent = `${trainPercent}%`;
+                    document.getElementById('trainPercent').textContent = `${trainPercent}%`;
+                    document.getElementById('testPercent').textContent = `${testPercent}%`;
+                };
+            }
+        }
+
+        // ===== Fullscreen Heatmap Matrix =====
+        let _heatmapData = null;      // {feature_names, correlation_matrix, mi_matrix}
+        let _heatmapMode = 'correlation';  // 'correlation' | 'mi'
+        let _heatmapShowValues = false;
+        let _heatmapSorted = false;
+
+        async function openHeatmapModal() {
+            const data = window.rawDataString;
+            const format = window.dataFormat;
+            if (!data) { alert('Najprv načítajte dáta'); return; }
+            if (!pipeline) { alert('Pipeline nie je inicializovaný'); return; }
+
+            const modal = document.getElementById('heatmapModal');
+            modal.classList.add('show');
+            document.getElementById('heatmapContainer').innerHTML = '<p style="color:#6c757d;padding:40px;text-align:center;">⏳ Počítam matice... (môže trvať niekoľko sekúnd)</p>';
+
+            try {
+                showLoading(true);
+                const rawResult = pipeline.getFeatureMatrices(data, format);
+                _heatmapData = convertWasmResult(rawResult);
+                _heatmapMode = 'correlation';
+                _heatmapShowValues = _heatmapData.num_features <= 15;
+                _heatmapSorted = false;
+                
+                document.getElementById('heatmapBtnCorr').classList.add('active');
+                document.getElementById('heatmapBtnMI').classList.remove('active');
+                document.getElementById('heatmapBtnValues').classList.toggle('active', _heatmapShowValues);
+                document.getElementById('heatmapBtnSort').classList.remove('active');
+                document.getElementById('heatmapInfo').textContent = `${_heatmapData.num_features} príznakov × ${_heatmapData.num_rows} riadkov`;
+
+                renderHeatmap();
+            } catch (err) {
+                document.getElementById('heatmapContainer').innerHTML = `<p style="color:red;padding:40px;">Chyba: ${err}</p>`;
+            } finally {
+                showLoading(false);
+            }
+        }
+        window.openHeatmapModal = openHeatmapModal;
+
+        function closeHeatmapModal() {
+            document.getElementById('heatmapModal').classList.remove('show');
+        }
+        window.closeHeatmapModal = closeHeatmapModal;
+
+        function switchHeatmapMatrix(mode) {
+            _heatmapMode = mode;
+            document.getElementById('heatmapBtnCorr').classList.toggle('active', mode === 'correlation');
+            document.getElementById('heatmapBtnMI').classList.toggle('active', mode === 'mi');
+            document.getElementById('heatmapTitle').textContent = mode === 'correlation' ? 'Matica korelácií (Pearson)' : 'Matica Mutual Information (KSG)';
+            renderHeatmap();
+        }
+        window.switchHeatmapMatrix = switchHeatmapMatrix;
+
+        function toggleHeatmapValues() {
+            _heatmapShowValues = !_heatmapShowValues;
+            document.getElementById('heatmapBtnValues').classList.toggle('active', _heatmapShowValues);
+            // Toggle class on existing cells without re-render
+            document.querySelectorAll('#heatmapContainer .heatmap-table td').forEach(td => {
+                td.classList.toggle('show-values', _heatmapShowValues);
+            });
+        }
+        window.toggleHeatmapValues = toggleHeatmapValues;
+
+        function toggleHeatmapSort() {
+            _heatmapSorted = !_heatmapSorted;
+            document.getElementById('heatmapBtnSort').classList.toggle('active', _heatmapSorted);
+            renderHeatmap();
+        }
+        window.toggleHeatmapSort = toggleHeatmapSort;
+
+        function heatmapColor(value, mode) {
+            // Correlation: -1..1 → red (negative) → white (0) → blue (positive)
+            // MI: 0..max → white (0) → purple (max)
+            if (mode === 'correlation') {
+                const v = Math.max(-1, Math.min(1, value));
+                const absV = Math.abs(v);
+                if (v >= 0) {
+                    // White → Blue
+                    const r = Math.round(255 * (1 - absV));
+                    const g = Math.round(255 * (1 - absV * 0.6));
+                    const b = 255;
+                    return `rgb(${r},${g},${b})`;
+                } else {
+                    // White → Red
+                    const r = 255;
+                    const g = Math.round(255 * (1 - absV * 0.7));
+                    const b = Math.round(255 * (1 - absV * 0.8));
+                    return `rgb(${r},${g},${b})`;
+                }
+            } else {
+                // MI: 0 → white, max → deep purple
+                const v = Math.max(0, Math.min(1, value));
+                const r = Math.round(255 - v * 175);
+                const g = Math.round(255 - v * 215);
+                const b = Math.round(255 - v * 75);
+                return `rgb(${r},${g},${b})`;
+            }
+        }
+
+        function textColor(value, mode) {
+            if (mode === 'correlation') {
+                return Math.abs(value) > 0.6 ? '#fff' : '#333';
+            } else {
+                return value > 0.6 ? '#fff' : '#333';
+            }
+        }
+
+        function renderHeatmap() {
+            if (!_heatmapData) return;
+            const container = document.getElementById('heatmapContainer');
+            const tooltip = document.getElementById('heatmapTooltip');
+
+            const matrix = _heatmapMode === 'correlation' ? _heatmapData.correlation_matrix : _heatmapData.mi_matrix;
+            const names = [..._heatmapData.feature_names];
+            const n = names.length;
+
+            // Determine ordering
+            let order = Array.from({length: n}, (_, i) => i);
+            if (_heatmapSorted && n > 2) {
+                // Cluster-like sort: hierarchical ordering by average absolute value
+                const avgAbs = order.map(i => {
+                    let sum = 0;
+                    for (let j = 0; j < n; j++) if (j !== i) sum += Math.abs(matrix[i][j]);
+                    return sum / (n - 1);
+                });
+                order.sort((a, b) => avgAbs[b] - avgAbs[a]);
+            }
+
+            // Normalize MI for coloring
+            let maxVal = 1.0;
+            if (_heatmapMode === 'mi') {
+                maxVal = 0;
+                for (let i = 0; i < n; i++)
+                    for (let j = 0; j < n; j++)
+                        if (i !== j && matrix[i][j] > maxVal) maxVal = matrix[i][j];
+                if (maxVal === 0) maxVal = 1;
+            }
+
+            // Build table
+            let html = '<table class="heatmap-table"><thead><tr>';
+            html += '<th class="corner"></th>';
+            for (const idx of order) {
+                html += `<th class="col-header" title="${names[idx]}">${names[idx]}</th>`;
+            }
+            html += '</tr></thead><tbody>';
+
+            for (const ri of order) {
+                html += '<tr>';
+                html += `<th class="row-header" title="${names[ri]}">${names[ri]}</th>`;
+                for (const ci of order) {
+                    const raw = matrix[ri][ci];
+                    const norm = _heatmapMode === 'mi' ? raw / maxVal : raw;
+                    const bg = ri === ci && _heatmapMode === 'correlation'
+                        ? '#e0e0e0'
+                        : heatmapColor(norm, _heatmapMode);
+                    const tc = ri === ci ? '#999' : textColor(Math.abs(norm), _heatmapMode);
+                    const valClass = _heatmapShowValues ? ' show-values' : '';
+                    const displayVal = _heatmapMode === 'correlation' ? raw.toFixed(2) : raw.toFixed(3);
+                    html += `<td class="${valClass}" style="background:${bg};color:${tc};" data-row="${ri}" data-col="${ci}" data-val="${raw}">${displayVal}</td>`;
+                }
+                html += '</tr>';
+            }
+            html += '</tbody></table>';
+            container.innerHTML = html;
+
+            // Legend
+            const legend = document.getElementById('heatmapLegend');
+            if (_heatmapMode === 'correlation') {
+                legend.innerHTML = `
+                    <span>-1.0</span>
+                    <div class="lg-bar" style="background:linear-gradient(to right, rgb(255,76,51), rgb(255,178,153), white, rgb(153,204,255), rgb(0,128,255));"></div>
+                    <span>+1.0</span>
+                    <span style="margin-left:15px;color:#999;">Pearson korelácia</span>`;
+            } else {
+                legend.innerHTML = `
+                    <span>0</span>
+                    <div class="lg-bar" style="background:linear-gradient(to right, white, rgb(180,140,220), rgb(80,40,180));"></div>
+                    <span>${maxVal.toFixed(3)}</span>
+                    <span style="margin-left:15px;color:#999;">Mutual Information (nats) · MI=0 pre nepočítané páry (|corr|&lt;0.3)</span>`;
+            }
+
+            // Tooltip on hover
+            container.onmousemove = (e) => {
+                const td = e.target.closest('td');
+                if (!td || td.dataset.row === undefined) { tooltip.style.display = 'none'; return; }
+                const ri = parseInt(td.dataset.row);
+                const ci = parseInt(td.dataset.col);
+                const val = parseFloat(td.dataset.val);
+                const label = _heatmapMode === 'correlation' ? 'Korelácia' : 'MI';
+                tooltip.innerHTML = `<strong>${names[ri]}</strong> × <strong>${names[ci]}</strong><br>${label}: <strong>${val.toFixed(4)}</strong>`;
+                tooltip.style.display = 'block';
+                tooltip.style.left = (e.clientX + 14) + 'px';
+                tooltip.style.top = (e.clientY - 10) + 'px';
+            };
+            container.onmouseleave = () => { tooltip.style.display = 'none'; };
+        }
+
+        // Register basic listeners immediately (no WASM needed)
+        setupBasicListeners();
+        // Then initialize WASM
         initApp();
     </script>
 
@@ -3111,6 +3568,37 @@
             </div>
         </div>
     </div>
+
+    <!-- Fullscreen Heatmap Matrix Modal -->
+    <div id="heatmapModal" class="editor-modal">
+        <div class="editor-modal-content" style="max-width: 100vw; margin: 0; border-radius: 0; height: 100vh;">
+            <div class="editor-header">
+                <h2 id="heatmapTitle">Matica korelácií</h2>
+                <span id="heatmapInfo" style="opacity: 0.85; font-size: 0.85em;"></span>
+                <button onclick="closeHeatmapModal()" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.5); color: white; padding: 8px 16px; font-size: 1em;">&times; Zavrieť</button>
+            </div>
+            <div class="heatmap-toolbar">
+                <div class="htb-group">
+                    <label>Matica:</label>
+                    <button id="heatmapBtnCorr" class="active" onclick="switchHeatmapMatrix('correlation')">Korelácia (Pearson)</button>
+                    <button id="heatmapBtnMI" onclick="switchHeatmapMatrix('mi')">Mutual Information</button>
+                </div>
+                <div class="htb-group">
+                    <label>Hodnoty:</label>
+                    <button id="heatmapBtnValues" onclick="toggleHeatmapValues()">Zobraziť čísla</button>
+                </div>
+                <div class="htb-group">
+                    <label>Zoradiť:</label>
+                    <button id="heatmapBtnSort" onclick="toggleHeatmapSort()">Podľa korelácie</button>
+                </div>
+            </div>
+            <div class="heatmap-container" id="heatmapContainer">
+                <p style="color:#6c757d;">Načítavanie matice...</p>
+            </div>
+            <div class="heatmap-legend" id="heatmapLegend"></div>
+        </div>
+    </div>
+    <div class="heatmap-tooltip" id="heatmapTooltip"></div>
 
     <!-- Data Editor Modal -->
     <div id="dataEditorModal" class="editor-modal">

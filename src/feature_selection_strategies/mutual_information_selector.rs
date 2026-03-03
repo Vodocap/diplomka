@@ -1,106 +1,49 @@
 use smartcore::linalg::basic::matrix::DenseMatrix;
 use smartcore::linalg::basic::arrays::Array;
 use super::FeatureSelector;
-use statrs::function::gamma::digamma;
+use crate::mi_estimator;
 use std::cell::RefCell;
 use std::collections::HashSet;
 
-pub struct MutualInformationSelector 
-{
+pub struct MutualInformationSelector {
     top_k: usize,
     k_neighbors: usize,
     details_cache: RefCell<String>,
 }
 
-impl MutualInformationSelector 
-{
-    pub fn new() -> Self 
-    {
-        Self 
-        { 
+impl MutualInformationSelector {
+    pub fn new() -> Self {
+        Self {
             top_k: 10,
             k_neighbors: 3,
             details_cache: RefCell::new(String::new()),
         }
     }
 
-    /// KSG odhad vzajomnej informacie medzi dvoma spojitymi premennymi
-    fn estimate_mi_ksg(x_col: &[f64], y: &[f64], k: usize) -> f64 
-    {
-        let n = x_col.len();
-        if n <= k 
-        { 
-            return 0.0; 
-        }
-
-        let mut nx_vec = vec![0usize; n];
-        let mut ny_vec = vec![0usize; n];
-
-        for i in 0..n 
-        {
-            let mut distances = Vec::with_capacity(n - 1);
-            for j in 0..n 
-            {
-                if i == j { continue; }
-                let dx = (x_col[i] - x_col[j]).abs();
-                let dy = (y[i] - y[j]).abs();
-                distances.push(dx.max(dy));
-            }
-            distances.sort_by(|a, b| a.partial_cmp(b).unwrap());
-            let epsilon = distances[k - 1];
-
-            let mut nx = 0usize;
-            let mut ny = 0usize;
-            for j in 0..n 
-            {
-                if i == j { continue; }
-                if (x_col[i] - x_col[j]).abs() < epsilon { nx += 1; }
-                if (y[i] - y[j]).abs() < epsilon { ny += 1; }
-            }
-            nx_vec[i] = nx;
-            ny_vec[i] = ny;
-        }
-
-        let psi_k = digamma(k as f64);
-        let psi_n = digamma(n as f64);
-        let mut mean_psi = 0.0;
-        for i in 0..n 
-        {
-            mean_psi += digamma((nx_vec[i] + 1) as f64) + digamma((ny_vec[i] + 1) as f64);
-        }
-        mean_psi /= n as f64;
-        (psi_k - mean_psi + psi_n).max(0.0)
-    }
-
-    /// Relative color for MI relevance: intensity proportional to value/max
+    /// Relatívna farba pre MI relevanciu: intenzita proporcná k value/max
     fn rel_mi_color(mi: f64, max_mi: f64) -> String {
         let t = if max_mi > 1e-12 { (mi / max_mi).min(1.0) } else { 0.0 };
         format!("rgba(52,152,219,{})", 0.05 + t * 0.55)
     }
 
-    /// Relative color for inter-feature MI (redundancy): red intensity proportional to value/max
+    /// Relatívna farba pre inter-feature MI (redundanciu): červená intenzita
     fn rel_redundancy_color(mi: f64, max_mi: f64) -> String {
         let t = if max_mi > 1e-12 { (mi / max_mi).min(1.0) } else { 0.0 };
         format!("rgba(231,76,60,{})", 0.05 + t * 0.55)
     }
 }
 
-impl FeatureSelector for MutualInformationSelector 
-{
-    fn get_name(&self) -> &str 
-    {
+impl FeatureSelector for MutualInformationSelector {
+    fn get_name(&self) -> &str {
         "Mutual Information (mRMR)"
     }
 
-    fn get_supported_params(&self) -> Vec<&str> 
-    {
+    fn get_supported_params(&self) -> Vec<&str> {
         vec!["num_features", "k_neighbors"]
     }
 
-    fn set_param(&mut self, key: &str, value: &str) -> Result<(), String> 
-    {
-        match key 
-        {
+    fn set_param(&mut self, key: &str, value: &str) -> Result<(), String> {
+        match key {
             "num_features" | "top_k" => self.top_k = value.parse().map_err(|_| "Invalid num_features".to_string())?,
             "k_neighbors" => self.k_neighbors = value.parse().map_err(|_| "Invalid k_neighbors".to_string())?,
             _ => return Err(format!("Param not found: {}. Supported: num_features, k_neighbors", key)),
@@ -108,31 +51,23 @@ impl FeatureSelector for MutualInformationSelector
         Ok(())
     }
 
-    fn get_selected_indices(&self, x: &DenseMatrix<f64>, y: &[f64]) -> Vec<usize> 
-    {
+    fn get_selected_indices(&self, x: &DenseMatrix<f64>, y: &[f64]) -> Vec<usize> {
         let (rows, cols) = x.shape();
         let effective_k = self.top_k.min(cols);
         let k_nn = self.k_neighbors;
 
-        // ─── Extract all columns ───
+        // Extrakcia stĺpcov
         let columns: Vec<Vec<f64>> = (0..cols)
             .map(|j| (0..rows).map(|i| *x.get((i, j))).collect())
             .collect();
 
-        // ─── 1. Relevance: MI(feature_i, target) for each feature ───
+        // 1. Relevancia: MI(feature_i, target) pre každý feature
         let relevance: Vec<f64> = (0..cols)
-            .map(|j| Self::estimate_mi_ksg(&columns[j], y, k_nn))
+            .map(|j| mi_estimator::estimate_mi_ksg(&columns[j], y, k_nn))
             .collect();
 
-        // ─── 2. Inter-feature MI matrix (symmetric) ───
-        let mut mi_matrix = vec![vec![0.0f64; cols]; cols];
-        for i in 0..cols {
-            for j in (i+1)..cols {
-                let mi_ij = Self::estimate_mi_ksg(&columns[i], &columns[j], k_nn);
-                mi_matrix[i][j] = mi_ij;
-                mi_matrix[j][i] = mi_ij;
-            }
-        }
+        // 2. Inter-feature MI matica (symetrická, všetky páry)
+        let mi_matrix = mi_estimator::compute_mi_matrix(&columns, k_nn);
 
         // ─── 3. mRMR greedy selection ───
         // mRMR score = relevance(f) - (1/|S|) * sum_{s in S} MI(f, s)
@@ -331,8 +266,7 @@ impl FeatureSelector for MutualInformationSelector
         result
     }
 
-    fn select_features(&self, x: &DenseMatrix<f64>, y: &[f64]) -> DenseMatrix<f64> 
-    {
+    fn select_features(&self, x: &DenseMatrix<f64>, y: &[f64]) -> DenseMatrix<f64> {
         let indices = self.get_selected_indices(x, y);
         self.extract_columns(x, &indices)
     }
@@ -343,7 +277,7 @@ impl FeatureSelector for MutualInformationSelector
             .map(|j| (0..rows).map(|i| *x.get((i, j))).collect())
             .collect();
         let scores: Vec<(usize, f64)> = (0..cols)
-            .map(|j| (j, Self::estimate_mi_ksg(&columns[j], y, self.k_neighbors)))
+            .map(|j| (j, mi_estimator::estimate_mi_ksg(&columns[j], y, self.k_neighbors)))
             .collect();
         Some(scores)
     }

@@ -1317,6 +1317,7 @@
         window.downloadSampleCSV = downloadSampleCSV;
         window.closeModal = closeModal;
         window.closeDataEditor = closeDataEditor;
+        window.editorDownloadData = editorDownloadData;
         window.editorApplyProcessor = editorApplyProcessor;
         window.editorDeleteColumn = editorDeleteColumn;
         window.editorReplaceAll = editorReplaceAll;
@@ -1805,8 +1806,8 @@
             const analyzerResults = result.analyzer_results;
             const totalMethods = analyzerResults.length;
 
-            // Count how many methods ranked each column in top N (top 3)
-            const topN = Math.min(3, Math.ceil(columns.length * 0.2)); // top 20% or 3
+            // Count how many methods ranked each column in top N (top 5)
+            const topN = Math.min(5, columns.length);
             const columnVotes = {};
             columns.forEach(col => { columnVotes[col] = 0; });
 
@@ -2947,6 +2948,29 @@
             document.getElementById('dataEditorModal').classList.remove('show');
         }
 
+        function editorDownloadData() {
+            const data = editorCurrentCSV;
+            if (!data || !data.trim()) {
+                alert('Žiadne dáta na stiahnutie.');
+                return;
+            }
+            const format = window.dataFormat || 'csv';
+            const mimeType = format === 'json' ? 'application/json;charset=utf-8;' : 'text/csv;charset=utf-8;';
+            const extension = format === 'json' ? '.json' : '.csv';
+            const filename = 'upravene_data' + extension;
+
+            const blob = new Blob([data], { type: mimeType });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
         function editorApplyAndClose() {
             if (editorCurrentCSV) {
                 // Update the raw data
@@ -3646,7 +3670,8 @@
             <div class="editor-footer">
                 <span class="status-text" id="editorStatusText">Kliknite na hlavičku stĺpca pre výber</span>
                 <div>
-                    <button onclick="editorApplyAndClose()" style="background: #27ae60;">Použiť zmeny a zavrieť</button>
+                    <button onclick="editorDownloadData()" style="background: #cc0000;">⬇ Stiahnuť dáta</button>
+                    <button onclick="editorApplyAndClose()" style="background: #cc0000;">Použiť zmeny a zavrieť</button>
                     <button onclick="closeDataEditor()" class="btn-secondary">Zrušiť</button>
                 </div>
             </div>

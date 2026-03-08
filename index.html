@@ -661,6 +661,18 @@
             padding: 6px 10px;
             font-size: 0.9em;
         }
+        .selector-compare-card .card-params .param-desc {
+            font-size: 0.78em;
+            color: #6c757d;
+            margin-top: 2px;
+            margin-bottom: 6px;
+            line-height: 1.3;
+        }
+        .selector-compare-card .card-params select {
+            width: 100%;
+            padding: 6px 10px;
+            font-size: 0.9em;
+        }
 
         /* Target method tabs */
         .target-method-tabs {
@@ -743,6 +755,142 @@
             border-bottom: none;
             margin: 0;
             padding: 0;
+        }
+
+        /* Heatmap Matrix Fullscreen Modal */
+        .heatmap-toolbar {
+            background: #f8f9fa;
+            padding: 10px 25px;
+            border-bottom: 2px solid #dee2e6;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-shrink: 0;
+            flex-wrap: wrap;
+        }
+        .heatmap-toolbar label {
+            font-weight: 600;
+            font-size: 13px;
+            color: #495057;
+        }
+        .heatmap-toolbar .htb-group {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+        .heatmap-toolbar button {
+            padding: 6px 14px;
+            font-size: 12px;
+            border: 2px solid #dee2e6;
+            background: white;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.15s;
+        }
+        .heatmap-toolbar button.active {
+            background: #cc0000;
+            color: white;
+            border-color: #cc0000;
+        }
+        .heatmap-toolbar button:hover:not(.active) {
+            background: #e9ecef;
+        }
+        .heatmap-container {
+            flex: 1;
+            overflow: auto;
+            padding: 15px;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+        }
+        .heatmap-table {
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+        .heatmap-table th {
+            padding: 4px 6px;
+            background: #f1f3f5;
+            border: 1px solid #dee2e6;
+            font-size: 10px;
+            position: sticky;
+            z-index: 2;
+            white-space: nowrap;
+            max-width: 90px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .heatmap-table th.corner {
+            position: sticky;
+            left: 0;
+            top: 0;
+            z-index: 3;
+            background: #e9ecef;
+        }
+        .heatmap-table th.col-header {
+            top: 0;
+            writing-mode: vertical-lr;
+            text-orientation: mixed;
+            transform: rotate(180deg);
+            height: 100px;
+            vertical-align: bottom;
+            padding: 6px 4px;
+        }
+        .heatmap-table th.row-header {
+            left: 0;
+            text-align: right;
+            padding-right: 8px;
+        }
+        .heatmap-table td {
+            padding: 0;
+            border: 1px solid rgba(255,255,255,0.3);
+            text-align: center;
+            cursor: pointer;
+            transition: outline 0.1s;
+            min-width: 28px;
+            height: 28px;
+            font-size: 0;
+        }
+        .heatmap-table td:hover {
+            outline: 2px solid #333;
+            outline-offset: -1px;
+            z-index: 1;
+            position: relative;
+        }
+        .heatmap-table td.show-values {
+            font-size: 9px;
+            font-weight: 600;
+            min-width: 42px;
+        }
+        .heatmap-tooltip {
+            position: fixed;
+            background: rgba(0,0,0,0.88);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 3000;
+            display: none;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        .heatmap-legend {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 25px 10px;
+            border-top: 1px solid #dee2e6;
+            background: #f8f9fa;
+            flex-shrink: 0;
+            font-size: 11px;
+            color: #495057;
+        }
+        .heatmap-legend .lg-bar {
+            height: 14px;
+            flex: 1;
+            max-width: 300px;
+            border-radius: 3px;
+            border: 1px solid #dee2e6;
         }
 
         .editor-toolbar {
@@ -1015,55 +1163,15 @@
 
                 <div id="targetSelectionArea" style="display: none; margin-top: 20px; padding-top: 20px; border-top: 2px solid #dee2e6;">
                     <h3 style="color: #cc0000; margin-bottom: 15px;">Výber cieľovej premennej</h3>
-
-                    <!-- Target method tabs -->
-                    <div class="target-method-tabs">
-                        <div class="target-method-tab active" data-tab="manual" onclick="switchTargetTab('manual')">Manuálny výber</div>
-                        <div class="target-method-tab" data-tab="stats" onclick="switchTargetTab('stats')">Štatistický prehľad</div>
-                        <div class="target-method-tab" data-tab="analysis" onclick="switchTargetTab('analysis')">Analýza cieľovej premennej</div>
+                    
+                    <div class="form-group">
+                        <label>Cieľová premenná (target):</label>
+                        <select id="targetColumnSelect" style="width: 100%; padding: 10px; border: 2px solid #cc0000; border-radius: 4px; font-size: 1em; background: white;">
+                            <option value="">-- Vyberte cieľovú premennú --</option>
+                        </select>
                     </div>
 
-                    <!-- Tab: Manuálny výber -->
-                    <div id="tabManual" class="target-method-content active">
-                        <div class="form-group">
-                            <label>Cieľový stĺpec:</label>
-                            <select id="targetColumnSelect">
-                                <option value="">-- Vyberte cieľový stĺpec --</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Tab: Štatistický prehľad -->
-                    <div id="tabStats" class="target-method-content">
-                        <p style="font-size: 0.9em; color: #6c757d; margin-bottom: 10px;">
-                            Kliknite na riadok v tabuľke pre výber cieľovej premennej.
-                        </p>
-                        <div id="columnStatsContainer" style="overflow-x: auto;"></div>
-                    </div>
-
-                    <!-- Tab: Analýza cieľovej premennej -->
-                    <div id="tabAnalysis" class="target-method-content">
-                        <p style="font-size: 0.9em; color: #6c757d; margin-bottom: 10px;">
-                            Vyberte metódu analýzy a spustite hodnotenie stĺpcov ako potenciálnych cieľových premenných.
-                        </p>
-                        <div style="display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 10px;">
-                            <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">
-                                <label>Metóda analýzy:</label>
-                                <select id="targetAnalysisMethod">
-                                    <option value="correlation">Pearsonova korelácia (lineárne vzťahy)</option>
-                                    <option value="mutual_information">Mutual Information (aj nelineárne vzťahy)</option>
-                                    <option value="entropy">Entropia a Information Gain</option>
-                                </select>
-                            </div>
-                            <button id="analyzeTargetBtn" class="btn-analyze" style="margin-bottom: 0; white-space: nowrap;">
-                                Spustiť analýzu
-                            </button>
-                        </div>
-                        <div id="targetMethodExplanation" style="font-size: 0.85em; color: #6c757d; padding: 8px; background: #f8f9fa; border-left: 3px solid #cc0000; margin-bottom: 10px;"></div>
-                        <div id="analyzeTargetStatus" class="status"></div>
-                    </div>
-
-                    <div class="form-group" style="margin-top: 15px;">
+                    <div class="form-group">
                         <label>Train/Test Split (% pre tréning):</label>
                         <div style="display: flex; align-items: center; gap: 10px;">
                             <input type="range" id="trainTestSplit" min="50" max="95" value="80" step="5" style="flex: 1;">
@@ -1076,6 +1184,46 @@
 
                     <button id="confirmTargetBtn">Potvrdiť výber a načítať do pipeline</button>
                     <div id="dataStatus" class="status"></div>
+
+                    <!-- Optional: Target analysis -->
+                    <details style="margin-top: 20px; border-top: 1px solid #dee2e6; padding-top: 15px;">
+                        <summary style="cursor: pointer; font-weight: 600; color: #495057; padding: 8px 0;">
+                            Voliteľné: Analýza cieľovej premennej (pomôže s výberom)
+                        </summary>
+                        <div style="margin-top: 15px;">
+                            <p style="color: #6c757d; margin-bottom: 15px;">
+                                Porovnajte rôzne metódy analýzy cieľovej premennej. Mapa premenných ukáže zhodu medzi metódami.
+                            </p>
+
+                            <!-- Target analyzer method cards -->
+                            <div id="targetAnalyzerGrid" class="selector-compare-grid">
+                                <!-- Dynamicky generované karty analyzérov -->
+                            </div>
+
+                            <div style="margin-top: 20px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                                <button id="compareTargetAnalyzersBtn" style="flex: 0 0 auto;">
+                                    Porovnať vybrané metódy
+                                </button>
+                                <button id="showMatrixBtnTarget" style="flex: 0 0 auto; background: #2c3e50; color: white; border: none; padding: 10px 20px; cursor: pointer; font-size: 14px;">
+                                    Matica korelácií / MI
+                                </button>
+                                <button id="selectAllAnalyzersBtn" class="btn-secondary" style="flex: 0 0 auto; padding: 10px 20px;">
+                                    Vybrať všetky
+                                </button>
+                                <span id="compareTargetStatus" style="font-size: 0.9em; color: #6c757d;"></span>
+                            </div>
+                            <div id="compareTargetAnalyzersStatus" class="status"></div>
+
+                            <!-- Results: Target variable map -->
+                            <div id="targetComparisonResultsArea" style="display: none; margin-top: 20px;">
+                                <h4 style="color: #495057; margin-bottom: 10px;">Mapa premenných - vyberte cieľovú premennú</h4>
+                                <p style="font-size: 12px; color: #6c757d; margin-bottom: 10px;">
+                                    Kliknite na premennú pre výber. Farba a bodky ukazujú, koľko metód ju označilo medzi top kandidátmi.
+                                </p>
+                                <div id="targetVariableMap"></div>
+                            </div>
+                        </div>
+                    </details>
                 </div>
 
                 <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
@@ -1103,9 +1251,12 @@
                     <!-- Dynamicky generované karty selektorov -->
                 </div>
 
-                <div style="margin-top: 20px; display: flex; gap: 10px; align-items: center;">
+                <div style="margin-top: 20px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                     <button id="compareSelectorBtn" style="flex: 0 0 auto;">
                         Porovnať vybrané selektory
+                    </button>
+                    <button id="showMatrixBtn" style="flex: 0 0 auto; background: #2c3e50; color: white; border: none; padding: 10px 20px; cursor: pointer; font-size: 14px;">
+                        Matica korelácií / MI
                     </button>
                     <button id="selectAllSelectorsBtn" class="btn-secondary" style="flex: 0 0 auto; padding: 10px 20px;">
                         Vybrať všetky
@@ -1165,8 +1316,8 @@
         // Make functions globally available for inline handlers
         window.downloadSampleCSV = downloadSampleCSV;
         window.closeModal = closeModal;
-        window.switchTargetTab = switchTargetTab;
         window.closeDataEditor = closeDataEditor;
+        window.editorDownloadData = editorDownloadData;
         window.editorApplyProcessor = editorApplyProcessor;
         window.editorDeleteColumn = editorDeleteColumn;
         window.editorReplaceAll = editorReplaceAll;
@@ -1200,103 +1351,43 @@
         }
 
         async function initApp() {
+            
             try {
                 showLoading(true);
-                
-                // Diagnostika pre GitHub Pages
-                console.log('=== WASM INITIALIZATION DEBUG ===');
-                console.log('Current URL:', window.location.href);
-                console.log('Base URI:', document.baseURI);
-                console.log('Origin:', window.location.origin);
-                console.log('Pathname:', window.location.pathname);
-                
-                // Auto-detect base path for GitHub Pages
-                const basePath = document.baseURI.endsWith('/') ? document.baseURI : document.baseURI + '/';
-                const wasmPath = new URL('./pkg/wasm.js', basePath).href;
-                console.log('Trying to load WASM from:', wasmPath);
                 
                 let wasmModule;
                 try {
                     wasmModule = await import('./pkg/wasm.js');
-                    console.log('✓ WASM module loaded successfully');
                 } catch (importError) {
-                    console.error('✗ Failed to import WASM module:', importError);
-                    console.error('Import error details:', {
-                        message: importError.message,
-                        name: importError.name,
-                        stack: importError.stack
-                    });
-                    throw new Error(`Nepodarilo sa načítať WASM modul z ./pkg/wasm.js\n\nChyba: ${importError.message}\n\nSkontrolujte:\n1. Či existuje súbor pkg/wasm.js\n2. Či je GitHub Pages správne nasadený\n3. Konzolu prehliadača pre ďalšie chyby`);
+                    throw importError;
                 }
                 
                 const init = wasmModule.default || wasmModule.init;
                 const WasmFactory = wasmModule.WasmFactory;
                 const WasmMLPipeline = wasmModule.WasmMLPipeline;
-                WasmDataLoaderClass = wasmModule.WasmDataLoader; // Uložíme do globálnej premennej
-
-                console.log('WASM exports:', {
-                    init: typeof init,
-                    WasmFactory: typeof WasmFactory,
-                    WasmMLPipeline: typeof WasmMLPipeline,
-                    WasmDataLoader: typeof WasmDataLoaderClass,
-                    allExports: Object.keys(wasmModule)
-                });
+                WasmDataLoaderClass = wasmModule.WasmDataLoader;
 
                 if (!init || !WasmFactory) {
-                    throw new Error('WASM module exports not found (wasm.js or pkg missing)');
+                    throw new Error('WASM module exports not found');
                 }
 
-                console.log('Initializing WASM...');
                 await init();
-                console.log('✓ WASM initialized');
 
                 factory = new WasmFactory();
                 pipeline = new WasmMLPipeline();
-                console.log('✓ Factory and Pipeline created');
-
-                console.log('Fetching available options...');
                 availableOptions = factory.getAvailableOptions();
-                console.log('✓ Available options:', availableOptions);
                 
                 if (!availableOptions || !availableOptions.models || availableOptions.models.length === 0) {
-                    throw new Error('Žiadne modely/selektory neboli načítané z WASM Factory. WASM modul môže byť nesprávne skompilovaný.');
+                    throw new Error('Žiadne modely neboli načítané z WASM Factory.');
                 }
 
-                console.log('Populating UI options...');
                 populateOptions();
-                console.log('✓ UI populated');
-                
-                console.log('Setting up event listeners...');
                 setupEventListeners();
-                console.log('✓ Event listeners ready');
-
-                console.log('=== INITIALIZATION COMPLETE ===');
                 showStatus('info', 'Aplikácia pripravená!', 'parseStatus');
             } catch (error) {
-                console.error('=== INIT ERROR ===');
                 console.error('Init error:', error);
-                console.error('Error stack:', error.stack);
                 const message = (error && error.message) ? error.message : String(error);
-                showStatus('error', `Chyba pri načítaní WASM: ${message}\n\nOtvorte Developer Console (F12) pre viac detailov.`, 'parseStatus');
-                
-                // Zobrazenie viditeľného erroru na stránke
-                document.body.innerHTML += `
-                    <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-                                background: #f8d7da; border: 3px solid #f5c6cb; padding: 30px; 
-                                border-radius: 10px; max-width: 600px; z-index: 9999; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
-                        <h2 style="color: #721c24; margin-bottom: 15px;">Chyba inicializácie WASM</h2>
-                        <p style="color: #721c24; margin-bottom: 10px;"><strong>Chyba:</strong> ${message}</p>
-                        <p style="color: #721c24; font-size: 0.9em;">Otvorte Developer Console (F12) pre viac informácií.</p>
-                        <hr style="margin: 15px 0; border-color: #f5c6cb;">
-                        <p style="color: #721c24; font-size: 0.85em;">
-                            <strong>Možné príčiny:</strong><br>
-                            • WASM súbory neboli správne nasadené na GitHub Pages<br>
-                            • Nesprávne MIME typy pre .wasm súbory<br>
-                            • CORS problémy pri načítaní modulov<br>
-                            • Cesta k pkg/wasm.js je nesprávna
-                        </p>
-                    </div>
-                `;
+                showStatus('error', `Chyba pri načítaní WASM: ${message}`, 'parseStatus');
             } finally {
                 showLoading(false);
             }
@@ -1350,8 +1441,10 @@
             document.getElementById('inspectDataBtn').onclick = inspectData;
             document.getElementById('inspectProcessedBtn').onclick = inspectProcessedData;
             document.getElementById('editDataBtn').onclick = openDataEditor;
-            document.getElementById('analyzeTargetBtn').onclick = analyzeTargets;
+            document.getElementById('compareTargetAnalyzersBtn').onclick = compareTargetAnalyzers;
             document.getElementById('compareSelectorBtn').onclick = compareSelectors;
+            document.getElementById('showMatrixBtn').onclick = openHeatmapModal;
+            document.getElementById('showMatrixBtnTarget').onclick = openHeatmapModal;
             document.getElementById('selectAllSelectorsBtn').onclick = toggleAllSelectors;
             document.getElementById('trainAllSelectorsBtn').onclick = trainAllSelectors;
             
@@ -1579,20 +1672,25 @@
                 const columns = await dataLoader.getAvailableColumns(data);
                 window.parsedColumns = columns;
 
+                // Target selection now via comparison map
+
+                document.getElementById('targetSelectionArea').style.display = 'block';
+                
+                // Populate target column dropdown
                 const targetSelect = document.getElementById('targetColumnSelect');
-                targetSelect.innerHTML = '';
+                targetSelect.innerHTML = '<option value="">-- Vyberte cie\u013eov\u00fa premenn\u00fa --</option>';
                 columns.forEach(col => {
                     const opt = document.createElement('option');
                     opt.value = col;
                     opt.textContent = col;
                     targetSelect.appendChild(opt);
                 });
-
-                // Build column stats table
-                buildColumnStatsTable(data, columns, format);
-
-                document.getElementById('targetSelectionArea').style.display = 'block';
-                document.getElementById('inspectDataBtn').disabled = true;
+                // Pre-select last column as default (common convention)
+                if (columns.length > 0) {
+                    targetSelect.value = columns[columns.length - 1];
+                }
+                
+                document.getElementById('inspectDataBtn').disabled = false;
                 document.getElementById('inspectProcessedBtn').disabled = true;
                 document.getElementById('editDataBtn').disabled = false;
 
@@ -1601,7 +1699,7 @@
                 populateComparisonSelectors();
                 populateTargetAnalyzerMethods();
 
-                showStatus('success', `Dáta načítané: ${columns.length} stĺpcov nájdených. Vyberte cieľovú premennú.`, 'parseStatus');
+                showStatus('success', `Dáta načítané: ${columns.length} stĺpcov nájdených. Porovnajte metódy analýzy a vyberte cieľovú premennú.`, 'parseStatus');
             } catch (error) {
                 showStatus('error', `Chyba: ${error}`, 'parseStatus');
             } finally {
@@ -1640,73 +1738,247 @@
             }
         }
 
-        async function analyzeTargets() {
+        async function compareTargetAnalyzers() {
             try {
-                showLoading(true);
                 const data = window.rawDataString;
                 const format = window.dataFormat;
                 if (!data) {
-                    showStatus('error', 'Najprv načítajte dáta', 'analyzeTargetStatus');
+                    showStatus('error', 'Najprv načítajte dáta', 'compareTargetAnalyzersStatus');
                     return;
                 }
 
-                const method = document.getElementById('targetAnalysisMethod').value;
-                const rawResult = await pipeline.analyzeTargetWith(data, format, method);
+                // Collect selected analyzers
+                const selectedMethods = [];
+                document.querySelectorAll('#targetAnalyzerGrid .selector-compare-card.active').forEach(card => {
+                    const name = card.id.replace('target_card_', '');
+                    selectedMethods.push(name);
+                });
+
+                if (selectedMethods.length === 0) {
+                    showStatus('error', 'Vyberte aspoň jednu metódu analýzy', 'compareTargetAnalyzersStatus');
+                    return;
+                }
+
+                showLoading(true);
+                
+                // Odhadujeme koľko to bude trvať
+                const dataSize = data.split('\n').length;
+                const hasMI = selectedMethods.includes('mutual_information');
+                let estimatedTime = '';
+                if (hasMI) {
+                    if (dataSize > 1000) {
+                        estimatedTime = ' (môže trvať 30-60s, prosím čakajte...)';
+                    } else if (dataSize > 500) {
+                        estimatedTime = ' (môže trvať 10-20s, prosím čakajte...)';
+                    } else if (dataSize > 100) {
+                        estimatedTime = ' (môže trvať 5-10s, prosím čakajte...)';
+                    }
+                }
+                
+                showStatus('info', `Porovnávam ${selectedMethods.length} metód${estimatedTime}...`, 'compareTargetAnalyzersStatus');
+
+                const rawResult = await pipeline.compareTargetAnalyzers(data, format, selectedMethods);
                 const result = convertWasmResult(rawResult);
 
-                // Open results in modal
-                const modal = document.getElementById('dataModal');
-                document.getElementById('modalTitle').textContent = `Analýza cieľovej premennej - ${result.method_description || method}`;
-                document.getElementById('modalBody').innerHTML = result.html;
-                modal.classList.add('show');
+                // Store for later use
+                window._lastTargetComparison = result;
 
-                if (result.recommended_target) {
-                    const targetSelect = document.getElementById('targetColumnSelect');
-                    for (const opt of targetSelect.options) {
-                        if (opt.value === result.recommended_target) {
-                            targetSelect.value = result.recommended_target;
-                            break;
-                        }
-                    }
-                    // Also highlight in stats table
-                    highlightStatsRow(result.recommended_target);
-                }
+                // Show target variable map
+                buildTargetVariableMap(result);
+                document.getElementById('targetComparisonResultsArea').style.display = 'block';
 
-                if (result.recommended_type) {
-                    document.getElementById('evalModeSelect').value = result.recommended_type;
-                }
-
-                showStatus('success', `Odporúčaná: ${result.recommended_target} (${result.recommended_type})`, 'analyzeTargetStatus');
+                showStatus('success', `Porovnanie dokončené: ${selectedMethods.length} metód na ${result.total_columns} premenných. Vyberte cieľovú premennú z mapy.`, 'compareTargetAnalyzersStatus');
             } catch (error) {
-                showStatus('error', `Chyba analýzy: ${error}`, 'analyzeTargetStatus');
+                showStatus('error', `Chyba porovnania: ${error}`, 'compareTargetAnalyzersStatus');
             } finally {
                 showLoading(false);
             }
         }
 
-        // Select target from analysis table rows (called from WASM-generated HTML)
-        function selectTargetFromAnalysis(colName, suggestedType) {
-            const targetSelect = document.getElementById('targetColumnSelect');
-            targetSelect.value = colName;
-            highlightStatsRow(colName);
-            if (suggestedType) {
-                document.getElementById('evalModeSelect').value = suggestedType;
+        function buildTargetVariableMap(result) {
+            const mapDiv = document.getElementById('targetVariableMap');
+            if (!result || !result.columns || !result.analyzer_results) {
+                mapDiv.innerHTML = '<p style="color:#e74c3c;">Chyba: Neplatný výsledok porovnania</p>';
+                return;
             }
-            // Close modal
-            document.getElementById('dataModal').classList.remove('show');
-            switchTargetTab('manual');
+
+            const columns = result.columns;
+            const analyzerResults = result.analyzer_results;
+            const totalMethods = analyzerResults.length;
+
+            // Count how many methods ranked each column in top N (top 5)
+            const topN = Math.min(5, columns.length);
+            const columnVotes = {};
+            columns.forEach(col => { columnVotes[col] = 0; });
+
+            analyzerResults.forEach(ar => {
+                if (!ar.ranking || ar.ranking.length === 0) return;
+                const topCols = ar.ranking.slice(0, topN);
+                topCols.forEach(entry => {
+                    if (columnVotes[entry.column_name] !== undefined) {
+                        columnVotes[entry.column_name]++;
+                    }
+                });
+            });
+
+            let html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px;">';
+            columns.forEach(colName => {
+                const votes = columnVotes[colName];
+                const votePct = totalMethods > 0 ? (votes / totalMethods * 100) : 0;
+                
+                const bg = votePct === 100 ? '#c8e6c9' 
+                    : votePct >= 67 ? '#fff9c4'
+                    : votePct >= 33 ? '#ffe0b2'
+                    : '#ffcdd2';
+                
+                const dots = Array.from({length: totalMethods}, (_, i) => 
+                    i < votes ? '\u25cf' : '\u25cb'
+                ).join('');
+
+                html += `<div onclick="selectTargetFromMap('${colName}')" style="
+                    padding:12px; background:${bg}; border:2px solid #dee2e6; 
+                    cursor:pointer; transition:transform 0.1s; font-size:13px;
+                " onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+                    <div style="font-weight:bold; color:#cc0000; margin-bottom:4px;">${colName}</div>
+                    <div style="font-size:11px; color:#495057; display:flex; justify-content:space-between; align-items:center;">
+                        <span>${votes}/${totalMethods}</span>
+                        <span style="font-weight:bold;">${dots}</span>
+                    </div>
+                </div>`;
+            });
+            html += '</div>';
+
+            // Scatter plot if SMC and MI are both selected
+            const smcResult = analyzerResults.find(ar => ar.method === 'smc');
+            const miResult = analyzerResults.find(ar => ar.method === 'mutual_information');
+            
+            if (smcResult && miResult && smcResult.ranking && miResult.ranking) {
+                html += '<h4 style="color:#495057;margin:25px 0 10px;border-bottom:2px solid #dee2e6;padding-bottom:8px;">Scatter plot: SMC vs Mutual Information</h4>';
+                html += '<p style="font-size:12px;color:#6c757d;margin-bottom:10px;">X-os: SMC hodnota | Y-os: Suma MI hodnoty. Prejdite myšou nad bodmi pre názov premennej.</p>';
+                
+                // Build data arrays
+                const plotData = [];
+                columns.forEach(colName => {
+                    const smcEntry = smcResult.ranking.find(r => r.column_name === colName);
+                    const miEntry = miResult.ranking.find(r => r.column_name === colName);
+                    if (smcEntry && miEntry) {
+                        plotData.push({
+                            name: colName,
+                            smc: smcEntry.score,
+                            mi: miEntry.score
+                        });
+                    }
+                });
+
+                if (plotData.length > 0) {
+                    // Find min/max for scaling
+                    const smcValues = plotData.map(d => d.smc);
+                    const miValues = plotData.map(d => d.mi);
+                    const smcMin = Math.min(...smcValues);
+                    const smcMax = Math.max(...smcValues);
+                    const miMin = Math.min(...miValues);
+                    const miMax = Math.max(...miValues);
+
+                    const width = 600;
+                    const height = 400;
+                    const margin = {top: 20, right: 20, bottom: 50, left: 60};
+                    const plotWidth = width - margin.left - margin.right;
+                    const plotHeight = height - margin.top - margin.bottom;
+
+                    // Scale functions
+                    const smcRange = smcMax - smcMin || 1;
+                    const miRange = miMax - miMin || 1;
+                    const scaleX = (val) => margin.left + ((val - smcMin) / smcRange) * plotWidth;
+                    const scaleY = (val) => margin.top + plotHeight - ((val - miMin) / miRange) * plotHeight;
+
+                    // Start SVG
+                    html += `<div style="background:white;border:1px solid #dee2e6;padding:15px;display:inline-block;">`;
+                    html += `<svg width="${width}" height="${height}" style="font-family:Segoe UI,sans-serif;">`;
+                    
+                    // Grid lines
+                    html += `<g opacity="0.1">`;
+                    for (let i = 0; i <= 5; i++) {
+                        const x = margin.left + (plotWidth * i / 5);
+                        const y = margin.top + (plotHeight * i / 5);
+                        html += `<line x1="${x}" y1="${margin.top}" x2="${x}" y2="${margin.top + plotHeight}" stroke="#000" stroke-width="1"/>`;
+                        html += `<line x1="${margin.left}" y1="${y}" x2="${margin.left + plotWidth}" y2="${y}" stroke="#000" stroke-width="1"/>`;
+                    }
+                    html += `</g>`;
+
+                    // Axes
+                    html += `<line x1="${margin.left}" y1="${margin.top + plotHeight}" x2="${margin.left + plotWidth}" y2="${margin.top + plotHeight}" stroke="#000" stroke-width="2"/>`;
+                    html += `<line x1="${margin.left}" y1="${margin.top}" x2="${margin.left}" y2="${margin.top + plotHeight}" stroke="#000" stroke-width="2"/>`;
+
+                    // Axis labels
+                    html += `<text x="${margin.left + plotWidth/2}" y="${height - 10}" text-anchor="middle" font-size="12" fill="#495057">SMC</text>`;
+                    html += `<text x="15" y="${margin.top + plotHeight/2}" text-anchor="middle" font-size="12" fill="#495057" transform="rotate(-90, 15, ${margin.top + plotHeight/2})">Σ MI</text>`;
+
+                    // Tick labels
+                    for (let i = 0; i <= 5; i++) {
+                        const smcVal = smcMin + (smcRange * i / 5);
+                        const miVal = miMin + (miRange * i / 5);
+                        const x = margin.left + (plotWidth * i / 5);
+                        const y = margin.top + plotHeight - (plotHeight * i / 5);
+                        html += `<text x="${x}" y="${margin.top + plotHeight + 20}" text-anchor="middle" font-size="10" fill="#6c757d">${smcVal.toFixed(3)}</text>`;
+                        html += `<text x="${margin.left - 10}" y="${y + 4}" text-anchor="end" font-size="10" fill="#6c757d">${miVal.toFixed(3)}</text>`;
+                    }
+
+                    // Data points
+                    plotData.forEach((d, idx) => {
+                        const cx = scaleX(d.smc);
+                        const cy = scaleY(d.mi);
+                        const pointId = `point_${idx}`;
+                        const tooltipId = `tooltip_${idx}`;
+                        
+                        // Smart tooltip positioning
+                        const tooltipWidth = d.name.length * 7 + 20;
+                        const tooltipX = cx + 10 + tooltipWidth > width ? cx - tooltipWidth - 10 : cx + 10;
+                        const tooltipY = cy - 30 < margin.top ? cy + 10 : cy - 30;
+                        
+                        html += `<circle id="${pointId}" cx="${cx}" cy="${cy}" r="5" fill="#cc0000" stroke="white" stroke-width="2" opacity="0.7" style="cursor:pointer;transition:all 0.2s;" onclick="selectTargetFromMap('${d.name}')" onmouseover="document.getElementById('${pointId}').setAttribute('r', '8'); document.getElementById('${pointId}').setAttribute('opacity', '1'); document.getElementById('${tooltipId}').style.display='block';" onmouseout="document.getElementById('${pointId}').setAttribute('r', '5'); document.getElementById('${pointId}').setAttribute('opacity', '0.7'); document.getElementById('${tooltipId}').style.display='none';" />`;
+                        
+                        // Tooltip
+                        html += `<g id="${tooltipId}" style="display:none;pointer-events:none;">`;
+                        html += `<rect x="${tooltipX}" y="${tooltipY}" width="${tooltipWidth}" height="25" fill="white" stroke="#cc0000" stroke-width="2" rx="3"/>`;
+                        html += `<text x="${tooltipX + 10}" y="${tooltipY + 16}" font-size="11" font-weight="bold" fill="#cc0000">${d.name}</text>`;
+                        html += `</g>`;
+                    });
+
+                    html += `</svg></div>`;
+                    html += '<div style="margin-top:10px;font-size:12px;color:#6c757d;">Kliknite na bod pre výber premennej. Vyššie hodnoty na oboch osiach = lepší kandidát na cieľovú premennú.</div>';
+                }
+            }
+
+            // Legend
+            html += '<div style="margin-top:15px;font-size:12px;display:flex;gap:10px;flex-wrap:wrap;">';
+            html += '<span style="background:#c8e6c9;padding:4px 10px;border:1px solid #aaa;">Všetky metódy</span>';
+            html += '<span style="background:#fff9c4;padding:4px 10px;border:1px solid #aaa;">Väčšina metód (≥67%)</span>';
+            html += '<span style="background:#ffe0b2;padding:4px 10px;border:1px solid #aaa;">Niektoré metódy (≥33%)</span>';
+            html += '<span style="background:#ffcdd2;padding:4px 10px;border:1px solid #aaa;">Menej metód</span>';
+            html += '</div>';
+
+            mapDiv.innerHTML = html;
+        }
+
+        function selectTargetFromMap(colName) {
+            const targetInput = document.getElementById('targetColumnSelect');
+            targetInput.value = colName;
+            
+            // Visual feedback
+            document.querySelectorAll('#targetVariableMap > div > div').forEach(el => {
+                el.style.border = '2px solid #dee2e6';
+            });
+            event.target.closest('div[onclick]').style.border = '4px solid #cc0000';
+            
+            showStatus('info', `Vybratá premenná: ${colName}`, 'compareTargetAnalyzersStatus');
+        }
+        window.selectTargetFromMap = selectTargetFromMap;
+
+        // Legacy compatibility
+        function selectTargetFromAnalysis(colName, suggestedType) {
+            selectTargetFromMap(colName);
         }
         window.selectTargetFromAnalysis = selectTargetFromAnalysis;
-
-        // ===== Target selection helpers =====
-
-        function switchTargetTab(tabName) {
-            document.querySelectorAll('.target-method-tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.target-method-content').forEach(c => c.classList.remove('active'));
-            document.querySelector(`.target-method-tab[data-tab="${tabName}"]`).classList.add('active');
-            const tabMap = { manual: 'tabManual', stats: 'tabStats', analysis: 'tabAnalysis' };
-            document.getElementById(tabMap[tabName]).classList.add('active');
-        }
 
         function populateTargetAnalyzerMethods() {
             try {
@@ -1714,20 +1986,28 @@
                 const analyzers = convertWasmResult(rawAnalyzers);
                 if (!analyzers || !analyzers.length) return;
 
-                const select = document.getElementById('targetAnalysisMethod');
-                select.innerHTML = '';
-                analyzers.forEach(a => {
-                    const opt = document.createElement('option');
-                    opt.value = a.name;
-                    opt.textContent = `${a.metric_name} - ${a.description}`;
-                    select.appendChild(opt);
+                const grid = document.getElementById('targetAnalyzerGrid');
+                grid.innerHTML = '';
+
+                analyzers.forEach(ana => {
+                    const card = document.createElement('div');
+                    card.className = 'selector-compare-card';
+                    card.id = `target_card_${ana.name}`;
+
+                    card.innerHTML = `
+                        <div class="card-header">
+                            <input type="checkbox" id="target_ana_${ana.name}" onchange="toggleTargetCard('${ana.name}')">
+                            <label for="target_ana_${ana.name}">${ana.metric_name}</label>
+                        </div>
+                        <div class="card-desc">${ana.description}</div>
+                        <div class="card-tags" style="font-size:11px;color:#6c757d;">${ana.metric_explanation}</div>
+                        <button onclick="showAnalyzerDetails('${ana.name}'); event.stopPropagation();" 
+                                style="margin-top:8px; padding:6px 12px; font-size:11px; background:#6c757d; color:white; border:none; cursor:pointer; border-radius:4px;">
+                            Zobraziť detaily (matica, kandidáti)
+                        </button>
+                    `;
+                    grid.appendChild(card);
                 });
-
-                // Show explanation for the initially selected method
-                updateTargetMethodExplanation(analyzers, select.value);
-
-                // Update explanation on change
-                select.onchange = () => updateTargetMethodExplanation(analyzers, select.value);
 
                 window._targetAnalyzers = analyzers;
             } catch (e) {
@@ -1735,13 +2015,72 @@
             }
         }
 
-        function updateTargetMethodExplanation(analyzers, selectedMethod) {
-            const explanationDiv = document.getElementById('targetMethodExplanation');
-            const found = analyzers.find(a => a.name === selectedMethod);
-            if (found && explanationDiv) {
-                explanationDiv.innerHTML = `<strong>${found.metric_name}:</strong> ${found.metric_explanation}`;
+        function toggleTargetCard(name) {
+            const cb = document.getElementById(`target_ana_${name}`);
+            const card = document.getElementById(`target_card_${name}`);
+            card.classList.toggle('active', cb.checked);
+        }
+        window.toggleTargetCard = toggleTargetCard;
+
+        function toggleAllAnalyzers() {
+            const cards = document.querySelectorAll('#targetAnalyzerGrid .selector-compare-card');
+            const allChecked = Array.from(cards).every(c => c.classList.contains('active'));
+            cards.forEach(card => {
+                const cb = card.querySelector('input[type="checkbox"]');
+                cb.checked = !allChecked;
+                card.classList.toggle('active', !allChecked);
+            });
+        }
+
+        async function showAnalyzerDetails(method) {
+            try {
+                const data = window.rawDataString;
+                const format = window.dataFormat;
+                if (!data) {
+                    alert('Najprv načítajte dáta');
+                    return;
+                }
+
+                showLoading(true);
+                const rawResult = await pipeline.analyzeTargetWith(data, format, method);
+                const result = convertWasmResult(rawResult);
+
+                // Create modal to show details
+                const modal = document.getElementById('analyzerDetailsModal');
+                const content = document.getElementById('analyzerDetailsContent');
+                const titleEl = document.getElementById('analyzerDetailsTitle');
+                
+                titleEl.textContent = `${result.metric_name} - ${result.method_description}`;
+                content.innerHTML = result.html;
+
+                // Add fullscreen matrix button for correlation/MI analyzers
+                if (method === 'correlation' || method === 'mutual_information') {
+                    const fsBtn = document.createElement('button');
+                    fsBtn.textContent = '🔍 Zobraziť maticu na celú obrazovku';
+                    fsBtn.style.cssText = 'margin:15px 0; padding:10px 20px; background:#2c3e50; color:white; border:none; cursor:pointer; font-size:13px; border-radius:4px;';
+                    fsBtn.onclick = () => {
+                        closeAnalyzerDetailsModal();
+                        const mode = method === 'correlation' ? 'correlation' : 'mi';
+                        openHeatmapModal().then(() => {
+                            if (mode === 'mi') switchHeatmapMatrix('mi');
+                        });
+                    };
+                    content.insertBefore(fsBtn, content.firstChild);
+                }
+
+                modal.classList.add('show');
+            } catch (error) {
+                alert(`Chyba pri načítaní detailov: ${error}`);
+            } finally {
+                showLoading(false);
             }
         }
+        window.showAnalyzerDetails = showAnalyzerDetails;
+
+        function closeAnalyzerDetailsModal() {
+            document.getElementById('analyzerDetailsModal').classList.remove('show');
+        }
+        window.closeAnalyzerDetailsModal = closeAnalyzerDetailsModal;
 
         function buildColumnStatsTable(data, columns, format) {
             if (format !== 'csv') {
@@ -1805,8 +2144,6 @@
             const targetSelect = document.getElementById('targetColumnSelect');
             targetSelect.value = colName;
             highlightStatsRow(colName);
-            // Switch to manual tab to show the dropdown
-            switchTargetTab('manual');
         }
         window.selectTargetFromStats = selectTargetFromStats;
 
@@ -1842,17 +2179,82 @@
                     params.forEach(p => {
                         let defaultVal = '';
                         let label = p;
+                        let description = '';
+                        let inputType = 'number';
+                        let selectOptions = null;
+
+                        // Common params
                         if (p === 'num_features') {
                             defaultVal = '5';
                             label = 'Počet features';
+                            description = 'Koľko features chcete vybrať z celkového počtu.';
                         } else if (p === 'threshold') {
                             defaultVal = sel.name === 'correlation' ? '0.95' : '0.01';
                             label = 'Prahová hodnota';
+                            description = sel.name === 'correlation'
+                                ? 'Features s koreláciou nad touto hodnotou budú odstránené.'
+                                : 'Minimálna variancia – features pod touto hodnotou budú vylúčené.';
                         }
-                        paramsHtml += `<div class="form-group" style="margin-bottom:8px;">
-                            <label>${label} (${p}):</label>
-                            <input type="number" step="any" value="${defaultVal}" id="compare_param_${sel.name}_${p}">
-                        </div>`;
+                        // VNS / SA specific params
+                        else if (p === 'max_iterations') {
+                            defaultVal = '100';
+                            label = 'Max iterácií';
+                            description = 'Počet iterácií algoritmu. Viac = presnejší výsledok, ale dlhší výpočet.';
+                        } else if (p === 'k_max') {
+                            defaultVal = '4';
+                            label = 'K max (neighborhoods)';
+                            description = 'Počet typov susedstiev vo VNS (1-4). Väčší = dôkladnejšie prehľadávanie.';
+                        } else if (p === 'alpha') {
+                            defaultVal = '0.7';
+                            label = 'Alpha (α) – relevancia';
+                            description = 'Váha individuálnej MI každého feature s targetom. Vyššia α = uprednostňujú sa features s vysokou závislosťou na target.';
+                        } else if (p === 'beta') {
+                            defaultVal = '0.2';
+                            label = 'Beta (β) – synergia';
+                            description = 'Váha synergie medzi features. Vyššia β = hľadajú sa features, ktoré spolu nesú viac informácie ako jednotlivo.';
+                        } else if (p === 'gamma') {
+                            defaultVal = '0.3';
+                            label = 'Gamma (γ) – penalizácia redundancie';
+                            description = 'Penalizácia za redundanciu medzi features. Vyššia γ = vylúčia sa features, ktoré nesú rovnakú informáciu.';
+                        } else if (p === 'initial_solution') {
+                            defaultVal = 'greedy';
+                            label = 'Počiatočné riešenie';
+                            description = 'Greedy = začne s top features podľa MI. Random = náhodný začiatok (väčšia diverzita).';
+                            selectOptions = ['greedy', 'random'];
+                        }
+                        // SA specific params
+                        else if (p === 'initial_temp') {
+                            defaultVal = '1.0';
+                            label = 'Počiatočná teplota';
+                            description = 'Štartová teplota SA. Vyššia = väčšia šanca prijať horšie riešenie na začiatku (lepšia explorácia).';
+                        } else if (p === 'cooling_rate') {
+                            defaultVal = '0.95';
+                            label = 'Rýchlosť chladnutia';
+                            description = 'Koeficient chladnutia (0-1). Bližšie k 1 = pomalšie chladnutie, dôkladnejšie prehľadávanie.';
+                        } else if (p === 'min_temp') {
+                            defaultVal = '0.001';
+                            label = 'Minimálna teplota';
+                            description = 'Teplota, pod ktorou sa algoritmus zastaví. Nižšia = dlhší beh.';
+                        } else if (p === 'reheat_interval') {
+                            defaultVal = '50';
+                            label = 'Reheat interval';
+                            description = 'Po koľkých iteráciách sa teplota čiastočne zvýši (escape z lokálneho minima).';
+                        }
+
+                        if (selectOptions) {
+                            const opts = selectOptions.map(o => `<option value="${o}" ${o === defaultVal ? 'selected' : ''}>${o}</option>`).join('');
+                            paramsHtml += `<div class="form-group" style="margin-bottom:8px;">
+                                <label>${label} (${p}):</label>
+                                <select id="compare_param_${sel.name}_${p}">${opts}</select>
+                                ${description ? `<div class="param-desc">${description}</div>` : ''}
+                            </div>`;
+                        } else {
+                            paramsHtml += `<div class="form-group" style="margin-bottom:8px;">
+                                <label>${label} (${p}):</label>
+                                <input type="${inputType}" step="any" value="${defaultVal}" id="compare_param_${sel.name}_${p}">
+                                ${description ? `<div class="param-desc">${description}</div>` : ''}
+                            </div>`;
+                        }
                     });
                 }
 
@@ -1877,7 +2279,7 @@
         window.toggleCompareCard = toggleCompareCard;
 
         function toggleAllSelectors() {
-            const cards = document.querySelectorAll('.selector-compare-card');
+            const cards = document.querySelectorAll('#selectorCompareGrid .selector-compare-card');
             const allChecked = Array.from(cards).every(c => c.classList.contains('active'));
             cards.forEach(card => {
                 const cb = card.querySelector('input[type="checkbox"]');
@@ -1885,6 +2287,144 @@
                 card.classList.toggle('active', !allChecked);
             });
         }
+
+        // Detekcia redundancie medzi vybranými featurmi
+        let previouslySelected = new Set();
+        
+        function attachRedundancyChecks() {
+            const checkboxes = document.querySelectorAll('#userFeatureMap input[type=checkbox]');
+            if (checkboxes.length === 0) return;
+
+            // Inicializuj previouslySelected s aktuálnym stavom
+            previouslySelected.clear();
+            document.querySelectorAll('#userFeatureMap input[type=checkbox]:checked').forEach(cb => {
+                previouslySelected.add(parseInt(cb.dataset.featureIdx));
+            });
+
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', async function() {
+                    // Zbierz vybrané indices
+                    const selectedIndices = [];
+                    const currentlySelected = new Set();
+                    document.querySelectorAll('#userFeatureMap input[type=checkbox]:checked').forEach(cb => {
+                        const idx = parseInt(cb.dataset.featureIdx);
+                        selectedIndices.push(idx);
+                        currentlySelected.add(idx);
+                    });
+
+                    if (selectedIndices.length === 0) {
+                        // Skryj upozornenie ak nič nie je vybrané
+                        const warningArea = document.getElementById('redundancyWarningArea');
+                        if (warningArea) warningArea.style.display = 'none';
+                        previouslySelected.clear();
+                        return;
+                    }
+
+                    // Zisti, ktoré features boli pridané (nie default)
+                    const newlyAdded = [];
+                    for (let idx of currentlySelected) {
+                        if (!previouslySelected.has(idx)) {
+                            newlyAdded.push(idx);
+                        }
+                    }
+
+                    // Ak nebola pridaná žiadna nová feature, len aktualizuj stav a skonči
+                    if (newlyAdded.length === 0) {
+                        previouslySelected = new Set(currentlySelected);
+                        const warningArea = document.getElementById('redundancyWarningArea');
+                        if (warningArea) warningArea.style.display = 'none';
+                        return;
+                    }
+
+                    // Zisti cieľový stĺpec index zo result dát
+                    let targetColIndex = -1;
+                    if (window._lastComparisonResult && window._lastComparisonResult.target_index !== undefined) {
+                        targetColIndex = window._lastComparisonResult.target_index;
+                    }
+
+                    // Zavolaj API pre detekciu redundancie s novo pridanými features
+                    try {
+                        // Pošli prvú novo pridanú feature ako fokus, alebo -1 ak žiadna
+                        const focusFeature = newlyAdded.length > 0 ? newlyAdded[0] : -1;
+                        
+                        const rawResult = await pipeline.checkFeatureRedundancy(
+                            window.rawDataString, 
+                            window.dataFormat, 
+                            selectedIndices, 
+                            targetColIndex,
+                            focusFeature
+                        );
+                        const result = convertWasmResult(rawResult);
+                        displayRedundancyWarnings(result);
+                        
+                        // Aktualizuj stav
+                        previouslySelected = new Set(currentlySelected);
+                    } catch (error) {
+                        console.warn('Redundancy check failed:', error);
+                    }
+                });
+            });
+        }
+        window.attachRedundancyChecks = attachRedundancyChecks;
+
+        function displayRedundancyWarnings(report) {
+            let warningArea = document.getElementById('redundancyWarningArea');
+            
+            if (!warningArea) {
+                // Vytvor warning area ak neexistuje
+                const mapContainer = document.getElementById('userFeatureMap');
+                if (!mapContainer) return;
+                
+                warningArea = document.createElement('div');
+                warningArea.id = 'redundancyWarningArea';
+                mapContainer.parentNode.insertBefore(warningArea, mapContainer);
+            }
+
+            if (!report.has_issues) {
+                // Zobraz OK správu alebo skry warning area
+                if (report.summary && report.summary.startsWith('OK:')) {
+                    let html = `<div style="margin-top:12px; padding:12px; background:#e8f5e9; border-left:4px solid #4caf50; border-radius:4px;">`;
+                    html += `<strong style="color:#2e7d32;">✓ ${report.summary}</strong>`;
+                    html += `</div>`;
+                    warningArea.innerHTML = html;
+                    warningArea.style.display = 'block';
+                    
+                    // Skry po 3 sekundách
+                    setTimeout(() => {
+                        if (warningArea) warningArea.style.display = 'none';
+                    }, 3000);
+                } else {
+                    warningArea.style.display = 'none';
+                }
+                return;
+            }
+
+            // Zobraz upozornenia
+            let html = `<div style="margin-top:12px; padding:12px; background:#fff5e6; border-left:4px solid #ff9800; border-radius:4px;">`;
+            html += `<strong style="color:#e65100;">${report.summary || 'Upozornenie na vysokú multikolinearitu:'}</strong><br>`;
+            
+            report.warnings.forEach(warning => {
+                html += `<div style="margin-top:8px; font-size:12px; color:#495057;">`;
+                
+                if (warning.warning_type === 'high_correlation') {
+                    // Korelačné upozornenie - lineárna závislosť
+                    html += `⚠️ <strong>${warning.feature1_name}</strong> ↔ <strong>${warning.feature2_name}</strong>: `;
+                    html += `lineárna korelácia <strong>${(warning.correlation * 100).toFixed(1)}%</strong>`;
+                } else if (warning.warning_type === 'high_mutual_information') {
+                    // NMI upozornenie - zdielaná informácia (zachytáva lineárne + nelineárne závislosti)
+                    html += `⚠️ <strong>${warning.feature1_name}</strong> ↔ <strong>${warning.feature2_name}</strong>: `;
+                    html += `zdieľaná informácia <strong>${(warning.correlation * 100).toFixed(1)}%</strong>`;
+                    html += ` <span style="font-size:10px;color:#999;">(NMI - zachytáva aj nelineárne závislosti)</span>`;
+                }
+                html += `</div>`;
+            });
+
+            
+            html += `</div>`;
+            warningArea.innerHTML = html;
+            warningArea.style.display = 'block';
+        }
+        window.displayRedundancyWarnings = displayRedundancyWarnings;
 
         async function compareSelectors() {
             try {
@@ -1906,13 +2446,13 @@
 
                 // Collect selected selectors and their params
                 const selectorConfigs = [];
-                document.querySelectorAll('.selector-compare-card.active').forEach(card => {
+                document.querySelectorAll('#selectorCompareGrid .selector-compare-card.active').forEach(card => {
                     const name = card.id.replace('compare_card_', '');
                     const params = [];
-                    card.querySelectorAll('.card-params input').forEach(input => {
-                        const paramName = input.id.replace(`compare_param_${name}_`, '');
-                        if (input.value) {
-                            params.push([paramName, input.value]);
+                    card.querySelectorAll('.card-params input, .card-params select').forEach(el => {
+                        const paramName = el.id.replace(`compare_param_${name}_`, '');
+                        if (el.value) {
+                            params.push([paramName, el.value]);
                         }
                     });
                     selectorConfigs.push({ name, params });
@@ -1945,6 +2485,9 @@
                 if (selectAllBtn) selectAllBtn.onclick = () => document.querySelectorAll('#userFeatureMap input[type=checkbox]').forEach(c => c.checked = true);
                 const deselectAllBtn = document.getElementById('featureMapDeselectAll');
                 if (deselectAllBtn) deselectAllBtn.onclick = () => document.querySelectorAll('#userFeatureMap input[type=checkbox]').forEach(c => c.checked = false);
+
+                // Attach redundancy check to all feature checkboxes
+                attachRedundancyChecks();
 
                 showStatus('success', `Porovnanie dokončené: ${selectorConfigs.length} selektorov na ${result.total_features} príznakoch. Teraz môžete natrénovať model s vybranými features.`, 'compareSelectorStatus');
             } catch (error) {
@@ -2047,11 +2590,25 @@
             trainFromComparison();
         }
 
-
+        // Global storage for comparison results
+        let globalComparisonResults = {
+            allResults: [],
+            totalFeatures: 0,
+            featureNames: [],
+            isClassification: false
+        };
 
         // Render training comparison table
         function renderTrainingComparison(allResults, totalFeatures, featureNames, targetDiv) {
             const resultsDiv = targetDiv || document.getElementById('selectorTrainingResults');
+            
+            // Store globally for embedded comparison
+            globalComparisonResults = {
+                allResults: allResults,
+                totalFeatures: totalFeatures,
+                featureNames: featureNames,
+                isClassification: false // will be set below
+            };
             
             // Determine if classification or regression from first successful result
             const firstSuccess = allResults.find(r => r.result);
@@ -2067,25 +2624,32 @@
                 return;
             }
             const isClassification = firstSuccess.result.evaluation_mode === 'classification';
+            globalComparisonResults.isClassification = isClassification;
 
             let html = '<h3 style="margin-top:20px;margin-bottom:10px;color:#cc0000;">Porovnanie výsledkov tréningu</h3>';
-            html += '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:13px;">';
+            html += '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">';
             html += '<thead><tr>';
-            html += '<th style="padding:10px 8px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:left;">Metóda</th>';
-            html += '<th style="padding:10px 8px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;">Features</th>';
+            html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:left;font-size:11px;">Metóda</th>';
+            html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;">Features</th>';
             
             if (isClassification) {
-                html += '<th style="padding:10px 8px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;">Accuracy</th>';
-                html += '<th style="padding:10px 8px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;">F1 Score</th>';
-                html += '<th style="padding:10px 8px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;">Precision</th>';
-                html += '<th style="padding:10px 8px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;">Recall</th>';
+                html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="Accuracy">ACC</th>';
+                html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="F1 Score">F1</th>';
+                html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="Precision">PREC</th>';
+                html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="Recall/Sensitivity">REC</th>';
+                html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="Specificity">SPEC</th>';
+                html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="False Positives">FP</th>';
+                html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="False Negatives">FN</th>';
+                html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="Matthews Correlation Coeff">MCC</th>';
             } else {
-                html += '<th style="padding:10px 8px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;">R2</th>';
-                html += '<th style="padding:10px 8px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;">RMSE</th>';
-                html += '<th style="padding:10px 8px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;">MSE</th>';
-                html += '<th style="padding:10px 8px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;">MAE</th>';
+                html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="R-squared">R²</th>';
+                html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="Root Mean Squared Error">RMSE</th>';
+                html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="Mean Absolute Error">MAE</th>';
+                html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="Mean Absolute Percentage Error">MAPE</th>';
+                html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="Median Absolute Error">MedAE</th>';
+                html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="Pearsonova korelácia predikcie">CORR</th>';
             }
-            html += '<th style="padding:10px 8px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;">Cas tréningu</th>';
+            html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;">Čas (ms)</th>';
             html += '</tr></thead><tbody>';
 
             // Find best values for highlighting
@@ -2099,34 +2663,57 @@
             allResults.forEach((r, idx) => {
                 const isBaseline = r.indices === null;
                 const isUser = r.isUser === true;
+                const isEmbedded = r.isEmbedded === true;
                 const isBest = r.result && ((isClassification ? r.result.accuracy : r.result.r2_score) === bestMetric);
-                const bg = isBest ? 'background:#ffe4e1;' : isUser ? 'background:#fff0f0;' : (idx % 2 === 0 ? 'background:#f8f9fa;' : '');
+                const bg = isBest ? 'background:#ffe4e1;' : isEmbedded ? 'background:#fff9e6;' : isUser ? 'background:#fff0f0;' : (idx % 2 === 0 ? 'background:#f8f9fa;' : '');
                 
                 html += `<tr style="${bg}">`;
-                html += `<td style="padding:8px;border:1px solid #dee2e6;font-weight:${isBaseline ? 'normal' : 'bold'};${isUser ? 'color:#cc0000;' : ''}">${r.name}${isBest ? ' (najlepsi)' : ''}</td>`;
-                html += `<td style="padding:8px;border:1px solid #dee2e6;text-align:center;">${r.count}/${totalFeatures}</td>`;
+                html += `<td style="padding:6px;border:1px solid #dee2e6;font-weight:${isBaseline ? 'normal' : 'bold'};font-size:12px;${isUser ? 'color:#cc0000;' : ''}${isEmbedded ? 'color:#ff8c00;' : ''}">${r.name}${isBest ? ' (best)' : ''}</td>`;
+                html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-size:12px;">${r.count}/${totalFeatures}</td>`;
 
                 if (r.error) {
-                    html += `<td colspan="5" style="padding:8px;border:1px solid #dee2e6;color:#e74c3c;text-align:center;">${r.error}</td>`;
+                    const colSpan = isClassification ? 8 : 6;
+                    html += `<td colspan="${colSpan}" style="padding:6px;border:1px solid #dee2e6;color:#e74c3c;text-align:center;font-size:11px;">${r.error}</td>`;
                 } else if (r.result) {
                     if (isClassification) {
-                        html += `<td style="padding:8px;border:1px solid #dee2e6;text-align:center;font-weight:bold;color:#cc0000;">${(r.result.accuracy * 100).toFixed(2)}%</td>`;
-                        html += `<td style="padding:8px;border:1px solid #dee2e6;text-align:center;">${r.result.f1_score.toFixed(4)}</td>`;
-                        html += `<td style="padding:8px;border:1px solid #dee2e6;text-align:center;">${r.result.precision.toFixed(4)}</td>`;
-                        html += `<td style="padding:8px;border:1px solid #dee2e6;text-align:center;">${r.result.recall.toFixed(4)}</td>`;
+                        html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-weight:bold;color:#cc0000;font-size:12px;">${(r.result.accuracy * 100).toFixed(1)}%</td>`;
+                        html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-size:12px;">${r.result.f1_score.toFixed(3)}</td>`;
+                        html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-size:12px;">${r.result.precision.toFixed(3)}</td>`;
+                        html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-size:12px;">${r.result.recall.toFixed(3)}</td>`;
+                        html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-size:12px;">${r.result.specificity.toFixed(3)}</td>`;
+                        html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-size:12px;">${Math.round(r.result.false_positives)}</td>`;
+                        html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-size:12px;">${Math.round(r.result.false_negatives)}</td>`;
+                        html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-size:12px;">${r.result.mcc.toFixed(3)}</td>`;
                     } else {
-                        html += `<td style="padding:8px;border:1px solid #dee2e6;text-align:center;font-weight:bold;color:#cc0000;">${r.result.r2_score.toFixed(4)}</td>`;
-                        html += `<td style="padding:8px;border:1px solid #dee2e6;text-align:center;">${r.result.rmse.toFixed(4)}</td>`;
-                        html += `<td style="padding:8px;border:1px solid #dee2e6;text-align:center;">${r.result.mse.toFixed(4)}</td>`;
-                        html += `<td style="padding:8px;border:1px solid #dee2e6;text-align:center;">${r.result.mae.toFixed(4)}</td>`;
+                        html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-weight:bold;color:#cc0000;font-size:12px;">${r.result.r2_score.toFixed(4)}</td>`;
+                        html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-size:12px;">${r.result.rmse.toFixed(3)}</td>`;
+                        html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-size:12px;">${r.result.mae.toFixed(3)}</td>`;
+                        html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-size:12px;">${r.result.mape ? r.result.mape.toFixed(2) + '%' : 'N/A'}</td>`;
+                        html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-size:12px;">${r.result.median_absolute_error.toFixed(3)}</td>`;
+                        html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-size:12px;">${r.result.pearson_correlation.toFixed(3)}</td>`;
                     }
-                    const timeStr = r.timeMs ? `${r.timeMs.toFixed(0)} ms` : '-';
-                    html += `<td style="padding:8px;border:1px solid #dee2e6;text-align:center;color:#6c757d;">${timeStr}</td>`;
+                    const timeStr = r.timeMs ? `${r.timeMs.toFixed(0)}` : '-';
+                    html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;color:#6c757d;font-size:12px;">${timeStr}</td>`;
                 }
                 html += '</tr>';
             });
 
             html += '</tbody></table></div>';
+            
+            // Add legend for abbreviations
+            html += '<div style="margin-top:12px;padding:12px;background:#f8f9fa;border:1px solid #dee2e6;border-radius:4px;font-size:11px;color:#495057;">';
+            if (isClassification) {
+                html += '<strong>Metriky klasifikácie:</strong><br>';
+                html += '• ACC = Accuracy | F1 = F1 Score | PREC = Precision | REC = Recall/Sensitivity | SPEC = Specificity<br>';
+                html += '• FP = počet falošne pozitívnych prípadov | FN = počet falošne negatívnych prípadov<br>';
+                html += '• MCC = Matthews Correlation Coefficient (vhodnejší ako accuracy pre imbalancované dáta)<br>';
+            } else {
+                html += '<strong>Metriky regresie:</strong><br>';
+                html += '• R² = Koeficient determinácie (0-1, vyššia = lepšia) | RMSE = Root Mean Squared Error<br>';
+                html += '• MAE = Mean Absolute Error | MAPE = Mean Absolute Percentage Error<br>';
+                html += '• MedAE = Median Absolute Error | CORR = Pearsonova korelácia (sklon linearity)<br>';
+            }
+            html += '</div>';
 
             // Show which features each selector picked
             html += '<details style="margin-top:15px;border:1px solid #dee2e6;">';
@@ -2142,7 +2729,276 @@
             });
             html += '</div></details>';
 
+            // Add button to compare with embedded methods
+            html += '<div style="margin-top:20px;padding:15px;background:#fff0f0;border:1px solid #cc0000;border-radius:4px;">';
+            html += '<h4 style="margin:0 0 8px 0;color:#cc0000;">Porovnanie s Embedded metódami</h4>';
+            html += '<p style="margin:0 0 12px 0;font-size:12px;color:#495057;">Embedded metódy vyberajú features priamo počas trénovania modelu (koeficienty, feature importance). Porovnajte ich výsledky s filter metódami použitými vyššie.</p>';
+            html += '<button id="compareEmbeddedBtn" style="background:#cc0000;color:white;border:none;padding:10px 20px;cursor:pointer;font-size:14px;font-weight:bold;border-radius:4px;">Porovnať s Embedded metódami</button>';
+            html += ' <span id="embeddedComparisonStatus" style="margin-left:12px;font-size:0.9em;color:#6c757d;"></span>';
+            html += '<div id="embeddedComparisonResults" style="margin-top:15px;"></div>';
+            html += '</div>';
+
+            // Matrix R² comparison - only for regression
+            if (!isClassification) {
+                html += '<div style="margin-top:20px;padding:15px;background:#fff0f0;border:1px solid #cc0000;border-radius:4px;">';
+                html += '<h4 style="margin:0 0 8px 0;color:#cc0000;">Porovnanie Model R² vs Maticové R²</h4>';
+                html += '<p style="margin:0 0 12px 0;font-size:12px;color:#495057;">';
+                html += 'Maticové R² = r<sup>T</sup><sub>yX</sub> R<sup>-1</sup> r<sub>yX</sub> — teoretický koeficient determinácie vypočítaný iba z korelačnej matice <b>bez trénovania modelu</b>.<br>';
+                html += 'Porovnanie s modelovým R² odhaľuje, či sú v dátach nelineárne vzťahy alebo interakcie.';
+                html += '</p>';
+                html += '<button id="compareMatrixR2Btn" style="background:#cc0000;color:white;border:none;padding:10px 20px;cursor:pointer;font-size:14px;font-weight:bold;border-radius:4px;">Porovnať R² (Model vs Matica)</button>';
+                html += ' <span id="matrixR2Status" style="margin-left:12px;font-size:0.9em;color:#6c757d;"></span>';
+                html += '<div id="matrixR2Results" style="margin-top:15px;"></div>';
+                html += '</div>';
+            }
+
             resultsDiv.innerHTML = html;
+
+            // Attach event handler for embedded methods comparison
+            const embeddedBtn = document.getElementById('compareEmbeddedBtn');
+            if (embeddedBtn) {
+                embeddedBtn.onclick = async () => {
+                    await compareWithEmbeddedMethods(allResults, totalFeatures, featureNames, isClassification);
+                };
+            }
+
+            // Attach event handler for Matrix R² comparison (only for regression)
+            if (!isClassification) {
+                const matrixR2Btn = document.getElementById('compareMatrixR2Btn');
+                if (matrixR2Btn) {
+                    matrixR2Btn.onclick = async () => {
+                        await compareMatrixR2(allResults, totalFeatures, featureNames);
+                    };
+                }
+            }
+        }
+
+        // ─── Matrix R² vs Model R² comparison ───
+        async function compareMatrixR2(allResults, totalFeatures, featureNames) {
+            const statusSpan = document.getElementById('matrixR2Status');
+            const resultsDiv = document.getElementById('matrixR2Results');
+            const btn = document.getElementById('compareMatrixR2Btn');
+
+            try {
+                btn.disabled = true;
+                statusSpan.textContent = 'Počítam maticové R² pre všetky varianty...';
+                statusSpan.style.color = '#3498db';
+
+                // For each result that has feature indices and an R² score, compute matrix R²
+                let comparisons = [];
+                for (const r of allResults) {
+                    if (!r.result || r.result.r2_score === undefined) continue;
+
+                    // Determine feature indices for this variant
+                    let featureIndices;
+                    if (r.indices === null) {
+                        // Baseline: all features
+                        featureIndices = Array.from({length: totalFeatures}, (_, i) => i);
+                    } else {
+                        featureIndices = r.indices;
+                    }
+
+                    if (!featureIndices || featureIndices.length === 0) continue;
+
+                    try {
+                        const matrixResult = convertWasmResult(pipeline.computeMatrixR2(featureIndices));
+                        comparisons.push({
+                            name: r.name,
+                            modelR2: r.result.r2_score,
+                            matrixR2: matrixResult.matrix_r2,
+                            numFeatures: featureIndices.length,
+                            featureCorrelations: matrixResult.feature_correlations || [],
+                            isEmbedded: r.isEmbedded || false,
+                            isUser: r.isUser || false,
+                        });
+                    } catch (e) {
+                        console.warn(`Matrix R² pre "${r.name}" zlyhalo:`, e);
+                    }
+                }
+
+                if (comparisons.length === 0) {
+                    resultsDiv.innerHTML = '<p style="color:#e74c3c;">Nemožno vypočítať maticové R² — žiadne úspešné výsledky.</p>';
+                    return;
+                }
+
+                // Render comparison table
+                let html = '<table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:10px;">';
+                html += '<thead><tr>';
+                html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:left;font-size:11px;">Metóda</th>';
+                html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;">Features</th>';
+                html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="R² z natrénovaného modelu">Model R²</th>';
+                html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="R² = rᵀᵧX R⁻¹ rᵧX z korelačnej matice">Maticové R²</th>';
+                html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;">Rozdiel</th>';
+                html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;">Diagnostika</th>';
+                html += '</tr></thead><tbody>';
+
+                comparisons.forEach((c, idx) => {
+                    const diff = c.modelR2 - c.matrixR2;
+                    const absDiff = Math.abs(diff);
+
+                    // Determine scenario
+                    let scenario, scenarioColor;
+                    if (absDiff < 0.05) {
+                        scenario = 'Lineárny vzťah';
+                        scenarioColor = '#28a745';
+                    } else if (diff > 0.05) {
+                        scenario = 'Nelineárne vzorce';
+                        scenarioColor = '#ff8c00';
+                    } else {
+                        scenario = 'Možný overfitting';
+                        scenarioColor = '#e74c3c';
+                    }
+
+                    const bg = idx % 2 === 0 ? 'background:#f8f9fa;' : '';
+                    const nameStyle = c.isUser ? 'color:#cc0000;' : c.isEmbedded ? 'color:#ff8c00;' : '';
+                    
+                    html += `<tr style="${bg}">`;
+                    html += `<td style="padding:8px 6px;border:1px solid #dee2e6;font-weight:bold;${nameStyle}">${c.name}</td>`;
+                    html += `<td style="padding:8px 6px;border:1px solid #dee2e6;text-align:center;">${c.numFeatures}/${totalFeatures}</td>`;
+                    html += `<td style="padding:8px 6px;border:1px solid #dee2e6;text-align:center;font-weight:bold;color:#2c3e50;">${c.modelR2.toFixed(4)}</td>`;
+                    html += `<td style="padding:8px 6px;border:1px solid #dee2e6;text-align:center;font-weight:bold;color:#3498db;">${c.matrixR2.toFixed(4)}</td>`;
+                    html += `<td style="padding:8px 6px;border:1px solid #dee2e6;text-align:center;color:${diff >= 0 ? '#28a745' : '#e74c3c'};">${diff >= 0 ? '+' : ''}${diff.toFixed(4)}</td>`;
+                    html += `<td style="padding:8px 6px;border:1px solid #dee2e6;text-align:center;color:${scenarioColor};font-weight:bold;">${scenario}</td>`;
+                    html += '</tr>';
+                });
+                html += '</tbody></table>';
+
+                // Legend / explanation
+                html += '<div style="margin-top:15px;padding:12px;background:#f8f9fa;border:1px solid #dee2e6;border-radius:4px;font-size:11px;color:#495057;">';
+                html += '<strong>Vysvetlenie diagnostiky:</strong><br>';
+                html += '<span style="color:#28a745;font-weight:bold;">Lineárny vzťah</span> (|rozdiel| &lt; 0.05): Model R² ≈ Maticové R². Vzťah medzi features a targetom je prevažne lineárny. Lineárna predikcia je pre tieto dáta vhodná.<br>';
+                html += '<span style="color:#ff8c00;font-weight:bold;">Nelineárne vzorce</span> (Model R² &gt; Maticové R² + 0.05): Model zachytáva nelineárne vzory alebo interakcie, ktoré čistá korelačná matica nevidí. Model je kvalitnejší než by naznačovala lineárna teória.<br>';
+                html += '<span style="color:#e74c3c;font-weight:bold;">Možný overfitting</span> (Model R² &lt; Maticové R² − 0.05): Model nedosahuje ani teoretické lineárne R². Možné príčiny: zle nastavený model, preučenie (overfitting), alebo zašumené testovacie dáta.<br>';
+                html += '<br><strong>Vzorec:</strong> Maticové R² = r<sup>T</sup><sub>yX</sub> · R<sup>−1</sup> · r<sub>yX</sub>, kde r<sub>yX</sub> je vektor korelácií Y s features a R je korelačná matica medzi features.';
+                html += '</div>';
+
+                // Detailed feature correlations (collapsible)
+                html += '<details style="margin-top:12px;border:1px solid #dee2e6;">';
+                html += '<summary style="padding:10px;background:#f8f9fa;cursor:pointer;font-weight:600;color:#2c3e50;">Korelácie features s targetom (detail)</summary>';
+                html += '<div style="padding:12px;">';
+
+                // Show feature correlations for baseline (all features)
+                const baseline = comparisons.find(c => c.numFeatures === totalFeatures);
+                if (baseline && baseline.featureCorrelations.length > 0) {
+                    // Sort by absolute correlation descending
+                    const sorted = [...baseline.featureCorrelations].sort((a, b) => Math.abs(b.correlation) - Math.abs(a.correlation));
+                    
+                    html += '<table style="width:100%;border-collapse:collapse;font-size:11px;">';
+                    html += '<thead><tr>';
+                    html += '<th style="padding:6px;border:1px solid #dee2e6;background:#e9ecef;text-align:left;">Feature</th>';
+                    html += '<th style="padding:6px;border:1px solid #dee2e6;background:#e9ecef;text-align:center;">r (korelácia)</th>';
+                    html += '<th style="padding:6px;border:1px solid #dee2e6;background:#e9ecef;text-align:center;">r² (variancia)</th>';
+                    html += '<th style="padding:6px;border:1px solid #dee2e6;background:#e9ecef;text-align:center;">Smer</th>';
+                    html += '</tr></thead><tbody>';
+
+                    sorted.forEach(fc => {
+                        const absCorr = Math.abs(fc.correlation);
+                        const barWidth = Math.round(absCorr * 100);
+                        const barColor = fc.correlation >= 0 ? '#3498db' : '#e74c3c';
+                        const direction = fc.correlation >= 0 ? '↗ pozitívna' : '↘ negatívna';
+                        
+                        html += '<tr>';
+                        html += `<td style="padding:5px 6px;border:1px solid #dee2e6;font-weight:bold;">${fc.name}</td>`;
+                        html += `<td style="padding:5px 6px;border:1px solid #dee2e6;text-align:center;">${fc.correlation.toFixed(4)}</td>`;
+                        html += `<td style="padding:5px 6px;border:1px solid #dee2e6;text-align:center;">`;
+                        html += `<div style="display:flex;align-items:center;gap:4px;">`;
+                        html += `<div style="background:${barColor};height:8px;width:${barWidth}%;border-radius:3px;min-width:2px;"></div>`;
+                        html += `<span>${fc.r_squared.toFixed(4)}</span>`;
+                        html += `</div></td>`;
+                        html += `<td style="padding:5px 6px;border:1px solid #dee2e6;text-align:center;color:${fc.correlation >= 0 ? '#3498db' : '#e74c3c'};font-size:10px;">${direction}</td>`;
+                        html += '</tr>';
+                    });
+                    html += '</tbody></table>';
+                }
+                html += '</div></details>';
+
+                resultsDiv.innerHTML = html;
+                statusSpan.textContent = 'Hotovo';
+                statusSpan.style.color = '#28a745';
+            } catch (e) {
+                statusSpan.textContent = 'Chyba: ' + e.message;
+                statusSpan.style.color = '#e74c3c';
+                console.error('Matrix R² comparison error:', e);
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function compareWithEmbeddedMethods(allResults, totalFeatures, featureNames, isClassification) {
+            const statusSpan = document.getElementById('embeddedComparisonStatus');
+            const resultsDiv = document.getElementById('embeddedComparisonResults');
+            const btn = document.getElementById('compareEmbeddedBtn');
+
+            try {
+                btn.disabled = true;
+                statusSpan.textContent = 'Analyzujem features pomocou embedded metódy...';
+                statusSpan.style.color = '#28a745';
+
+                // Calculate average number of features from filter methods (exclude baseline and user selection)
+                const filterResults = allResults.filter(r => r.indices && !r.isUser);
+                const avgFeatures = filterResults.length > 0
+                    ? Math.round(filterResults.reduce((sum, r) => sum + r.count, 0) / filterResults.length)
+                    : 5; // default
+
+                // Get training split ratio from UI
+                const trainRatio = parseFloat(document.getElementById('trainTestSplit').value) / 100;
+
+                // Call embedded feature ranking (pass isClassification from pipeline evaluation mode)
+                const rankingResult = await pipeline.getEmbeddedFeatureRanking(trainRatio, avgFeatures, isClassification);
+                const ranking = convertWasmResult(rankingResult);
+
+                statusSpan.textContent = `Embedded metóda vybrala ${ranking.selected_indices.length} features, trénovanie...`;
+
+                // Train model with embedded-selected features
+                const t0 = performance.now();
+                const embeddedTrainResult = await pipeline.trainWithFeatureIndices(
+                    trainRatio,
+                    ranking.selected_indices
+                );
+                const trainTime = performance.now() - t0;
+                const embeddedResult = convertWasmResult(embeddedTrainResult);
+
+                statusSpan.textContent = 'Hotovo!';
+                statusSpan.style.color = '#28a745';
+                btn.disabled = false;
+
+                // Add embedded result to global results
+                const embeddedEntry = {
+                    name: ranking.method,
+                    result: embeddedResult,
+                    indices: ranking.selected_indices,
+                    count: ranking.selected_indices.length,
+                    timeMs: trainTime,
+                    isEmbedded: true
+                };
+
+                // Check if embedded result already exists, replace it
+                const existingIdx = globalComparisonResults.allResults.findIndex(r => r.isEmbedded);
+                if (existingIdx >= 0) {
+                    globalComparisonResults.allResults[existingIdx] = embeddedEntry;
+                } else {
+                    globalComparisonResults.allResults.push(embeddedEntry);
+                }
+
+                // Re-render the entire comparison table with embedded results included
+                const comparisonResultsDiv = document.getElementById('comparisonTrainingResults');
+                renderTrainingComparison(
+                    globalComparisonResults.allResults,
+                    globalComparisonResults.totalFeatures,
+                    globalComparisonResults.featureNames,
+                    comparisonResultsDiv
+                );
+
+                // Show success message in embedded section
+                resultsDiv.innerHTML = '<p style="color:#28a745;font-weight:bold;">✓ Embedded metóda pridaná do tabuľky porovnania vyššie</p>';
+
+            } catch (error) {
+                statusSpan.textContent = `Chyba: ${error}`;
+                statusSpan.style.color = '#e74c3c';
+                resultsDiv.innerHTML = `<p style="color:#e74c3c;">Chyba pri embedded porovnaní: ${error}</p>`;
+                btn.disabled = false;
+                console.error('Embedded comparison error:', error);
+            }
         }
 
         function showStatus(type, message, elementId) {
@@ -2265,6 +3121,29 @@
 
         function closeDataEditor() {
             document.getElementById('dataEditorModal').classList.remove('show');
+        }
+
+        function editorDownloadData() {
+            const data = editorCurrentCSV;
+            if (!data || !data.trim()) {
+                alert('Žiadne dáta na stiahnutie.');
+                return;
+            }
+            const format = window.dataFormat || 'csv';
+            const mimeType = format === 'json' ? 'application/json;charset=utf-8;' : 'text/csv;charset=utf-8;';
+            const extension = format === 'json' ? '.json' : '.csv';
+            const filename = 'upravene_data' + extension;
+
+            const blob = new Blob([data], { type: mimeType });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
         }
 
         function editorApplyAndClose() {
@@ -2611,6 +3490,259 @@
             document.getElementById('editorStatusText').textContent = text;
         }
 
+        // Setup UI event listeners that don't depend on WASM (radio buttons, etc.)  
+        function setupBasicListeners() {
+            // Escape key closes modals
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    const hm = document.getElementById('heatmapModal');
+                    if (hm && hm.classList.contains('show')) { closeHeatmapModal(); return; }
+                    const ad = document.getElementById('analyzerDetailsModal');
+                    if (ad && ad.classList.contains('show')) { closeAnalyzerDetailsModal(); return; }
+                    const de = document.getElementById('dataEditorModal');
+                    if (de && de.classList.contains('show')) { closeDataEditor(); return; }
+                    const dm = document.getElementById('dataModal');
+                    if (dm && dm.classList.contains('show')) { closeModal(); return; }
+                }
+            });
+
+            // Data input method radio buttons - these must work even if WASM fails
+            const radioText = document.getElementById('dataInputText');
+            const radioFile = document.getElementById('dataInputFile');
+            if (radioText) radioText.onchange = toggleDataInputMethod;
+            if (radioFile) radioFile.onchange = toggleDataInputMethod;
+
+            // File input change listener
+            const fileInput = document.getElementById('fileInput');
+            if (fileInput) {
+                fileInput.onchange = function(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const fileInfo = document.getElementById('fileInfo');
+                        fileInfo.textContent = `Vybraný súbor: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+                        const ext = file.name.split('.').pop().toLowerCase();
+                        if (ext === 'csv') {
+                            document.getElementById('dataFormatSelect').value = 'csv';
+                        } else if (ext === 'json') {
+                            document.getElementById('dataFormatSelect').value = 'json';
+                        }
+                    }
+                };
+            }
+
+            // Train/Test split slider
+            const splitSlider = document.getElementById('trainTestSplit');
+            if (splitSlider) {
+                splitSlider.oninput = function(e) {
+                    const trainPercent = parseInt(e.target.value);
+                    const testPercent = 100 - trainPercent;
+                    document.getElementById('splitValue').textContent = `${trainPercent}%`;
+                    document.getElementById('trainPercent').textContent = `${trainPercent}%`;
+                    document.getElementById('testPercent').textContent = `${testPercent}%`;
+                };
+            }
+        }
+
+        // ===== Fullscreen Heatmap Matrix =====
+        let _heatmapData = null;      // {feature_names, correlation_matrix, mi_matrix}
+        let _heatmapMode = 'correlation';  // 'correlation' | 'mi'
+        let _heatmapShowValues = false;
+        let _heatmapSorted = false;
+
+        async function openHeatmapModal() {
+            const data = window.rawDataString;
+            const format = window.dataFormat;
+            if (!data) { alert('Najprv načítajte dáta'); return; }
+            if (!pipeline) { alert('Pipeline nie je inicializovaný'); return; }
+
+            const modal = document.getElementById('heatmapModal');
+            modal.classList.add('show');
+            document.getElementById('heatmapContainer').innerHTML = '<p style="color:#6c757d;padding:40px;text-align:center;">⏳ Počítam matice... (môže trvať niekoľko sekúnd)</p>';
+
+            try {
+                showLoading(true);
+                const rawResult = pipeline.getFeatureMatrices(data, format);
+                _heatmapData = convertWasmResult(rawResult);
+                _heatmapMode = 'correlation';
+                _heatmapShowValues = _heatmapData.num_features <= 15;
+                _heatmapSorted = false;
+                
+                document.getElementById('heatmapBtnCorr').classList.add('active');
+                document.getElementById('heatmapBtnMI').classList.remove('active');
+                document.getElementById('heatmapBtnValues').classList.toggle('active', _heatmapShowValues);
+                document.getElementById('heatmapBtnSort').classList.remove('active');
+                document.getElementById('heatmapInfo').textContent = `${_heatmapData.num_features} príznakov × ${_heatmapData.num_rows} riadkov`;
+
+                renderHeatmap();
+            } catch (err) {
+                document.getElementById('heatmapContainer').innerHTML = `<p style="color:red;padding:40px;">Chyba: ${err}</p>`;
+            } finally {
+                showLoading(false);
+            }
+        }
+        window.openHeatmapModal = openHeatmapModal;
+
+        function closeHeatmapModal() {
+            document.getElementById('heatmapModal').classList.remove('show');
+        }
+        window.closeHeatmapModal = closeHeatmapModal;
+
+        function switchHeatmapMatrix(mode) {
+            _heatmapMode = mode;
+            document.getElementById('heatmapBtnCorr').classList.toggle('active', mode === 'correlation');
+            document.getElementById('heatmapBtnMI').classList.toggle('active', mode === 'mi');
+            document.getElementById('heatmapTitle').textContent = mode === 'correlation' ? 'Matica korelácií (Pearson)' : 'Matica Mutual Information (KSG)';
+            renderHeatmap();
+        }
+        window.switchHeatmapMatrix = switchHeatmapMatrix;
+
+        function toggleHeatmapValues() {
+            _heatmapShowValues = !_heatmapShowValues;
+            document.getElementById('heatmapBtnValues').classList.toggle('active', _heatmapShowValues);
+            // Toggle class on existing cells without re-render
+            document.querySelectorAll('#heatmapContainer .heatmap-table td').forEach(td => {
+                td.classList.toggle('show-values', _heatmapShowValues);
+            });
+        }
+        window.toggleHeatmapValues = toggleHeatmapValues;
+
+        function toggleHeatmapSort() {
+            _heatmapSorted = !_heatmapSorted;
+            document.getElementById('heatmapBtnSort').classList.toggle('active', _heatmapSorted);
+            renderHeatmap();
+        }
+        window.toggleHeatmapSort = toggleHeatmapSort;
+
+        function heatmapColor(value, mode) {
+            // Correlation: -1..1 → red (negative) → white (0) → blue (positive)
+            // MI: 0..max → white (0) → purple (max)
+            if (mode === 'correlation') {
+                const v = Math.max(-1, Math.min(1, value));
+                const absV = Math.abs(v);
+                if (v >= 0) {
+                    // White → Blue
+                    const r = Math.round(255 * (1 - absV));
+                    const g = Math.round(255 * (1 - absV * 0.6));
+                    const b = 255;
+                    return `rgb(${r},${g},${b})`;
+                } else {
+                    // White → Red
+                    const r = 255;
+                    const g = Math.round(255 * (1 - absV * 0.7));
+                    const b = Math.round(255 * (1 - absV * 0.8));
+                    return `rgb(${r},${g},${b})`;
+                }
+            } else {
+                // MI: 0 → white, max → deep purple
+                const v = Math.max(0, Math.min(1, value));
+                const r = Math.round(255 - v * 175);
+                const g = Math.round(255 - v * 215);
+                const b = Math.round(255 - v * 75);
+                return `rgb(${r},${g},${b})`;
+            }
+        }
+
+        function textColor(value, mode) {
+            if (mode === 'correlation') {
+                return Math.abs(value) > 0.6 ? '#fff' : '#333';
+            } else {
+                return value > 0.6 ? '#fff' : '#333';
+            }
+        }
+
+        function renderHeatmap() {
+            if (!_heatmapData) return;
+            const container = document.getElementById('heatmapContainer');
+            const tooltip = document.getElementById('heatmapTooltip');
+
+            const matrix = _heatmapMode === 'correlation' ? _heatmapData.correlation_matrix : _heatmapData.mi_matrix;
+            const names = [..._heatmapData.feature_names];
+            const n = names.length;
+
+            // Determine ordering
+            let order = Array.from({length: n}, (_, i) => i);
+            if (_heatmapSorted && n > 2) {
+                // Cluster-like sort: hierarchical ordering by average absolute value
+                const avgAbs = order.map(i => {
+                    let sum = 0;
+                    for (let j = 0; j < n; j++) if (j !== i) sum += Math.abs(matrix[i][j]);
+                    return sum / (n - 1);
+                });
+                order.sort((a, b) => avgAbs[b] - avgAbs[a]);
+            }
+
+            // Normalize MI for coloring
+            let maxVal = 1.0;
+            if (_heatmapMode === 'mi') {
+                maxVal = 0;
+                for (let i = 0; i < n; i++)
+                    for (let j = 0; j < n; j++)
+                        if (i !== j && matrix[i][j] > maxVal) maxVal = matrix[i][j];
+                if (maxVal === 0) maxVal = 1;
+            }
+
+            // Build table
+            let html = '<table class="heatmap-table"><thead><tr>';
+            html += '<th class="corner"></th>';
+            for (const idx of order) {
+                html += `<th class="col-header" title="${names[idx]}">${names[idx]}</th>`;
+            }
+            html += '</tr></thead><tbody>';
+
+            for (const ri of order) {
+                html += '<tr>';
+                html += `<th class="row-header" title="${names[ri]}">${names[ri]}</th>`;
+                for (const ci of order) {
+                    const raw = matrix[ri][ci];
+                    const norm = _heatmapMode === 'mi' ? raw / maxVal : raw;
+                    const bg = ri === ci && _heatmapMode === 'correlation'
+                        ? '#e0e0e0'
+                        : heatmapColor(norm, _heatmapMode);
+                    const tc = ri === ci ? '#999' : textColor(Math.abs(norm), _heatmapMode);
+                    const valClass = _heatmapShowValues ? ' show-values' : '';
+                    const displayVal = _heatmapMode === 'correlation' ? raw.toFixed(2) : raw.toFixed(3);
+                    html += `<td class="${valClass}" style="background:${bg};color:${tc};" data-row="${ri}" data-col="${ci}" data-val="${raw}">${displayVal}</td>`;
+                }
+                html += '</tr>';
+            }
+            html += '</tbody></table>';
+            container.innerHTML = html;
+
+            // Legend
+            const legend = document.getElementById('heatmapLegend');
+            if (_heatmapMode === 'correlation') {
+                legend.innerHTML = `
+                    <span>-1.0</span>
+                    <div class="lg-bar" style="background:linear-gradient(to right, rgb(255,76,51), rgb(255,178,153), white, rgb(153,204,255), rgb(0,128,255));"></div>
+                    <span>+1.0</span>
+                    <span style="margin-left:15px;color:#999;">Pearson korelácia</span>`;
+            } else {
+                legend.innerHTML = `
+                    <span>0</span>
+                    <div class="lg-bar" style="background:linear-gradient(to right, white, rgb(180,140,220), rgb(80,40,180));"></div>
+                    <span>${maxVal.toFixed(3)}</span>
+                    <span style="margin-left:15px;color:#999;">Mutual Information (nats) · MI=0 pre nepočítané páry (|corr|&lt;0.3)</span>`;
+            }
+
+            // Tooltip on hover
+            container.onmousemove = (e) => {
+                const td = e.target.closest('td');
+                if (!td || td.dataset.row === undefined) { tooltip.style.display = 'none'; return; }
+                const ri = parseInt(td.dataset.row);
+                const ci = parseInt(td.dataset.col);
+                const val = parseFloat(td.dataset.val);
+                const label = _heatmapMode === 'correlation' ? 'Korelácia' : 'MI';
+                tooltip.innerHTML = `<strong>${names[ri]}</strong> × <strong>${names[ci]}</strong><br>${label}: <strong>${val.toFixed(4)}</strong>`;
+                tooltip.style.display = 'block';
+                tooltip.style.left = (e.clientX + 14) + 'px';
+                tooltip.style.top = (e.clientY - 10) + 'px';
+            };
+            container.onmouseleave = () => { tooltip.style.display = 'none'; };
+        }
+
+        // Register basic listeners immediately (no WASM needed)
+        setupBasicListeners();
+        // Then initialize WASM
         initApp();
     </script>
 
@@ -2622,6 +3754,49 @@
             <div id="modalBody"></div>
         </div>
     </div>
+
+    <!-- Analyzer Details Modal -->
+    <div id="analyzerDetailsModal" class="editor-modal">
+        <div class="editor-modal-content" style="max-width: 1200px;">
+            <div class="editor-header">
+                <h2 id="analyzerDetailsTitle">Detaily analyzera</h2>
+                <button onclick="closeAnalyzerDetailsModal()" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.5); color: white; padding: 8px 16px; font-size: 1em;">&times; Zavrieť</button>
+            </div>
+            <div id="analyzerDetailsContent" style="padding: 20px; overflow-y: auto; max-height: calc(90vh - 100px);">
+                <!-- Dynamicky generovaný obsah -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Fullscreen Heatmap Matrix Modal -->
+    <div id="heatmapModal" class="editor-modal">
+        <div class="editor-modal-content" style="max-width: 100vw; margin: 0; border-radius: 0; height: 100vh;">
+            <div class="editor-header">
+                <h2 id="heatmapTitle">Matica korelácií</h2>
+                <span id="heatmapInfo" style="opacity: 0.85; font-size: 0.85em;"></span>
+                <button onclick="closeHeatmapModal()" style="background: rgba(255,0,0,0.2); border: 1px solid rgba(255,0,0,0.5); color: white; padding: 8px 16px; font-size: 1em;">&times; Zavrieť</button>
+            </div>
+            <div class="heatmap-toolbar">
+                <div class="htb-group">
+                    <label>Matica:</label>
+                    <button id="heatmapBtnCorr" class="active" onclick="switchHeatmapMatrix('correlation')">Korelácia (Pearson)</button>
+                    <button id="heatmapBtnMI" onclick="switchHeatmapMatrix('mi')">Mutual Information</button>
+                </div>
+                <div class="htb-group">
+                    <label>Hodnoty:</label>
+                    <button id="heatmapBtnValues" onclick="toggleHeatmapValues()">Zobraziť čísla</button>
+                </div>
+                <div class="htb-group">
+                    <button id="heatmapBtnSort" onclick="toggleHeatmapSort()">Zoradiť</button>
+                </div>
+            </div>
+            <div class="heatmap-container" id="heatmapContainer">
+                <p style="color:#6c757d;">Načítavanie matice...</p>
+            </div>
+            <div class="heatmap-legend" id="heatmapLegend"></div>
+        </div>
+    </div>
+    <div class="heatmap-tooltip" id="heatmapTooltip"></div>
 
     <!-- Data Editor Modal -->
     <div id="dataEditorModal" class="editor-modal">
@@ -2669,7 +3844,8 @@
             <div class="editor-footer">
                 <span class="status-text" id="editorStatusText">Kliknite na hlavičku stĺpca pre výber</span>
                 <div>
-                    <button onclick="editorApplyAndClose()" style="background: #27ae60;">Použiť zmeny a zavrieť</button>
+                    <button onclick="editorDownloadData()" style="background: #cc0000;">⬇ Stiahnuť dáta</button>
+                    <button onclick="editorApplyAndClose()" style="background: #cc0000;">Použiť zmeny a zavrieť</button>
                     <button onclick="closeDataEditor()" class="btn-secondary">Zrušiť</button>
                 </div>
             </div>

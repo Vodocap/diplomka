@@ -77,7 +77,7 @@ export class WasmMLPipeline {
      */
     analyzeTargetCandidates(data: string, format: string): any;
     /**
-     * Analyzuje cieľovú premennú pomocou zvoleného analyzátora
+     * Analyzuje cieľovú premennú pomocou zvoleného analyzátora (s cachovaním dát)
      */
     analyzeTargetWith(data: string, format: string, method: string): any;
     /**
@@ -93,10 +93,22 @@ export class WasmMLPipeline {
      */
     buildFromPreset(preset_name: string, model: string, model_params: any, selector_params: any): any;
     /**
+     * Skontroluje redundanciu vybraných features na základe korelácie a MI (vylučuje target column)
+     * Ak je focus_feature zadaný (>= 0), kontroluje len páry s touto feature
+     */
+    checkFeatureRedundancy(data: string, format: string, selected_indices: Uint32Array, target_col_index: number, focus_feature: number): any;
+    /**
      * Porovná viaceré feature selektory na dátach BEZ potreby pipeline.
      * Umožňuje používateľovi preskúmať feature selection ešte pred vytvorením pipeline.
      */
     compareSelectors(data: string, target_column: string, format: string, selectors_json: any): any;
+    compareTargetAnalyzers(data: string, format: string, methods: string[]): any;
+    /**
+     * Vypočíta maticové R² = rᵀᵧX R⁻¹ rᵧX pre dané feature indices.
+     * Toto je teoretický R² z korelačnej matice BEZ trénovania modelu.
+     * Porovnanie s model R² odhaľuje nelinearitu v dátach.
+     */
+    computeMatrixR2(indices_js: any): any;
     /**
      * Vymaže stĺpec z CSV dát
      */
@@ -117,6 +129,14 @@ export class WasmMLPipeline {
      * Vráti všetky dáta vo formáte vhodnom pre editor (všetky riadky, všetky stĺpce)
      */
     getEditableData(data: string, format: string): any;
+    /**
+     * Získaj feature importance/ranking z embedded metódy (Ridge L2, Tree importance)
+     */
+    getEmbeddedFeatureRanking(train_ratio: number, top_k: number, is_classification: boolean): any;
+    /**
+     * Vráti surovú korelačnú a MI maticu spolu s názvami stĺpcov (pre JS heatmap vizualizáciu)
+     */
+    getFeatureMatrices(data: string, format: string): any;
     /**
      * Get feature selection details with names and scores
      */
@@ -182,12 +202,17 @@ export interface InitOutput {
     readonly wasmmlpipeline_applyProcessorToColumn: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: any) => [number, number, number];
     readonly wasmmlpipeline_buildFromConfig: (a: number, b: any) => [number, number, number];
     readonly wasmmlpipeline_buildFromPreset: (a: number, b: number, c: number, d: number, e: number, f: any, g: any) => [number, number, number];
+    readonly wasmmlpipeline_checkFeatureRedundancy: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number) => [number, number, number];
     readonly wasmmlpipeline_compareSelectors: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: any) => [number, number, number];
+    readonly wasmmlpipeline_compareTargetAnalyzers: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number, number];
+    readonly wasmmlpipeline_computeMatrixR2: (a: number, b: any) => [number, number, number];
     readonly wasmmlpipeline_deleteColumn: (a: number, b: number, c: number, d: number, e: number) => [number, number, number];
     readonly wasmmlpipeline_evaluate: (a: number, b: number) => [number, number, number];
     readonly wasmmlpipeline_getAvailableProcessors: () => any;
     readonly wasmmlpipeline_getAvailableTargetAnalyzers: (a: number) => [number, number, number];
     readonly wasmmlpipeline_getEditableData: (a: number, b: number, c: number, d: number, e: number) => [number, number, number];
+    readonly wasmmlpipeline_getEmbeddedFeatureRanking: (a: number, b: number, c: number, d: number) => [number, number, number];
+    readonly wasmmlpipeline_getFeatureMatrices: (a: number, b: number, c: number, d: number, e: number) => [number, number, number];
     readonly wasmmlpipeline_getFeatureSelectionInfo: (a: number) => [number, number, number];
     readonly wasmmlpipeline_getInfo: (a: number) => [number, number, number];
     readonly wasmmlpipeline_getProcessorParams: (a: number, b: number) => any;
@@ -204,7 +229,6 @@ export interface InitOutput {
     readonly wasmmlpipeline_trainWithSplit: (a: number, b: number) => [number, number, number];
     readonly __wbg_csvloader_free: (a: number, b: number) => void;
     readonly __wbg_wasmdataloader_free: (a: number, b: number) => void;
-    readonly __wbg_wasmfactory_free: (a: number, b: number) => void;
     readonly csvloader_get_headers: (a: number) => any;
     readonly csvloader_get_training_data: (a: number, b: number, c: number) => [number, number, number];
     readonly csvloader_len: (a: number) => number;
@@ -216,6 +240,7 @@ export interface InitOutput {
     readonly wasmdataloader_loadData: (a: number, b: number, c: number, d: number, e: number) => [number, number, number];
     readonly wasmdataloader_new: (a: number, b: number) => [number, number, number];
     readonly wasmdataloader_validateFormat: (a: number, b: number, c: number) => [number, number];
+    readonly __wbg_wasmfactory_free: (a: number, b: number) => void;
     readonly wasmfactory_getAvailableOptions: (a: number) => any;
     readonly wasmfactory_getCompatibleProcessors: (a: number, b: number, c: number) => any;
     readonly wasmfactory_getCompatibleSelectors: (a: number, b: number, c: number) => any;
@@ -224,9 +249,9 @@ export interface InitOutput {
     readonly wasmfactory_getProcessorParamDefinitions: (a: number, b: number, c: number) => any;
     readonly wasmfactory_getSelectorParams: (a: number, b: number, c: number) => any;
     readonly wasmfactory_new: () => number;
-    readonly wasm_bindgen__closure__destroy__h6c9d8563d4584f37: (a: number, b: number) => void;
-    readonly wasm_bindgen__convert__closures_____invoke__h76d7a7f4237f3c92: (a: number, b: number, c: any, d: any) => void;
-    readonly wasm_bindgen__convert__closures_____invoke__hc673461b9820d736: (a: number, b: number, c: any) => void;
+    readonly wasm_bindgen__closure__destroy__he19b5b7ba5d0617d: (a: number, b: number) => void;
+    readonly wasm_bindgen__convert__closures_____invoke__h37ac5f3fddefe22a: (a: number, b: number, c: any, d: any) => void;
+    readonly wasm_bindgen__convert__closures_____invoke__hfd7798dac3d4e96a: (a: number, b: number, c: any) => void;
     readonly __wbindgen_malloc: (a: number, b: number) => number;
     readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_exn_store: (a: number) => void;

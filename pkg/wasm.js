@@ -284,7 +284,7 @@ export class WasmMLPipeline {
         return takeFromExternrefTable0(ret[0]);
     }
     /**
-     * Analyzuje cieľovú premennú pomocou zvoleného analyzátora
+     * Analyzuje cieľovú premennú pomocou zvoleného analyzátora (s cachovaním dát)
      * @param {string} data
      * @param {string} format
      * @param {string} method
@@ -356,6 +356,29 @@ export class WasmMLPipeline {
         return takeFromExternrefTable0(ret[0]);
     }
     /**
+     * Skontroluje redundanciu vybraných features na základe korelácie a MI (vylučuje target column)
+     * Ak je focus_feature zadaný (>= 0), kontroluje len páry s touto feature
+     * @param {string} data
+     * @param {string} format
+     * @param {Uint32Array} selected_indices
+     * @param {number} target_col_index
+     * @param {number} focus_feature
+     * @returns {any}
+     */
+    checkFeatureRedundancy(data, format, selected_indices, target_col_index, focus_feature) {
+        const ptr0 = passStringToWasm0(data, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(format, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ptr2 = passArray32ToWasm0(selected_indices, wasm.__wbindgen_malloc);
+        const len2 = WASM_VECTOR_LEN;
+        const ret = wasm.wasmmlpipeline_checkFeatureRedundancy(this.__wbg_ptr, ptr0, len0, ptr1, len1, ptr2, len2, target_col_index, focus_feature);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return takeFromExternrefTable0(ret[0]);
+    }
+    /**
      * Porovná viaceré feature selektory na dátach BEZ potreby pipeline.
      * Umožňuje používateľovi preskúmať feature selection ešte pred vytvorením pipeline.
      * @param {string} data
@@ -372,6 +395,39 @@ export class WasmMLPipeline {
         const ptr2 = passStringToWasm0(format, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len2 = WASM_VECTOR_LEN;
         const ret = wasm.wasmmlpipeline_compareSelectors(this.__wbg_ptr, ptr0, len0, ptr1, len1, ptr2, len2, selectors_json);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return takeFromExternrefTable0(ret[0]);
+    }
+    /**
+     * @param {string} data
+     * @param {string} format
+     * @param {string[]} methods
+     * @returns {any}
+     */
+    compareTargetAnalyzers(data, format, methods) {
+        const ptr0 = passStringToWasm0(data, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(format, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ptr2 = passArrayJsValueToWasm0(methods, wasm.__wbindgen_malloc);
+        const len2 = WASM_VECTOR_LEN;
+        const ret = wasm.wasmmlpipeline_compareTargetAnalyzers(this.__wbg_ptr, ptr0, len0, ptr1, len1, ptr2, len2);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return takeFromExternrefTable0(ret[0]);
+    }
+    /**
+     * Vypočíta maticové R² = rᵀᵧX R⁻¹ rᵧX pre dané feature indices.
+     * Toto je teoretický R² z korelačnej matice BEZ trénovania modelu.
+     * Porovnanie s model R² odhaľuje nelinearitu v dátach.
+     * @param {any} indices_js
+     * @returns {any}
+     */
+    computeMatrixR2(indices_js) {
+        const ret = wasm.wasmmlpipeline_computeMatrixR2(this.__wbg_ptr, indices_js);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
         }
@@ -437,6 +493,37 @@ export class WasmMLPipeline {
         const ptr1 = passStringToWasm0(format, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len1 = WASM_VECTOR_LEN;
         const ret = wasm.wasmmlpipeline_getEditableData(this.__wbg_ptr, ptr0, len0, ptr1, len1);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return takeFromExternrefTable0(ret[0]);
+    }
+    /**
+     * Získaj feature importance/ranking z embedded metódy (Ridge L2, Tree importance)
+     * @param {number} train_ratio
+     * @param {number} top_k
+     * @param {boolean} is_classification
+     * @returns {any}
+     */
+    getEmbeddedFeatureRanking(train_ratio, top_k, is_classification) {
+        const ret = wasm.wasmmlpipeline_getEmbeddedFeatureRanking(this.__wbg_ptr, train_ratio, top_k, is_classification);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return takeFromExternrefTable0(ret[0]);
+    }
+    /**
+     * Vráti surovú korelačnú a MI maticu spolu s názvami stĺpcov (pre JS heatmap vizualizáciu)
+     * @param {string} data
+     * @param {string} format
+     * @returns {any}
+     */
+    getFeatureMatrices(data, format) {
+        const ptr0 = passStringToWasm0(data, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(format, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ret = wasm.wasmmlpipeline_getFeatureMatrices(this.__wbg_ptr, ptr0, len0, ptr1, len1);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
         }
@@ -642,6 +729,13 @@ function __wbg_get_imports() {
             const ret = Number(arg0);
             return ret;
         },
+        __wbg_String_8f0eb39a4a4c2f66: function(arg0, arg1) {
+            const ret = String(arg1);
+            const ptr1 = passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            const len1 = WASM_VECTOR_LEN;
+            getDataViewMemory0().setInt32(arg0 + 4 * 1, len1, true);
+            getDataViewMemory0().setInt32(arg0 + 4 * 0, ptr1, true);
+        },
         __wbg___wbindgen_bigint_get_as_i64_8fcf4ce7f1ca72a2: function(arg0, arg1) {
             const v = arg1;
             const ret = typeof(v) === 'bigint' ? v : undefined;
@@ -817,7 +911,7 @@ function __wbg_get_imports() {
                     const a = state0.a;
                     state0.a = 0;
                     try {
-                        return wasm_bindgen__convert__closures_____invoke__h76d7a7f4237f3c92(a, state0.b, arg0, arg1);
+                        return wasm_bindgen__convert__closures_____invoke__h37ac5f3fddefe22a(a, state0.b, arg0, arg1);
                     } finally {
                         state0.a = a;
                     }
@@ -907,8 +1001,8 @@ function __wbg_get_imports() {
             console.warn(arg0);
         },
         __wbindgen_cast_0000000000000001: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { dtor_idx: 432, function: Function { arguments: [Externref], shim_idx: 433, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, wasm.wasm_bindgen__closure__destroy__h6c9d8563d4584f37, wasm_bindgen__convert__closures_____invoke__hc673461b9820d736);
+            // Cast intrinsic for `Closure(Closure { dtor_idx: 470, function: Function { arguments: [Externref], shim_idx: 471, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, wasm.wasm_bindgen__closure__destroy__he19b5b7ba5d0617d, wasm_bindgen__convert__closures_____invoke__hfd7798dac3d4e96a);
             return ret;
         },
         __wbindgen_cast_0000000000000002: function(arg0) {
@@ -947,12 +1041,12 @@ function __wbg_get_imports() {
     };
 }
 
-function wasm_bindgen__convert__closures_____invoke__hc673461b9820d736(arg0, arg1, arg2) {
-    wasm.wasm_bindgen__convert__closures_____invoke__hc673461b9820d736(arg0, arg1, arg2);
+function wasm_bindgen__convert__closures_____invoke__hfd7798dac3d4e96a(arg0, arg1, arg2) {
+    wasm.wasm_bindgen__convert__closures_____invoke__hfd7798dac3d4e96a(arg0, arg1, arg2);
 }
 
-function wasm_bindgen__convert__closures_____invoke__h76d7a7f4237f3c92(arg0, arg1, arg2, arg3) {
-    wasm.wasm_bindgen__convert__closures_____invoke__h76d7a7f4237f3c92(arg0, arg1, arg2, arg3);
+function wasm_bindgen__convert__closures_____invoke__h37ac5f3fddefe22a(arg0, arg1, arg2, arg3) {
+    wasm.wasm_bindgen__convert__closures_____invoke__h37ac5f3fddefe22a(arg0, arg1, arg2, arg3);
 }
 
 const CsvLoaderFinalization = (typeof FinalizationRegistry === 'undefined')
@@ -1061,6 +1155,14 @@ function getStringFromWasm0(ptr, len) {
     return decodeText(ptr, len);
 }
 
+let cachedUint32ArrayMemory0 = null;
+function getUint32ArrayMemory0() {
+    if (cachedUint32ArrayMemory0 === null || cachedUint32ArrayMemory0.byteLength === 0) {
+        cachedUint32ArrayMemory0 = new Uint32Array(wasm.memory.buffer);
+    }
+    return cachedUint32ArrayMemory0;
+}
+
 let cachedUint8ArrayMemory0 = null;
 function getUint8ArrayMemory0() {
     if (cachedUint8ArrayMemory0 === null || cachedUint8ArrayMemory0.byteLength === 0) {
@@ -1108,6 +1210,23 @@ function makeMutClosure(arg0, arg1, dtor, f) {
     };
     CLOSURE_DTORS.register(real, state, state);
     return real;
+}
+
+function passArray32ToWasm0(arg, malloc) {
+    const ptr = malloc(arg.length * 4, 4) >>> 0;
+    getUint32ArrayMemory0().set(arg, ptr / 4);
+    WASM_VECTOR_LEN = arg.length;
+    return ptr;
+}
+
+function passArrayJsValueToWasm0(array, malloc) {
+    const ptr = malloc(array.length * 4, 4) >>> 0;
+    for (let i = 0; i < array.length; i++) {
+        const add = addToExternrefTable0(array[i]);
+        getDataViewMemory0().setUint32(ptr + 4 * i, add, true);
+    }
+    WASM_VECTOR_LEN = array.length;
+    return ptr;
 }
 
 function passStringToWasm0(arg, malloc, realloc) {
@@ -1187,6 +1306,7 @@ function __wbg_finalize_init(instance, module) {
     wasm = instance.exports;
     wasmModule = module;
     cachedDataViewMemory0 = null;
+    cachedUint32ArrayMemory0 = null;
     cachedUint8ArrayMemory0 = null;
     wasm.__wbindgen_start();
     return wasm;

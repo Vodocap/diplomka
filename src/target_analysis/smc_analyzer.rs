@@ -1,16 +1,22 @@
 use super::{TargetAnalyzer, TargetCandidate};
 use std::collections::HashSet;
+use std::cell::RefCell;
 
 /// Analyzátor cieľovej premennej na základe Squared Multiple Correlation (SMC).
 /// SMC_j = 1 - 1/(R⁻¹)_jj, kde R je korelačná matica.
 /// Udáva, koľko variability premennej Xj je vysvetlené lineárnou kombináciou
 /// všetkých ostatných premenných. Presne aproximuje R² z lineárnej regresie
 /// bez nutnosti trénovania modelu.
-pub struct SmcAnalyzer;
+pub struct SmcAnalyzer {
+    /// Cache pre korelačnú maticu
+    corr_cache: RefCell<Option<Vec<Vec<f64>>>>,
+}
 
 impl SmcAnalyzer {
     pub fn new() -> Self {
-        Self
+        Self {
+            corr_cache: RefCell::new(None),
+        }
     }
 
     fn pearson_corr(x: &[f64], y: &[f64]) -> f64 {
@@ -90,6 +96,23 @@ impl SmcAnalyzer {
         }
     }
 
+    /// Vypočíta korelačnú maticu s cachovaním
+    fn compute_corr_matrix(&self, columns: &[Vec<f64>]) -> Vec<Vec<f64>> {
+        let num_cols = columns.len();
+        let mut corr_matrix = vec![vec![0.0f64; num_cols]; num_cols];
+        
+        for i in 0..num_cols {
+            corr_matrix[i][i] = 1.0;
+            for j in (i+1)..num_cols {
+                let c = Self::pearson_corr(&columns[i], &columns[j]);
+                corr_matrix[i][j] = c;
+                corr_matrix[j][i] = c;
+            }
+        }
+        
+        corr_matrix
+    }
+
     fn classify_column(values: &[f64], n: usize) -> (usize, String) {
         let mut uniq = HashSet::new();
         for &v in values { uniq.insert(v.to_bits()); }
@@ -126,16 +149,11 @@ impl TargetAnalyzer for SmcAnalyzer {
         let num_cols = columns.len();
         let n = if num_cols > 0 { columns[0].len() } else { return vec![]; };
 
-        // Compute correlation matrix
-        let mut corr_matrix = vec![vec![0.0f64; num_cols]; num_cols];
-        for i in 0..num_cols {
-            corr_matrix[i][i] = 1.0;
-            for j in (i+1)..num_cols {
-                let c = Self::pearson_corr(&columns[i], &columns[j]);
-                corr_matrix[i][j] = c;
-                corr_matrix[j][i] = c;
-            }
-        }
+        // Vypočítame korelačnú maticu a uložíme do cache
+        let corr_matrix = self.compute_corr_matrix(columns);
+        
+        // Uložíme do cache pre get_details_html()
+        *self.corr_cache.borrow_mut() = Some(corr_matrix.clone());
 
         // Try to invert; if singular, regularize
         let inv = Self::invert_matrix(&corr_matrix).unwrap_or_else(|| {
@@ -247,15 +265,12 @@ impl TargetAnalyzer for SmcAnalyzer {
 
         // Correlation matrix if not too many columns
         if num_cols <= 15 {
-            let mut corr_matrix = vec![vec![0.0f64; num_cols]; num_cols];
-            for i in 0..num_cols {
-                corr_matrix[i][i] = 1.0;
-                for j in (i+1)..num_cols {
-                    let c = Self::pearson_corr(&columns[i], &columns[j]);
-                    corr_matrix[i][j] = c;
-                    corr_matrix[j][i] = c;
-                }
-            }
+            // Použijeme cache ak existuje
+            let corr_matrix = if let Some(cached) = self.corr_cache.borrow().as_ref() {
+                cached.clone()
+            } else {
+                self.compute_corr_matrix(columns)
+            };
 
             html.push_str("<h4 style='color:#495057;margin:20px 0 10px;border-bottom:2px solid #dee2e6;padding-bottom:8px;'>Korelačná matica</h4>");
             html.push_str("<div style='overflow-x:auto;'><table style='border-collapse:collapse;font-size:11px;'>");

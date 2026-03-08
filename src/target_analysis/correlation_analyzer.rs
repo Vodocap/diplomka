@@ -1,15 +1,21 @@
 use super::{TargetAnalyzer, TargetCandidate};
 use std::collections::HashSet;
+use std::cell::RefCell;
 
 /// Analyzátor cieľovej premennej na základe Pearsonovej korelácie.
 /// Pre každú premennú vypočíta sumu štvorcov korelácií so všetkými
 /// ostatnými premennými: Score_j = Σ r²_jk.
 /// Vyššie skóre = premenná má silnejšie lineárne väzby s ostatnými.
-pub struct CorrelationAnalyzer;
+pub struct CorrelationAnalyzer {
+    /// Cache pre korelačnú maticu
+    corr_cache: RefCell<Option<Vec<Vec<f64>>>>,
+}
 
 impl CorrelationAnalyzer {
     pub fn new() -> Self {
-        Self
+        Self {
+            corr_cache: RefCell::new(None),
+        }
     }
 
     fn pearson_corr(x: &[f64], y: &[f64]) -> f64 {
@@ -39,6 +45,30 @@ impl CorrelationAnalyzer {
         let stype = if is_cat { "classification" } else { "regression" };
         (unique_count, stype.to_string())
     }
+
+    /// Vypočíta korelačnú maticu s cachovaním
+    fn compute_corr_matrix(&self, columns: &[Vec<f64>]) -> Vec<Vec<f64>> {
+        // Skontroluj cache
+        if let Some(cached) = self.corr_cache.borrow().as_ref() {
+            return cached.clone();
+        }
+
+        let num_cols = columns.len();
+        let mut corr_matrix = vec![vec![0.0f64; num_cols]; num_cols];
+        
+        for i in 0..num_cols {
+            corr_matrix[i][i] = 1.0;
+            for j in (i+1)..num_cols {
+                let c = Self::pearson_corr(&columns[i], &columns[j]);
+                corr_matrix[i][j] = c;
+                corr_matrix[j][i] = c;
+            }
+        }
+
+        // Cache the result
+        *self.corr_cache.borrow_mut() = Some(corr_matrix.clone());
+        corr_matrix
+    }
 }
 
 impl TargetAnalyzer for CorrelationAnalyzer {
@@ -59,6 +89,9 @@ impl TargetAnalyzer for CorrelationAnalyzer {
         Vyššia hodnota znamená silnejšie celkové lineárne väzby. \
         Na rozdiel od priemeru |r| táto metrika penalizuje veľa slabých korelácií \
         a zvýhodňuje premenné s niekoľkými silnými vzťahmi. \
+        POZNÁMKA: r² (malé r na druhú) = korelačný koeficient na druhú (-1 ≤ r ≤ 1), čo dáva 0 ≤ r² ≤ 1. \
+        NEJEDNÁ SA o R² (veľké R na druhú = coefficient of determination z regresie). \
+        R² by vyžadoval model a predikcie, zatiaľ čo r² je len korelačný koeficient umocnený na 2. \
         Obmedzenie: zachytáva len lineárne vzťahy."
     }
 
@@ -66,16 +99,8 @@ impl TargetAnalyzer for CorrelationAnalyzer {
         let num_cols = columns.len();
         let n = if num_cols > 0 { columns[0].len() } else { return vec![]; };
 
-        // Full correlation matrix
-        let mut corr_matrix = vec![vec![0.0f64; num_cols]; num_cols];
-        for i in 0..num_cols {
-            corr_matrix[i][i] = 1.0;
-            for j in (i+1)..num_cols {
-                let c = Self::pearson_corr(&columns[i], &columns[j]);
-                corr_matrix[i][j] = c;
-                corr_matrix[j][i] = c;
-            }
-        }
+        // Use cached correlation matrix
+        let corr_matrix = self.compute_corr_matrix(columns);
 
         let mut candidates = Vec::new();
         for col_idx in 0..num_cols {
@@ -115,18 +140,18 @@ impl TargetAnalyzer for CorrelationAnalyzer {
         let num_cols = columns.len();
         if num_cols > 50 { return String::new(); }
 
-        // Correlation matrix
-        let mut corr_matrix = vec![vec![0.0f64; num_cols]; num_cols];
-        for i in 0..num_cols {
-            corr_matrix[i][i] = 1.0;
-            for j in (i+1)..num_cols {
-                let c = Self::pearson_corr(&columns[i], &columns[j]);
-                corr_matrix[i][j] = c;
-                corr_matrix[j][i] = c;
-            }
-        }
+        // Use cached correlation matrix
+        let corr_matrix = self.compute_corr_matrix(columns);
 
         let mut html = String::new();
+        html.push_str("<div style='margin-bottom:15px;padding:12px;background:#e8f4f8;border-left:4px solid #3498db;'>");
+        html.push_str("<strong style='color:#2c3e50;'>Info: r² vs R²</strong><br>");
+        html.push_str("<span style='font-size:12px;color:#495057;'>");
+        html.push_str("• <b>r²</b> (malé r na druhú) = korelačný koeficient na druhú. Keďže -1 ≤ r ≤ 1, tak 0 ≤ r² ≤ 1.<br>");
+        html.push_str("• <b>R²</b> (veľké R na druhú) = coefficient of determination z regresie (koľko % variancie Y vysvetľuje model).<br>");
+        html.push_str("• <b>Prečo r²?</b> Pretože sa tu porovnávajú páry premenných bez modelu. R² by vyžadoval trénovanie regresného modelu.<br>");
+        html.push_str("• <b>Suma r²</b> = Score_j = Σ r²_jk meria celkovú silu lineárnych vzťahov premennej j so všetkými ostatnými.");
+        html.push_str("</span></div>");
         html.push_str("<h4 style='color:#495057;margin:20px 0 10px;border-bottom:2px solid #dee2e6;padding-bottom:8px;'>Korelačná matica všetkých stĺpcov</h4>");
         html.push_str("<div style='overflow-x:auto;'><table style='border-collapse:collapse;font-size:11px;'>");
         html.push_str("<tr><th style='padding:6px;border:1px solid #ddd;background:#f0f0f0;'></th>");

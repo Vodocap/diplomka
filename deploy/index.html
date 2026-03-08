@@ -3774,7 +3774,7 @@
             <div class="editor-header">
                 <h2 id="heatmapTitle">Matica korelácií</h2>
                 <span id="heatmapInfo" style="opacity: 0.85; font-size: 0.85em;"></span>
-                <button onclick="closeHeatmapModal()" style="background: rgba(255,0,0,0.2); border: 1px solid rgba(255,0,0,0.5); color: white; padding: 8px 16px; font-size: 1em;">&times; Zavrieť</button>
+                <button onclick="closeHeatmapModal()" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.5); color: white; padding: 8px 16px; font-size: 1em;">&times; Zavrieť</button>
             </div>
             <div class="heatmap-toolbar">
                 <div class="htb-group">
@@ -3787,7 +3787,8 @@
                     <button id="heatmapBtnValues" onclick="toggleHeatmapValues()">Zobraziť čísla</button>
                 </div>
                 <div class="htb-group">
-                    <button id="heatmapBtnSort" onclick="toggleHeatmapSort()">Zoradiť</button>
+                    <label>Zoradiť:</label>
+                    <button id="heatmapBtnSort" onclick="toggleHeatmapSort()">Podľa korelácie</button>
                 </div>
             </div>
             <div class="heatmap-container" id="heatmapContainer">

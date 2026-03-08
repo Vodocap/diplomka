@@ -2668,7 +2668,7 @@
                 const bg = isBest ? 'background:#ffe4e1;' : isEmbedded ? 'background:#fff9e6;' : isUser ? 'background:#fff0f0;' : (idx % 2 === 0 ? 'background:#f8f9fa;' : '');
                 
                 html += `<tr style="${bg}">`;
-                html += `<td style="padding:6px;border:1px solid #dee2e6;font-weight:${isBaseline ? 'normal' : 'bold'};font-size:12px;${isUser ? 'color:#cc0000;' : ''}${isEmbedded ? 'color:#ff8c00;' : ''}">${isEmbedded ? '🔧 ' : ''}${r.name}${isBest ? ' ⭐ best' : ''}</td>`;
+                html += `<td style="padding:6px;border:1px solid #dee2e6;font-weight:${isBaseline ? 'normal' : 'bold'};font-size:12px;${isUser ? 'color:#cc0000;' : ''}${isEmbedded ? 'color:#ff8c00;' : ''}">${r.name}${isBest ? ' (best)' : ''}</td>`;
                 html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-size:12px;">${r.count}/${totalFeatures}</td>`;
 
                 if (r.error) {
@@ -2738,6 +2738,20 @@
             html += '<div id="embeddedComparisonResults" style="margin-top:15px;"></div>';
             html += '</div>';
 
+            // Matrix R² comparison - only for regression
+            if (!isClassification) {
+                html += '<div style="margin-top:20px;padding:15px;background:#fff0f0;border:1px solid #cc0000;border-radius:4px;">';
+                html += '<h4 style="margin:0 0 8px 0;color:#cc0000;">Porovnanie Model R² vs Maticové R²</h4>';
+                html += '<p style="margin:0 0 12px 0;font-size:12px;color:#495057;">';
+                html += 'Maticové R² = r<sup>T</sup><sub>yX</sub> R<sup>-1</sup> r<sub>yX</sub> — teoretický koeficient determinácie vypočítaný iba z korelačnej matice <b>bez trénovania modelu</b>.<br>';
+                html += 'Porovnanie s modelovým R² odhaľuje, či sú v dátach nelineárne vzťahy alebo interakcie.';
+                html += '</p>';
+                html += '<button id="compareMatrixR2Btn" style="background:#cc0000;color:white;border:none;padding:10px 20px;cursor:pointer;font-size:14px;font-weight:bold;border-radius:4px;">Porovnať R² (Model vs Matica)</button>';
+                html += ' <span id="matrixR2Status" style="margin-left:12px;font-size:0.9em;color:#6c757d;"></span>';
+                html += '<div id="matrixR2Results" style="margin-top:15px;"></div>';
+                html += '</div>';
+            }
+
             resultsDiv.innerHTML = html;
 
             // Attach event handler for embedded methods comparison
@@ -2746,6 +2760,167 @@
                 embeddedBtn.onclick = async () => {
                     await compareWithEmbeddedMethods(allResults, totalFeatures, featureNames, isClassification);
                 };
+            }
+
+            // Attach event handler for Matrix R² comparison (only for regression)
+            if (!isClassification) {
+                const matrixR2Btn = document.getElementById('compareMatrixR2Btn');
+                if (matrixR2Btn) {
+                    matrixR2Btn.onclick = async () => {
+                        await compareMatrixR2(allResults, totalFeatures, featureNames);
+                    };
+                }
+            }
+        }
+
+        // ─── Matrix R² vs Model R² comparison ───
+        async function compareMatrixR2(allResults, totalFeatures, featureNames) {
+            const statusSpan = document.getElementById('matrixR2Status');
+            const resultsDiv = document.getElementById('matrixR2Results');
+            const btn = document.getElementById('compareMatrixR2Btn');
+
+            try {
+                btn.disabled = true;
+                statusSpan.textContent = 'Počítam maticové R² pre všetky varianty...';
+                statusSpan.style.color = '#3498db';
+
+                // For each result that has feature indices and an R² score, compute matrix R²
+                let comparisons = [];
+                for (const r of allResults) {
+                    if (!r.result || r.result.r2_score === undefined) continue;
+
+                    // Determine feature indices for this variant
+                    let featureIndices;
+                    if (r.indices === null) {
+                        // Baseline: all features
+                        featureIndices = Array.from({length: totalFeatures}, (_, i) => i);
+                    } else {
+                        featureIndices = r.indices;
+                    }
+
+                    if (!featureIndices || featureIndices.length === 0) continue;
+
+                    try {
+                        const matrixResult = convertWasmResult(pipeline.computeMatrixR2(featureIndices));
+                        comparisons.push({
+                            name: r.name,
+                            modelR2: r.result.r2_score,
+                            matrixR2: matrixResult.matrix_r2,
+                            numFeatures: featureIndices.length,
+                            featureCorrelations: matrixResult.feature_correlations || [],
+                            isEmbedded: r.isEmbedded || false,
+                            isUser: r.isUser || false,
+                        });
+                    } catch (e) {
+                        console.warn(`Matrix R² pre "${r.name}" zlyhalo:`, e);
+                    }
+                }
+
+                if (comparisons.length === 0) {
+                    resultsDiv.innerHTML = '<p style="color:#e74c3c;">Nemožno vypočítať maticové R² — žiadne úspešné výsledky.</p>';
+                    return;
+                }
+
+                // Render comparison table
+                let html = '<table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:10px;">';
+                html += '<thead><tr>';
+                html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:left;font-size:11px;">Metóda</th>';
+                html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;">Features</th>';
+                html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="R² z natrénovaného modelu">Model R²</th>';
+                html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="R² = rᵀᵧX R⁻¹ rᵧX z korelačnej matice">Maticové R²</th>';
+                html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;">Rozdiel</th>';
+                html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;">Diagnostika</th>';
+                html += '</tr></thead><tbody>';
+
+                comparisons.forEach((c, idx) => {
+                    const diff = c.modelR2 - c.matrixR2;
+                    const absDiff = Math.abs(diff);
+
+                    // Determine scenario
+                    let scenario, scenarioColor;
+                    if (absDiff < 0.05) {
+                        scenario = 'Lineárny vzťah';
+                        scenarioColor = '#28a745';
+                    } else if (diff > 0.05) {
+                        scenario = 'Nelineárne vzorce';
+                        scenarioColor = '#ff8c00';
+                    } else {
+                        scenario = 'Možný overfitting';
+                        scenarioColor = '#e74c3c';
+                    }
+
+                    const bg = idx % 2 === 0 ? 'background:#f8f9fa;' : '';
+                    const nameStyle = c.isUser ? 'color:#cc0000;' : c.isEmbedded ? 'color:#ff8c00;' : '';
+                    
+                    html += `<tr style="${bg}">`;
+                    html += `<td style="padding:8px 6px;border:1px solid #dee2e6;font-weight:bold;${nameStyle}">${c.name}</td>`;
+                    html += `<td style="padding:8px 6px;border:1px solid #dee2e6;text-align:center;">${c.numFeatures}/${totalFeatures}</td>`;
+                    html += `<td style="padding:8px 6px;border:1px solid #dee2e6;text-align:center;font-weight:bold;color:#2c3e50;">${c.modelR2.toFixed(4)}</td>`;
+                    html += `<td style="padding:8px 6px;border:1px solid #dee2e6;text-align:center;font-weight:bold;color:#3498db;">${c.matrixR2.toFixed(4)}</td>`;
+                    html += `<td style="padding:8px 6px;border:1px solid #dee2e6;text-align:center;color:${diff >= 0 ? '#28a745' : '#e74c3c'};">${diff >= 0 ? '+' : ''}${diff.toFixed(4)}</td>`;
+                    html += `<td style="padding:8px 6px;border:1px solid #dee2e6;text-align:center;color:${scenarioColor};font-weight:bold;">${scenario}</td>`;
+                    html += '</tr>';
+                });
+                html += '</tbody></table>';
+
+                // Legend / explanation
+                html += '<div style="margin-top:15px;padding:12px;background:#f8f9fa;border:1px solid #dee2e6;border-radius:4px;font-size:11px;color:#495057;">';
+                html += '<strong>Vysvetlenie diagnostiky:</strong><br>';
+                html += '<span style="color:#28a745;font-weight:bold;">Lineárny vzťah</span> (|rozdiel| &lt; 0.05): Model R² ≈ Maticové R². Vzťah medzi features a targetom je prevažne lineárny. Lineárna predikcia je pre tieto dáta vhodná.<br>';
+                html += '<span style="color:#ff8c00;font-weight:bold;">Nelineárne vzorce</span> (Model R² &gt; Maticové R² + 0.05): Model zachytáva nelineárne vzory alebo interakcie, ktoré čistá korelačná matica nevidí. Model je kvalitnejší než by naznačovala lineárna teória.<br>';
+                html += '<span style="color:#e74c3c;font-weight:bold;">Možný overfitting</span> (Model R² &lt; Maticové R² − 0.05): Model nedosahuje ani teoretické lineárne R². Možné príčiny: zle nastavený model, preučenie (overfitting), alebo zašumené testovacie dáta.<br>';
+                html += '<br><strong>Vzorec:</strong> Maticové R² = r<sup>T</sup><sub>yX</sub> · R<sup>−1</sup> · r<sub>yX</sub>, kde r<sub>yX</sub> je vektor korelácií Y s features a R je korelačná matica medzi features.';
+                html += '</div>';
+
+                // Detailed feature correlations (collapsible)
+                html += '<details style="margin-top:12px;border:1px solid #dee2e6;">';
+                html += '<summary style="padding:10px;background:#f8f9fa;cursor:pointer;font-weight:600;color:#2c3e50;">Korelácie features s targetom (detail)</summary>';
+                html += '<div style="padding:12px;">';
+
+                // Show feature correlations for baseline (all features)
+                const baseline = comparisons.find(c => c.numFeatures === totalFeatures);
+                if (baseline && baseline.featureCorrelations.length > 0) {
+                    // Sort by absolute correlation descending
+                    const sorted = [...baseline.featureCorrelations].sort((a, b) => Math.abs(b.correlation) - Math.abs(a.correlation));
+                    
+                    html += '<table style="width:100%;border-collapse:collapse;font-size:11px;">';
+                    html += '<thead><tr>';
+                    html += '<th style="padding:6px;border:1px solid #dee2e6;background:#e9ecef;text-align:left;">Feature</th>';
+                    html += '<th style="padding:6px;border:1px solid #dee2e6;background:#e9ecef;text-align:center;">r (korelácia)</th>';
+                    html += '<th style="padding:6px;border:1px solid #dee2e6;background:#e9ecef;text-align:center;">r² (variancia)</th>';
+                    html += '<th style="padding:6px;border:1px solid #dee2e6;background:#e9ecef;text-align:center;">Smer</th>';
+                    html += '</tr></thead><tbody>';
+
+                    sorted.forEach(fc => {
+                        const absCorr = Math.abs(fc.correlation);
+                        const barWidth = Math.round(absCorr * 100);
+                        const barColor = fc.correlation >= 0 ? '#3498db' : '#e74c3c';
+                        const direction = fc.correlation >= 0 ? '↗ pozitívna' : '↘ negatívna';
+                        
+                        html += '<tr>';
+                        html += `<td style="padding:5px 6px;border:1px solid #dee2e6;font-weight:bold;">${fc.name}</td>`;
+                        html += `<td style="padding:5px 6px;border:1px solid #dee2e6;text-align:center;">${fc.correlation.toFixed(4)}</td>`;
+                        html += `<td style="padding:5px 6px;border:1px solid #dee2e6;text-align:center;">`;
+                        html += `<div style="display:flex;align-items:center;gap:4px;">`;
+                        html += `<div style="background:${barColor};height:8px;width:${barWidth}%;border-radius:3px;min-width:2px;"></div>`;
+                        html += `<span>${fc.r_squared.toFixed(4)}</span>`;
+                        html += `</div></td>`;
+                        html += `<td style="padding:5px 6px;border:1px solid #dee2e6;text-align:center;color:${fc.correlation >= 0 ? '#3498db' : '#e74c3c'};font-size:10px;">${direction}</td>`;
+                        html += '</tr>';
+                    });
+                    html += '</tbody></table>';
+                }
+                html += '</div></details>';
+
+                resultsDiv.innerHTML = html;
+                statusSpan.textContent = 'Hotovo';
+                statusSpan.style.color = '#28a745';
+            } catch (e) {
+                statusSpan.textContent = 'Chyba: ' + e.message;
+                statusSpan.style.color = '#e74c3c';
+                console.error('Matrix R² comparison error:', e);
+            } finally {
+                btn.disabled = false;
             }
         }
 
@@ -2768,8 +2943,8 @@
                 // Get training split ratio from UI
                 const trainRatio = parseFloat(document.getElementById('trainTestSplit').value) / 100;
 
-                // Call embedded feature ranking
-                const rankingResult = await pipeline.getEmbeddedFeatureRanking(trainRatio, avgFeatures);
+                // Call embedded feature ranking (pass isClassification from pipeline evaluation mode)
+                const rankingResult = await pipeline.getEmbeddedFeatureRanking(trainRatio, avgFeatures, isClassification);
                 const ranking = convertWasmResult(rankingResult);
 
                 statusSpan.textContent = `Embedded metóda vybrala ${ranking.selected_indices.length} features, trénovanie...`;
@@ -3599,7 +3774,7 @@
             <div class="editor-header">
                 <h2 id="heatmapTitle">Matica korelácií</h2>
                 <span id="heatmapInfo" style="opacity: 0.85; font-size: 0.85em;"></span>
-                <button onclick="closeHeatmapModal()" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.5); color: white; padding: 8px 16px; font-size: 1em;">&times; Zavrieť</button>
+                <button onclick="closeHeatmapModal()" style="background: rgba(255,0,0,0.2); border: 1px solid rgba(255,0,0,0.5); color: white; padding: 8px 16px; font-size: 1em;">&times; Zavrieť</button>
             </div>
             <div class="heatmap-toolbar">
                 <div class="htb-group">
@@ -3612,8 +3787,7 @@
                     <button id="heatmapBtnValues" onclick="toggleHeatmapValues()">Zobraziť čísla</button>
                 </div>
                 <div class="htb-group">
-                    <label>Zoradiť:</label>
-                    <button id="heatmapBtnSort" onclick="toggleHeatmapSort()">Podľa korelácie</button>
+                    <button id="heatmapBtnSort" onclick="toggleHeatmapSort()">Zoradiť</button>
                 </div>
             </div>
             <div class="heatmap-container" id="heatmapContainer">

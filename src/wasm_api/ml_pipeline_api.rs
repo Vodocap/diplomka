@@ -5,7 +5,7 @@ use crate::data_loading::DataLoaderFactory;
 use crate::feature_selection_strategies::factory::FeatureSelectorFactory;
 use crate::target_analysis::TargetAnalyzerFactory;
 use smartcore::linalg::basic::matrix::DenseMatrix;
-use smartcore::linalg::basic::arrays::{Array, Array2};
+use smartcore::linalg::basic::arrays::Array;
 use std::cell::RefCell;
 use statrs::function::gamma::digamma;
 
@@ -579,7 +579,6 @@ impl WasmMLPipeline {
         let (train_indices, test_indices) = self.ensure_split_indices(train_ratio)?;
 
         let (x_data, y_data) = self.data_cache.as_ref().unwrap();
-        let num_samples = x_data.shape().0;
         let num_features = x_data.shape().1;
 
         // Reset training state to ensure clean baseline (no leftover indices)
@@ -839,7 +838,6 @@ impl WasmMLPipeline {
         let (train_indices, test_indices) = self.ensure_split_indices(train_ratio)?;
 
         let (x_data, y_data) = self.data_cache.as_ref().unwrap();
-        let num_samples = x_data.shape().0;
         let num_features = x_data.shape().1;
 
         // Validate indices
@@ -1023,16 +1021,47 @@ impl WasmMLPipeline {
                 sum_abs_error += error.abs();
                 abs_errors.push(error.abs());
                 sum_squared_total += (actual - y_mean).powi(2);
+
+                // MAPE
+                if actual.abs() > 1e-10 {
+                    sum_abs_pct_error += (error.abs() / actual.abs()) * 100.0;
+                }
+
+                // Pearson correlation
+                y_sum += actual;
+                pred_sum += pred;
+                y_sq_sum += actual * actual;
+                pred_sq_sum += pred * pred;
+                correlation_sum += actual * pred;
             }
 
             result.mse = sum_squared_error / n;
             result.rmse = result.mse.sqrt();
             result.mae = sum_abs_error / n;
+            result.mape = sum_abs_pct_error / n;
             result.r2_score = if sum_squared_total > 0.0 {
                 1.0 - (sum_squared_error / sum_squared_total)
             } else {
                 0.0
             };
+
+            // Median Absolute Error
+            if !abs_errors.is_empty() {
+                abs_errors.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+                let mid = abs_errors.len() / 2;
+                result.median_absolute_error = if abs_errors.len() % 2 == 0 {
+                    (abs_errors[mid - 1] + abs_errors[mid]) / 2.0
+                } else {
+                    abs_errors[mid]
+                };
+            }
+
+            // Pearson Correlation Coefficient
+            let mean_y = y_sum / n;
+            let mean_pred = pred_sum / n;
+            let num = correlation_sum - n * mean_y * mean_pred;
+            let den = ((y_sq_sum - n * mean_y * mean_y) * (pred_sq_sum - n * mean_pred * mean_pred)).sqrt();
+            result.pearson_correlation = if den > 0.0 { num / den } else { 0.0 };
         }
 
         Ok(serde_wasm_bindgen::to_value(&result).unwrap())
@@ -1057,7 +1086,7 @@ impl WasmMLPipeline {
 
     /// Získaj feature importance/ranking z embedded metódy (Ridge L2, Tree importance)
     #[wasm_bindgen(js_name = getEmbeddedFeatureRanking)]
-    pub fn get_embedded_feature_ranking(&mut self, train_ratio: f64, top_k: usize) -> Result<JsValue, JsValue> {
+    pub fn get_embedded_feature_ranking(&mut self, train_ratio: f64, top_k: usize, is_classification: bool) -> Result<JsValue, JsValue> {
         if self.data_cache.is_none() {
             return Err(JsValue::from_str("Dáta nie sú načítané"));
         }
@@ -1081,11 +1110,7 @@ impl WasmMLPipeline {
         let x_train_matrix = DenseMatrix::from_2d_vec(&x_train_data)
             .map_err(|e| JsValue::from_str(&format!("Chyba pri vytváraní train matice: {:?}", e)))?;
 
-        // Detekuj typ úlohy (klasifikácia vs regresia) na základe unikátnych hodnôt y
-        let unique_y: std::collections::HashSet<i32> = y_train.iter()
-            .map(|&v| v as i32)
-            .collect();
-        let is_classification = unique_y.len() < 20; // heuristika
+        // Typ úlohy (klasifikácia vs regresia) sa určuje podľa evaluation_mode zvoleného v pipeline
 
         // Použij embedded selector factory
         use crate::embedded::EmbeddedSelectorFactory;
@@ -1126,28 +1151,164 @@ impl WasmMLPipeline {
         Ok(serde_wasm_bindgen::to_value(&result).unwrap())
     }
 
-    /// Helper: Výpočet Pearsonovej korelácie (deprecated - používa sa v embedded moduloch)
-    fn pearson_correlation(&self, x: &[f64], y: &[f64]) -> f64 {
-        let n = x.len() as f64;
-        if n == 0.0 || x.len() != y.len() { return 0.0; }
-        
-        let mean_x = x.iter().sum::<f64>() / n;
-        let mean_y = y.iter().sum::<f64>() / n;
-        
-        let mut num = 0.0;
-        let mut den_x = 0.0;
-        let mut den_y = 0.0;
-        
-        for (xi, yi) in x.iter().zip(y.iter()) {
-            let dx = xi - mean_x;
-            let dy = yi - mean_y;
-            num += dx * dy;
-            den_x += dx * dx;
-            den_y += dy * dy;
+    /// Vypočíta maticové R² = rᵀᵧX R⁻¹ rᵧX pre dané feature indices.
+    /// Toto je teoretický R² z korelačnej matice BEZ trénovania modelu.
+    /// Porovnanie s model R² odhaľuje nelinearitu v dátach.
+    #[wasm_bindgen(js_name = computeMatrixR2)]
+    pub fn compute_matrix_r2(&self, indices_js: JsValue) -> Result<JsValue, JsValue> {
+        if self.data_cache.is_none() {
+            return Err(JsValue::from_str("Dáta nie sú načítané"));
         }
-        
-        let den = (den_x * den_y).sqrt();
-        if den == 0.0 { 0.0 } else { num / den }
+
+        let indices: Vec<usize> = serde_wasm_bindgen::from_value(indices_js)
+            .map_err(|e| JsValue::from_str(&format!("Indices parse error: {:?}", e)))?;
+
+        let (x_data, y_data) = self.data_cache.as_ref().unwrap();
+        let num_rows = x_data.shape().0;
+        let num_features = x_data.shape().1;
+
+        if indices.is_empty() {
+            return Ok(serde_wasm_bindgen::to_value(&serde_json::json!({
+                "matrix_r2": 0.0,
+                "error": "Prázdny zoznam feature indices"
+            })).unwrap());
+        }
+
+        // Validate indices
+        for &idx in &indices {
+            if idx >= num_features {
+                return Err(JsValue::from_str(&format!(
+                    "Feature index {} mimo rozsah (max {})", idx, num_features - 1
+                )));
+            }
+        }
+
+        let k = indices.len(); // počet vybraných features
+
+        // Extrahuj stĺpce pre vybrané features
+        let columns: Vec<Vec<f64>> = indices.iter()
+            .map(|&idx| (0..num_rows).map(|row| *x_data.get((row, idx))).collect())
+            .collect();
+
+        // 1. Vypočítaj korelačnú maticu R medzi vybranými features (k×k)
+        let mut corr_xx = vec![vec![0.0f64; k]; k];
+        for i in 0..k {
+            corr_xx[i][i] = 1.0;
+            for j in (i + 1)..k {
+                let c = crate::mi_estimator::pearson_correlation(&columns[i], &columns[j]);
+                corr_xx[i][j] = c;
+                corr_xx[j][i] = c;
+            }
+        }
+
+        // 2. Vypočítaj vektor korelácií rᵧX medzi Y a každým vybraným feature
+        let r_yx: Vec<f64> = columns.iter()
+            .map(|col| crate::mi_estimator::pearson_correlation(col, y_data))
+            .collect();
+
+        // 3. Invertuj korelačnú maticu R⁻¹ (s regularizáciou ak singulárna)
+        let r_inv = Self::invert_matrix_gauss(&corr_xx).unwrap_or_else(|| {
+            // Regularizácia: R + λI
+            let mut reg = corr_xx.clone();
+            let lambda = 0.01;
+            for i in 0..k {
+                reg[i][i] += lambda;
+            }
+            Self::invert_matrix_gauss(&reg).unwrap_or_else(|| {
+                // Fallback: identita
+                let mut id = vec![vec![0.0; k]; k];
+                for i in 0..k { id[i][i] = 1.0; }
+                id
+            })
+        });
+
+        // 4. Vypočítaj R² = rᵀᵧX · R⁻¹ · rᵧX
+        // Najprv: temp = R⁻¹ · rᵧX (vektor k×1)
+        let mut temp = vec![0.0f64; k];
+        for i in 0..k {
+            for j in 0..k {
+                temp[i] += r_inv[i][j] * r_yx[j];
+            }
+        }
+        // Potom: R² = rᵀᵧX · temp
+        let mut matrix_r2: f64 = 0.0;
+        for i in 0..k {
+            matrix_r2 += r_yx[i] * temp[i];
+        }
+        // Clamp na [0, 1]
+        matrix_r2 = matrix_r2.clamp(0.0, 1.0);
+
+        // Aj individuálne feature korelácie s targetom
+        let feature_correlations: Vec<serde_json::Value> = indices.iter().zip(r_yx.iter())
+            .map(|(&idx, &corr)| {
+                let name = if idx < self.feature_names.len() {
+                    self.feature_names[idx].clone()
+                } else {
+                    format!("F{}", idx)
+                };
+                serde_json::json!({
+                    "index": idx,
+                    "name": name,
+                    "correlation": (corr * 10000.0).round() / 10000.0,
+                    "r_squared": (corr * corr * 10000.0).round() / 10000.0
+                })
+            })
+            .collect();
+
+        let result = serde_json::json!({
+            "matrix_r2": (matrix_r2 * 10000.0).round() / 10000.0,
+            "num_features": k,
+            "feature_correlations": feature_correlations,
+        });
+
+        Ok(serde_wasm_bindgen::to_value(&result).unwrap())
+    }
+
+    /// Gauss-Jordan eliminácia pre inverziu matice
+    fn invert_matrix_gauss(mat: &[Vec<f64>]) -> Option<Vec<Vec<f64>>> {
+        let n = mat.len();
+        if n == 0 { return None; }
+
+        // Augmented matrix [mat | I]
+        let mut aug: Vec<Vec<f64>> = mat.iter().enumerate().map(|(i, row)| {
+            let mut r = row.clone();
+            for j in 0..n {
+                r.push(if i == j { 1.0 } else { 0.0 });
+            }
+            r
+        }).collect();
+
+        for col in 0..n {
+            // Partial pivoting
+            let mut max_row = col;
+            let mut max_val = aug[col][col].abs();
+            for row in (col + 1)..n {
+                if aug[row][col].abs() > max_val {
+                    max_val = aug[row][col].abs();
+                    max_row = row;
+                }
+            }
+            if max_val < 1e-12 {
+                return None; // Singulárna
+            }
+            aug.swap(col, max_row);
+
+            let pivot = aug[col][col];
+            for j in 0..(2 * n) {
+                aug[col][j] /= pivot;
+            }
+
+            for row in 0..n {
+                if row == col { continue; }
+                let factor = aug[row][col];
+                for j in 0..(2 * n) {
+                    aug[row][j] -= factor * aug[col][j];
+                }
+            }
+        }
+
+        let inv: Vec<Vec<f64>> = aug.iter().map(|row| row[n..].to_vec()).collect();
+        Some(inv)
     }
 
     /// Evaluácia (split dáta)
@@ -2439,10 +2600,8 @@ impl WasmMLPipeline {
 
                     // Vytvor nové hlavičky: nahraď pôvodný stĺpec novými
                     let mut new_headers: Vec<String> = Vec::new();
-                    let mut ohe_start = 0;
                     for (i, h) in headers.iter().enumerate() {
                         if i == col_idx {
-                            ohe_start = new_headers.len();
                             for uv in &unique_vals {
                                 let col_name = if uv.is_empty() {
                                     format!("{}_empty", column_name)

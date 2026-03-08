@@ -2,6 +2,7 @@ use super::FeatureSelector;
 use smartcore::linalg::basic::matrix::DenseMatrix;
 use smartcore::linalg::basic::arrays::Array;
 use std::collections::HashSet;
+use crate::mi_estimator;
 
 // Simple PRNG for WASM compatibility
 struct SimpleRng {
@@ -321,7 +322,7 @@ impl FeatureSelector for SynergyVNSSelector {
 
         // 1. Vypočítaj MI scores pre každý feature vs target
         let mi_scores: Vec<f64> = columns.iter().map(|col| {
-            estimate_mi_ksg(col, y, 3)
+            mi_estimator::estimate_mi_proxy(col, y)
         }).collect();
 
         // 2. Vypočítaj pairwise MI medzi features (REDUNDANCIA, nie synergy!)
@@ -329,7 +330,7 @@ impl FeatureSelector for SynergyVNSSelector {
         let mut pairwise_mi_matrix = vec![vec![0.0; num_features]; num_features];
         for i in 0..num_features {
             for j in (i + 1)..num_features {
-                let mi = estimate_mi_ksg(&columns[i], &columns[j], 3);
+                let mi = mi_estimator::estimate_mi_proxy(&columns[i], &columns[j]);
                 pairwise_mi_matrix[i][j] = mi;
                 pairwise_mi_matrix[j][i] = mi;
             }
@@ -339,7 +340,7 @@ impl FeatureSelector for SynergyVNSSelector {
         let mut correlation_matrix = vec![vec![0.0; num_features]; num_features];
         for i in 0..num_features {
             for j in (i + 1)..num_features {
-                let corr = pearson_correlation(&columns[i], &columns[j]);
+                let corr = mi_estimator::pearson_correlation(&columns[i], &columns[j]);
                 correlation_matrix[i][j] = corr;
                 correlation_matrix[j][i] = corr;
             }
@@ -473,7 +474,7 @@ impl FeatureSelector for SynergyVNSSelector {
 
     fn get_feature_scores(&self, x: &DenseMatrix<f64>, y: &[f64]) -> Option<Vec<(usize, f64)>> {
         let columns = Self::matrix_to_columns(x);
-        let mi_scores: Vec<f64> = columns.iter().map(|col| estimate_mi_ksg(col, y, 3)).collect();
+        let mi_scores: Vec<f64> = columns.iter().map(|col| mi_estimator::estimate_mi_proxy(col, y)).collect();
         
         Some(mi_scores.iter().enumerate().map(|(idx, &score)| (idx, score)).collect())
     }
@@ -481,42 +482,4 @@ impl FeatureSelector for SynergyVNSSelector {
     fn get_metric_name(&self) -> &str {
         "VNS Fitness"
     }
-}
-
-/// KSG estimator pre mutual information (simplified)
-fn estimate_mi_ksg(x: &[f64], y: &[f64], _k: usize) -> f64 {
-    if x.is_empty() || x.len() != y.len() {
-        return 0.0;
-    }
-
-    // Simplified: použijeme normalized MI proxy
-    let corr = pearson_correlation(x, y);
-    let mi_proxy = -0.5 * (1.0 - corr * corr).max(0.0).ln();
-    mi_proxy.max(0.0)
-}
-
-/// Pearson correlation
-fn pearson_correlation(x: &[f64], y: &[f64]) -> f64 {
-    let n = x.len() as f64;
-    if n == 0.0 || x.len() != y.len() {
-        return 0.0;
-    }
-
-    let mean_x = x.iter().sum::<f64>() / n;
-    let mean_y = y.iter().sum::<f64>() / n;
-
-    let mut num = 0.0;
-    let mut den_x = 0.0;
-    let mut den_y = 0.0;
-
-    for (xi, yi) in x.iter().zip(y.iter()) {
-        let dx = xi - mean_x;
-        let dy = yi - mean_y;
-        num += dx * dy;
-        den_x += dx * dx;
-        den_y += dy * dy;
-    }
-
-    let den = (den_x * den_y).sqrt();
-    if den == 0.0 { 0.0 } else { num / den }
 }

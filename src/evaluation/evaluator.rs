@@ -3,6 +3,7 @@ use smartcore::metrics::{
     f1, precision, recall,
     mean_squared_error, r2, mean_absolute_error,
 };
+use crate::mi_estimator;
 
 pub struct ModelEvaluator;
 
@@ -127,7 +128,7 @@ impl ModelEvaluator {
         report.add_metric("explained_variance".to_string(), explained_var);
 
         // Pearsonov korelačný koeficient medzi y_true a y_pred
-        let corr = Self::calculate_pearson_correlation(&y_true_vec, &y_pred_vec);
+        let corr = mi_estimator::pearson_correlation(&y_true_vec, &y_pred_vec);
         report.add_metric("pearson_correlation".to_string(), corr);
 
         report
@@ -209,30 +210,5 @@ impl ModelEvaluator {
         
         if ss_tot == 0.0 { return 0.0; }
         1.0 - (ss_res / ss_tot)
-    }
-
-    fn calculate_pearson_correlation(y_true: &[f64], y_pred: &[f64]) -> f64 {
-        let n = y_true.len() as f64;
-        if n == 0.0 { return 0.0; }
-        
-        let mean_true = y_true.iter().sum::<f64>() / n;
-        let mean_pred = y_pred.iter().sum::<f64>() / n;
-        
-        let mut numerator = 0.0;
-        let mut sum_sq_true = 0.0;
-        let mut sum_sq_pred = 0.0;
-        
-        for (t, p) in y_true.iter().zip(y_pred.iter()) {
-            let dt = t - mean_true;
-            let dp = p - mean_pred;
-            numerator += dt * dp;
-            sum_sq_true += dt * dt;
-            sum_sq_pred += dp * dp;
-        }
-        
-        let denom = (sum_sq_true * sum_sq_pred).sqrt();
-        if denom == 0.0 { return 0.0; }
-        
-        numerator / denom
     }
 }

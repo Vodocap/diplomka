@@ -105,7 +105,7 @@ impl SmcSelector {
     fn compute_target_smc_without(columns: &[Vec<f64>], y: &[f64], exclude_idx: usize) -> f64 {
         let num_features = columns.len();
         // Zostávajúce features (bez excluded) + target na konci
-        let mut kept: Vec<usize> = (0..num_features).filter(|&i| i != exclude_idx).collect();
+        let kept: Vec<usize> = (0..num_features).filter(|&i| i != exclude_idx).collect();
         let total = kept.len() + 1; // features + target
 
         let mut corr = vec![vec![0.0f64; total]; total];

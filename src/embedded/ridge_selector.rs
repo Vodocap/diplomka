@@ -14,10 +14,6 @@ impl RidgeSelector {
             alpha: 1.0, // Default regularization
         }
     }
-    
-    pub fn with_alpha(alpha: f64) -> Self {
-        RidgeSelector { alpha }
-    }
 }
 
 impl EmbeddedFeatureSelector for RidgeSelector {
@@ -53,14 +49,6 @@ impl EmbeddedFeatureSelector for RidgeSelector {
     
     fn get_name(&self) -> String {
         format!("Ridge (L2, α={:.2})", self.alpha)
-    }
-    
-    fn supports_classification(&self) -> bool {
-        false // Ridge je len pre regresiu
-    }
-    
-    fn supports_regression(&self) -> bool {
-        true
     }
 }
 

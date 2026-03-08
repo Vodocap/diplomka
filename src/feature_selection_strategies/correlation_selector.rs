@@ -3,6 +3,7 @@ use smartcore::linalg::basic::arrays::Array;
 use super::FeatureSelector;
 use std::collections::HashSet;
 use std::cell::RefCell;
+use crate::mi_estimator;
 
 /// Info o jednej feature: Pearson, Spearman, normalita, vybrany metric
 #[derive(Clone, Debug)]
@@ -10,7 +11,6 @@ struct FeatureCorrelation {
     index: usize,
     pearson: f64,
     spearman: f64,
-    is_normal: bool,
     chosen_corr: f64,          // |Pearson| ak normal, |Spearman| ak nie
     chosen_label: &'static str, // "Pearson" alebo "Spearman"
 }
@@ -38,24 +38,9 @@ impl CorrelationSelector
         }
     }
 
-    /// Pearson correlation (signed)
+    /// Pearson correlation (signed) - deleguje na zdieľanú implementáciu
     fn pearson_correlation(x: &[f64], y: &[f64]) -> f64 {
-        let n = x.len() as f64;
-        if n == 0.0 { return 0.0; }
-        let mean_x = x.iter().sum::<f64>() / n;
-        let mean_y = y.iter().sum::<f64>() / n;
-        let mut num = 0.0;
-        let mut den_x = 0.0;
-        let mut den_y = 0.0;
-        for (xi, yi) in x.iter().zip(y.iter()) {
-            let dx = xi - mean_x;
-            let dy = yi - mean_y;
-            num += dx * dy;
-            den_x += dx * dx;
-            den_y += dy * dy;
-        }
-        let den = (den_x * den_y).sqrt();
-        if den == 0.0 { 0.0 } else { num / den }
+        mi_estimator::pearson_correlation(x, y)
     }
 
     /// Spearman rank correlation = Pearson on ranks
@@ -175,7 +160,6 @@ impl FeatureSelector for CorrelationSelector
                 index: i,
                 pearson,
                 spearman,
-                is_normal,
                 chosen_corr,
                 chosen_label,
             });

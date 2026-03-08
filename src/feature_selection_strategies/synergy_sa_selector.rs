@@ -2,6 +2,7 @@ use super::FeatureSelector;
 use smartcore::linalg::basic::matrix::DenseMatrix;
 use smartcore::linalg::basic::arrays::Array;
 use std::collections::HashSet;
+use crate::mi_estimator;
 
 // Simple PRNG for WASM compatibility
 struct SimpleRng {
@@ -11,10 +12,6 @@ struct SimpleRng {
 impl SimpleRng {
     fn new() -> Self {
         SimpleRng { state: 0xDEADBEEF42 }
-    }
-
-    fn new_with_seed(seed: u64) -> Self {
-        SimpleRng { state: seed.wrapping_add(1) }
     }
 
     fn next(&mut self) -> u64 {
@@ -251,14 +248,14 @@ impl FeatureSelector for SynergySASelector {
 
         // 1. MI scores pre každý feature vs target
         let mi_scores: Vec<f64> = columns.iter().map(|col| {
-            estimate_mi_ksg(col, y, 3)
+            mi_estimator::estimate_mi_proxy(col, y)
         }).collect();
 
         // 2. Pairwise MI medzi features (pre redundanciu/synergiu)
         let mut pairwise_mi_matrix = vec![vec![0.0; num_features]; num_features];
         for i in 0..num_features {
             for j in (i + 1)..num_features {
-                let mi = estimate_mi_ksg(&columns[i], &columns[j], 3);
+                let mi = mi_estimator::estimate_mi_proxy(&columns[i], &columns[j]);
                 pairwise_mi_matrix[i][j] = mi;
                 pairwise_mi_matrix[j][i] = mi;
             }
@@ -275,7 +272,7 @@ impl FeatureSelector for SynergySASelector {
         let mut temperature = self.initial_temp;
         let mut iterations_since_improvement = 0;
 
-        for iteration in 0..self.max_iterations {
+        for _iteration in 0..self.max_iterations {
             if temperature < self.min_temp {
                 break;
             }
@@ -398,47 +395,11 @@ impl FeatureSelector for SynergySASelector {
 
     fn get_feature_scores(&self, x: &DenseMatrix<f64>, y: &[f64]) -> Option<Vec<(usize, f64)>> {
         let columns = Self::matrix_to_columns(x);
-        let mi_scores: Vec<f64> = columns.iter().map(|col| estimate_mi_ksg(col, y, 3)).collect();
+        let mi_scores: Vec<f64> = columns.iter().map(|col| mi_estimator::estimate_mi_proxy(col, y)).collect();
         Some(mi_scores.iter().enumerate().map(|(idx, &score)| (idx, score)).collect())
     }
 
     fn get_metric_name(&self) -> &str {
         "SA Fitness"
     }
-}
-
-/// KSG estimator pre mutual information (simplified)
-fn estimate_mi_ksg(x: &[f64], y: &[f64], _k: usize) -> f64 {
-    if x.is_empty() || x.len() != y.len() {
-        return 0.0;
-    }
-    let corr = pearson_correlation(x, y);
-    let mi_proxy = -0.5 * (1.0 - corr * corr).max(0.0).ln();
-    mi_proxy.max(0.0)
-}
-
-/// Pearson correlation
-fn pearson_correlation(x: &[f64], y: &[f64]) -> f64 {
-    let n = x.len() as f64;
-    if n == 0.0 || x.len() != y.len() {
-        return 0.0;
-    }
-
-    let mean_x = x.iter().sum::<f64>() / n;
-    let mean_y = y.iter().sum::<f64>() / n;
-
-    let mut num = 0.0;
-    let mut den_x = 0.0;
-    let mut den_y = 0.0;
-
-    for (xi, yi) in x.iter().zip(y.iter()) {
-        let dx = xi - mean_x;
-        let dy = yi - mean_y;
-        num += dx * dy;
-        den_x += dx * dx;
-        den_y += dy * dy;
-    }
-
-    let den = (den_x * den_y).sqrt();
-    if den == 0.0 { 0.0 } else { num / den }
 }

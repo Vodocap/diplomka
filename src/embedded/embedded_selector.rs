@@ -10,8 +10,4 @@ pub trait EmbeddedFeatureSelector {
     
     /// Názov metódy
     fn get_name(&self) -> String;
-    
-    /// Typ úlohy (classification / regression)
-    fn supports_classification(&self) -> bool;
-    fn supports_regression(&self) -> bool;
 }

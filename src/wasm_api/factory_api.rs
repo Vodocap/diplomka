@@ -2,7 +2,6 @@ use wasm_bindgen::prelude::*;
 use serde::{Serialize, Deserialize};
 use crate::models::factory::ModelFactory;
 use crate::processing::factory::ProcessorFactory;
-use crate::processing::ProcessorParam;
 use crate::feature_selection_strategies::factory::FeatureSelectorFactory;
 use crate::data_loading::factory::DataLoaderFactory;
 use crate::pipeline::director::MLPipelineDirector;

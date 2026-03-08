@@ -12,6 +12,50 @@
 use statrs::function::gamma::digamma;
 use kdtree::KdTree;
 
+// ═══════════════════════════════════════════════════════════════════════
+//  Zdieľané štatistické utility
+// ═══════════════════════════════════════════════════════════════════════
+
+/// Pearsonov korelačný koeficient medzi dvoma vektormi.
+/// Vracia hodnotu v rozsahu [-1, 1].
+pub fn pearson_correlation(x: &[f64], y: &[f64]) -> f64 {
+    let n = x.len() as f64;
+    if n == 0.0 || x.len() != y.len() {
+        return 0.0;
+    }
+
+    let mean_x = x.iter().sum::<f64>() / n;
+    let mean_y = y.iter().sum::<f64>() / n;
+
+    let mut num = 0.0;
+    let mut den_x = 0.0;
+    let mut den_y = 0.0;
+
+    for (xi, yi) in x.iter().zip(y.iter()) {
+        let dx = xi - mean_x;
+        let dy = yi - mean_y;
+        num += dx * dy;
+        den_x += dx * dx;
+        den_y += dy * dy;
+    }
+
+    let den = (den_x * den_y).sqrt();
+    if den == 0.0 { 0.0 } else { num / den }
+}
+
+/// Zjednodušený odhad Mutual Information na báze Pearsonovej korelácie.
+/// Používa sa v SA/VNS optimalizačných selektoroch kde je dôležitá
+/// rýchlosť (volaná opakovane v každej iterácii).
+/// Pre presnejší odhad použite `estimate_mi_ksg`.
+pub fn estimate_mi_proxy(x: &[f64], y: &[f64]) -> f64 {
+    if x.is_empty() || x.len() != y.len() {
+        return 0.0;
+    }
+    let corr = pearson_correlation(x, y);
+    let mi_proxy = -0.5 * (1.0 - corr * corr).max(0.0).ln();
+    mi_proxy.max(0.0)
+}
+
 /// Chebyshevova (L∞) vzdialenosť medzi dvoma bodmi.
 #[inline]
 fn chebyshev(a: &[f64], b: &[f64]) -> f64 {

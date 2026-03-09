@@ -110,6 +110,15 @@ export class WasmMLPipeline {
      */
     computeMatrixR2(indices_js: any): any;
     /**
+     * Vypočíta Joint MI pre dvojice features s cieľovou premennou.
+     * Joint MI = MI((X1, X2); Y) — koľko informácie dvojica spoločne nesie o Y.
+     * Synergia = Joint MI - (MI(X1;Y) + MI(X2;Y)). Kladná = dvojica má synergiu.
+     *
+     * mode: "with_selected" — páry (nevybraná, vybraná)
+     *       "among_unselected" — páry (nevybraná, nevybraná)
+     */
+    computeSynergyAnalysis(data: string, format: string, target_col: string, selected_indices: Uint32Array, mode: string): any;
+    /**
      * Vymaže stĺpec z CSV dát
      */
     deleteColumn(data: string, column_name: string): any;
@@ -206,6 +215,7 @@ export interface InitOutput {
     readonly wasmmlpipeline_compareSelectors: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: any) => [number, number, number];
     readonly wasmmlpipeline_compareTargetAnalyzers: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number, number];
     readonly wasmmlpipeline_computeMatrixR2: (a: number, b: any) => [number, number, number];
+    readonly wasmmlpipeline_computeSynergyAnalysis: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number, k: number) => [number, number, number];
     readonly wasmmlpipeline_deleteColumn: (a: number, b: number, c: number, d: number, e: number) => [number, number, number];
     readonly wasmmlpipeline_evaluate: (a: number, b: number) => [number, number, number];
     readonly wasmmlpipeline_getAvailableProcessors: () => any;

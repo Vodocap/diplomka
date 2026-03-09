@@ -434,6 +434,37 @@ export class WasmMLPipeline {
         return takeFromExternrefTable0(ret[0]);
     }
     /**
+     * Vypočíta Joint MI pre dvojice features s cieľovou premennou.
+     * Joint MI = MI((X1, X2); Y) — koľko informácie dvojica spoločne nesie o Y.
+     * Synergia = Joint MI - (MI(X1;Y) + MI(X2;Y)). Kladná = dvojica má synergiu.
+     *
+     * mode: "with_selected" — páry (nevybraná, vybraná)
+     *       "among_unselected" — páry (nevybraná, nevybraná)
+     * @param {string} data
+     * @param {string} format
+     * @param {string} target_col
+     * @param {Uint32Array} selected_indices
+     * @param {string} mode
+     * @returns {any}
+     */
+    computeSynergyAnalysis(data, format, target_col, selected_indices, mode) {
+        const ptr0 = passStringToWasm0(data, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(format, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ptr2 = passStringToWasm0(target_col, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len2 = WASM_VECTOR_LEN;
+        const ptr3 = passArray32ToWasm0(selected_indices, wasm.__wbindgen_malloc);
+        const len3 = WASM_VECTOR_LEN;
+        const ptr4 = passStringToWasm0(mode, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len4 = WASM_VECTOR_LEN;
+        const ret = wasm.wasmmlpipeline_computeSynergyAnalysis(this.__wbg_ptr, ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3, ptr4, len4);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return takeFromExternrefTable0(ret[0]);
+    }
+    /**
      * Vymaže stĺpec z CSV dát
      * @param {string} data
      * @param {string} column_name
@@ -1001,7 +1032,7 @@ function __wbg_get_imports() {
             console.warn(arg0);
         },
         __wbindgen_cast_0000000000000001: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { dtor_idx: 470, function: Function { arguments: [Externref], shim_idx: 471, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
+            // Cast intrinsic for `Closure(Closure { dtor_idx: 472, function: Function { arguments: [Externref], shim_idx: 473, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
             const ret = makeMutClosure(arg0, arg1, wasm.wasm_bindgen__closure__destroy__he19b5b7ba5d0617d, wasm_bindgen__convert__closures_____invoke__hfd7798dac3d4e96a);
             return ret;
         },

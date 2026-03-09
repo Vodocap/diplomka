@@ -11,6 +11,7 @@ export const wasmmlpipeline_checkFeatureRedundancy: (a: number, b: number, c: nu
 export const wasmmlpipeline_compareSelectors: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: any) => [number, number, number];
 export const wasmmlpipeline_compareTargetAnalyzers: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number, number];
 export const wasmmlpipeline_computeMatrixR2: (a: number, b: any) => [number, number, number];
+export const wasmmlpipeline_computeSynergyAnalysis: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number, k: number) => [number, number, number];
 export const wasmmlpipeline_deleteColumn: (a: number, b: number, c: number, d: number, e: number) => [number, number, number];
 export const wasmmlpipeline_evaluate: (a: number, b: number) => [number, number, number];
 export const wasmmlpipeline_getAvailableProcessors: () => any;

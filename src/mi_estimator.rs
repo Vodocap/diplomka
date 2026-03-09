@@ -180,6 +180,74 @@ pub fn estimate_mi_ksg(x: &[f64], y: &[f64], k: usize) -> f64 {
     (psi_k - mean_psi + psi_n).max(0.0)
 }
 
+/// KSG estimátor Joint Mutual Information MI((X1, X2); Y)
+/// Meria koľko informácie dvojica premenných (X1, X2) spoločne nesie o cieľovej Y.
+/// Používa 3D KD-tree s Chebyshevovou vzdialenosťou.
+///
+/// # Argumenty
+/// * `x1` - prvá premenná dvojice
+/// * `x2` - druhá premenná dvojice
+/// * `y`  - cieľová premenná
+/// * `k`  - počet najbližších susedov pre KSG odhad
+pub fn estimate_joint_mi_ksg(x1: &[f64], x2: &[f64], y: &[f64], k: usize) -> f64 {
+    let n = x1.len();
+    if n <= k || x1.len() != x2.len() || x1.len() != y.len() {
+        return 0.0;
+    }
+
+    let k_eff = k.min(n - 1);
+    if n <= k_eff {
+        return 0.0;
+    }
+
+    // 3D KD-tree: body (x1, x2, y)
+    let points: Vec<[f64; 3]> = (0..n).map(|i| [x1[i], x2[i], y[i]]).collect();
+    let mut tree = KdTree::with_capacity(3, n);
+    for i in 0..n {
+        tree.add(&points[i], i).unwrap();
+    }
+
+    // Zoradený index pre y marginal (1D range-counting)
+    let y_sorted = SortedIndex::build(y);
+
+    let mut nxy_vec = Vec::with_capacity(n);
+    let mut ny_vec = Vec::with_capacity(n);
+
+    for i in 0..n {
+        // k-NN v 3D priestore (Chebyshevova vzdialenosť)
+        let neighbors = tree.nearest(&points[i], k_eff + 1, &chebyshev).unwrap();
+
+        let epsilon = neighbors.iter()
+            .filter(|(_, &idx)| idx != i)
+            .nth(k_eff - 1)
+            .map(|(d, _)| *d)
+            .unwrap_or(f64::INFINITY);
+
+        // Počítanie v (x1, x2) marginále: max(|x1_i-x1_j|, |x2_i-x2_j|) < epsilon
+        let mut nxy = 0usize;
+        for j in 0..n {
+            if j == i { continue; }
+            let d = (x1[i] - x1[j]).abs().max((x2[i] - x2[j]).abs());
+            if d < epsilon { nxy += 1; }
+        }
+
+        // Počítanie v y marginále (zoradený index pre O(log n))
+        let ny = y_sorted.count_within(y[i], epsilon, i);
+
+        nxy_vec.push(nxy);
+        ny_vec.push(ny);
+    }
+
+    // KSG vzorec: MI = ψ(k) - <ψ(n_xy+1) + ψ(n_y+1)> + ψ(N)
+    let psi_k = digamma(k_eff as f64);
+    let psi_n = digamma(n as f64);
+    let mean_psi: f64 = (0..n)
+        .map(|i| digamma((nxy_vec[i] + 1) as f64) + digamma((ny_vec[i] + 1) as f64))
+        .sum::<f64>() / n as f64;
+
+    (psi_k - mean_psi + psi_n).max(0.0)
+}
+
 /// Adaptívne k: pre veľké datasety sa automaticky zníži k,
 /// pretože väčší počet bodov kompenzuje menší k_neighbors.
 fn adaptive_k(n: usize, k: usize) -> usize {

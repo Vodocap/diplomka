@@ -87,3 +87,76 @@ jobs:
           folder: deploy
           branch: gh-pages
           clean: true
+
+  playwright-tests:
+    runs-on: ubuntu-latest
+    needs: build-and-deploy
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust and add wasm target
+        run: |
+          curl https://sh.rustup.rs -sSf | sh -s -- -y
+          source $HOME/.cargo/env
+          rustup default stable
+          rustup target add wasm32-unknown-unknown
+
+      - name: Install wasm-pack
+        run: |
+          curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+          source $HOME/.cargo/env
+
+      - name: Build WebAssembly
+        run: wasm-pack build --release --target web --out-dir pkg
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python test dependencies
+        run: |
+          pip install pytest pytest-playwright pytest-html
+          playwright install chromium --with-deps
+
+      - name: Start server and run Playwright tests
+        run: |
+          # Start server in background
+          bash serve.sh &
+          SERVER_PID=$!
+          
+          # Wait for server to be ready
+          for i in $(seq 1 30); do
+            if curl -s http://localhost:3333 > /dev/null 2>&1; then
+              echo "Server ready on port 3333"
+              break
+            fi
+            sleep 1
+          done
+
+          # Run tests
+          mkdir -p tests/reports tests/output
+          python3 -m pytest tests/test_08_all_models_comprehensive.py \
+            --browser chromium \
+            -v \
+            --timeout 180 \
+            --html=tests/reports/test_report.html --self-contained-html \
+            --tb=short \
+            2>&1 | tee tests/output/test_output.log
+
+          TEST_EXIT=$?
+          kill $SERVER_PID 2>/dev/null || true
+          exit $TEST_EXIT
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-report
+          path: |
+            tests/reports/
+            tests/output/
+            tests/test_report.log
+          retention-days: 14

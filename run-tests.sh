@@ -40,7 +40,7 @@ echo "🧪 Spúšťam Playwright testy..."
 echo ""
 
 if [ -n "$HEADED" ] || [[ ! " $@ " =~ " --headless " ]]; then
-    python3 -m pytest $EXTRA_ARGS
+    python3 -m pytest --headed --browser chromium $EXTRA_ARGS
 else
-    python3 -m pytest --browser chromium -v --timeout 120 $EXTRA_ARGS
+    python3 -m pytest --browser chromium --timeout 120 $EXTRA_ARGS
 fi

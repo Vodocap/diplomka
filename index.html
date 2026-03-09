@@ -808,14 +808,13 @@
             font-size: 11px;
         }
         .heatmap-table th {
-            padding: 4px 6px;
+            padding: 2px 4px;
             background: #f1f3f5;
             border: 1px solid #dee2e6;
             font-size: 10px;
             position: sticky;
             z-index: 2;
             white-space: nowrap;
-            max-width: 90px;
             overflow: hidden;
             text-overflow: ellipsis;
         }
@@ -831,14 +830,13 @@
             writing-mode: vertical-lr;
             text-orientation: mixed;
             transform: rotate(180deg);
-            height: 100px;
             vertical-align: bottom;
-            padding: 6px 4px;
+            padding: 4px 2px;
         }
         .heatmap-table th.row-header {
             left: 0;
             text-align: right;
-            padding-right: 8px;
+            padding-right: 6px;
         }
         .heatmap-table td {
             padding: 0;
@@ -846,9 +844,9 @@
             text-align: center;
             cursor: pointer;
             transition: outline 0.1s;
-            min-width: 28px;
-            height: 28px;
             font-size: 0;
+            overflow: hidden;
+            line-height: 1;
         }
         .heatmap-table td:hover {
             outline: 2px solid #333;
@@ -857,9 +855,11 @@
             position: relative;
         }
         .heatmap-table td.show-values {
-            font-size: 9px;
             font-weight: 600;
-            min-width: 42px;
+        }
+        .heatmap-table td.filtered-out {
+            background: #f5f5f5 !important;
+            color: #ccc !important;
         }
         .heatmap-tooltip {
             position: fixed;
@@ -2160,7 +2160,12 @@
             const grid = document.getElementById('selectorCompareGrid');
             grid.innerHTML = '';
 
+            // Skryť synergy selektory - synergia sa teraz analyzuje post-hoc po tréningu
+            const hiddenSelectors = ['synergy_vns', 'synergy_sa'];
+
             availableOptions.selectors.forEach(sel => {
+                if (hiddenSelectors.includes(sel.name)) return;
+                
                 const card = document.createElement('div');
                 card.className = 'selector-compare-card';
                 card.id = `compare_card_${sel.name}`;
@@ -2472,6 +2477,7 @@
                 // Store results for training
                 window._lastComparisonResult = result;
 
+
                 // Open comparison in modal
                 const modal = document.getElementById('dataModal');
                 document.getElementById('modalTitle').textContent = `Porovnanie selektorov (cieľ: ${targetColumn})`;
@@ -2709,7 +2715,7 @@
                 html += '• MCC = Matthews Correlation Coefficient (vhodnejší ako accuracy pre imbalancované dáta)<br>';
             } else {
                 html += '<strong>Metriky regresie:</strong><br>';
-                html += '• R² = Koeficient determinácie (0-1, vyššia = lepšia) | RMSE = Root Mean Squared Error<br>';
+                html += '• R² = Koeficient determinácie (max 1.0, môže byť záporné pre zlé modely, vyššia = lepšia) | RMSE = Root Mean Squared Error<br>';
                 html += '• MAE = Mean Absolute Error | MAPE = Mean Absolute Percentage Error<br>';
                 html += '• MedAE = Median Absolute Error | CORR = Pearsonova korelácia (sklon linearity)<br>';
             }
@@ -2752,6 +2758,18 @@
                 html += '</div>';
             }
 
+            // Synergy analysis section
+            html += '<div style="margin-top:20px;padding:15px;background:#fff0f0;border:1px solid #cc0000;border-radius:4px;">';
+            html += '<h4 style="margin:0 0 8px 0;color:#cc0000;">Analýza synergií medzi features (Joint MI)</h4>';
+            html += '<p style="margin:0 0 12px 0;font-size:12px;color:#495057;">Vypočíta Joint Mutual Information MI((F1, F2); target) pre dvojice features.<br>Ak je Joint MI &gt; MI(F1;target) + MI(F2;target), dvojica má <strong>synergiu</strong> — spolu nesú VIAC informácie o cieľovej premennej ako samostatne.</p>';
+            html += '<div style="display:flex;gap:10px;flex-wrap:wrap;">';
+            html += '<button id="synergyWithSelectedBtn" style="background:#cc0000;color:white;border:none;padding:10px 16px;cursor:pointer;font-size:13px;font-weight:bold;border-radius:4px;">Synergie nevybraných s vybranými</button>';
+            html += '<button id="synergyAmongUnselectedBtn" style="background:#cc0000;color:white;border:none;padding:10px 16px;cursor:pointer;font-size:13px;font-weight:bold;border-radius:4px;">Synergie medzi nevybranými</button>';
+            html += '</div>';
+            html += '<span id="synergyStatus" style="display:block;margin-top:8px;font-size:0.9em;color:#6c757d;"></span>';
+            html += '<div id="synergyResults" style="margin-top:15px;"></div>';
+            html += '</div>';
+
             resultsDiv.innerHTML = html;
 
             // Attach event handler for embedded methods comparison
@@ -2771,6 +2789,135 @@
                     };
                 }
             }
+
+            // Attach synergy analysis buttons
+            const synergyWithBtn = document.getElementById('synergyWithSelectedBtn');
+            if (synergyWithBtn) {
+                synergyWithBtn.onclick = async () => {
+                    await runSynergyAnalysis('with_selected');
+                };
+            }
+            const synergyAmongBtn = document.getElementById('synergyAmongUnselectedBtn');
+            if (synergyAmongBtn) {
+                synergyAmongBtn.onclick = async () => {
+                    await runSynergyAnalysis('among_unselected');
+                };
+            }
+        }
+
+        // ─── Synergy analysis (Joint MI) ───
+        async function runSynergyAnalysis(mode) {
+            const statusSpan = document.getElementById('synergyStatus');
+            const resultsDiv = document.getElementById('synergyResults');
+            const comparison = window._lastComparisonResult;
+
+            if (!comparison) {
+                statusSpan.textContent = 'Najprv spustite porovnanie selektorov.';
+                statusSpan.style.color = '#e74c3c';
+                return;
+            }
+
+            // Zbieraj vybrané indexy z checkboxov
+            const selectedIndices = [];
+            document.querySelectorAll('#userFeatureMap input[type=checkbox]:checked').forEach(cb => {
+                selectedIndices.push(parseInt(cb.dataset.featureIdx));
+            });
+
+            if (mode === 'with_selected' && selectedIndices.length === 0) {
+                statusSpan.textContent = 'Najprv vyberte aspoň jednu feature v mape vyššie.';
+                statusSpan.style.color = '#e74c3c';
+                return;
+            }
+
+            try {
+                statusSpan.textContent = 'Počítam Joint Mutual Information pre dvojice... (môže trvať niekoľko sekúnd)';
+                statusSpan.style.color = '#3498db';
+
+                const rawResult = await pipeline.computeSynergyAnalysis(
+                    window.rawDataString, window.dataFormat,
+                    comparison.target_column, selectedIndices, mode
+                );
+                const result = convertWasmResult(rawResult);
+                renderSynergyResults(result, resultsDiv);
+                statusSpan.textContent = '';
+            } catch (err) {
+                statusSpan.textContent = `Chyba: ${err}`;
+                statusSpan.style.color = '#e74c3c';
+            }
+        }
+
+        function renderSynergyResults(result, div) {
+            const pairs = result.pairs || [];
+            const mode = result.mode;
+
+            const modeLabel = mode === 'with_selected'
+                ? 'Synergie nevybraných features s vybranými'
+                : 'Synergie medzi nevybranými features';
+
+            let html = `<h4 style="color:#cc0000;margin:0 0 10px;">${modeLabel}</h4>`;
+            html += '<p style="font-size:11px;color:#6c757d;margin-bottom:10px;">';
+            html += 'Joint MI = MI((F1, F2); target) — koľko informácie dvojica spoločne nesie o cieľovej premennej.<br>';
+            html += 'Synergia = Joint MI − (MI(F1;target) + MI(F2;target)). <strong style="color:#27ae60;">Kladná hodnota = dvojica má synergiu</strong> (spolu nesú VIAC informácie ako samostatne).</p>';
+
+            if (pairs.length === 0) {
+                html += '<p style="color:#6c757d;font-style:italic;">Nenašli sa žiadne dvojice na analýzu.</p>';
+                div.innerHTML = html;
+                return;
+            }
+
+            // Rozdeľ na synergické (synergy > 0) a ostatné
+            const synergisticPairs = pairs.filter(p => p.synergy > 0.001);
+            const otherPairs = pairs.filter(p => p.synergy <= 0.001);
+
+            html += '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">';
+            html += '<thead><tr>';
+            html += '<th style="padding:8px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:left;">Feature 1</th>';
+            html += '<th style="padding:8px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;" title="MI(F1; target)">MI₁</th>';
+            html += '<th style="padding:8px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:left;">Feature 2</th>';
+            html += '<th style="padding:8px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;" title="MI(F2; target)">MI₂</th>';
+            html += '<th style="padding:8px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;" title="MI(F1;target) + MI(F2;target)">MI₁+MI₂</th>';
+            html += '<th style="padding:8px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-weight:bold;" title="MI((F1,F2); target)">Joint MI</th>';
+            html += '<th style="padding:8px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;" title="Joint MI − (MI₁+MI₂)">Synergia</th>';
+            html += '</tr></thead><tbody>';
+
+            // Najprv synergické páry, potom top 15 ostatných
+            const displayPairs = [...synergisticPairs, ...otherPairs.slice(0, 15)];
+
+            displayPairs.forEach((p, idx) => {
+                const hasSynergy = p.synergy > 0.001;
+                const bg = hasSynergy ? 'background:#c8e6c9;' : (idx % 2 === 0 ? 'background:#f8f9fa;' : '');
+                const synergyStyle = hasSynergy ? 'font-weight:bold;color:#27ae60;' : 'color:#e74c3c;';
+
+                html += `<tr style="${bg}">`;
+                html += `<td style="padding:6px;border:1px solid #dee2e6;"><strong style="color:#cc0000;">F${p.idx1}</strong>: ${p.name1}</td>`;
+                html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;">${p.mi1.toFixed(4)}</td>`;
+                html += `<td style="padding:6px;border:1px solid #dee2e6;"><strong style="color:#cc0000;">F${p.idx2}</strong>: ${p.name2}</td>`;
+                html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;">${p.mi2.toFixed(4)}</td>`;
+                html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;">${p.individual_sum.toFixed(4)}</td>`;
+                html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-weight:bold;">${p.joint_mi.toFixed(4)}</td>`;
+                html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;${synergyStyle}">${hasSynergy ? '+' : ''}${p.synergy.toFixed(4)}${hasSynergy ? ' \u2713' : ''}</td>`;
+                html += '</tr>';
+            });
+
+            html += '</tbody></table></div>';
+
+            // Sumár
+            if (synergisticPairs.length > 0) {
+                html += '<div style="margin-top:12px;padding:10px;background:#c8e6c9;border-left:4px solid #27ae60;font-size:12px;">';
+                html += `<strong>Nájdených ${synergisticPairs.length} synergických dvojíc</strong> (Joint MI &gt; MI₁ + MI₂).<br>`;
+                html += 'Tieto features spolu nesú VIAC informácie o cieľovej premennej ako súčet ich individuálnych MI. ';
+                html += 'Zvážte ich spoločné zaradenie do modelu.<br>';
+                const top3 = synergisticPairs.slice(0, 3);
+                html += '<strong>Top páry:</strong> ';
+                html += top3.map(p => `<strong>${p.name1}</strong> + <strong>${p.name2}</strong> (synergia +${p.synergy.toFixed(4)})`).join(', ');
+                html += '</div>';
+            } else {
+                html += '<div style="margin-top:12px;padding:10px;background:#fff3cd;border-left:4px solid #ffc107;font-size:12px;">';
+                html += '<strong>Info:</strong> Žiadna analyzovaná dvojica nevykazuje synergiu (Joint MI \u2264 MI₁ + MI₂ pre všetky páry).';
+                html += '</div>';
+            }
+
+            div.innerHTML = html;
         }
 
         // ─── Matrix R² vs Model R² comparison ───
@@ -3548,6 +3695,7 @@
         let _heatmapMode = 'correlation';  // 'correlation' | 'mi'
         let _heatmapShowValues = false;
         let _heatmapSorted = false;
+        let _heatmapThreshold = 0.0;    // Min |correlation| to highlight
 
         async function openHeatmapModal() {
             const data = window.rawDataString;
@@ -3566,11 +3714,14 @@
                 _heatmapMode = 'correlation';
                 _heatmapShowValues = _heatmapData.num_features <= 15;
                 _heatmapSorted = false;
+                _heatmapThreshold = 0.0;
                 
                 document.getElementById('heatmapBtnCorr').classList.add('active');
                 document.getElementById('heatmapBtnMI').classList.remove('active');
                 document.getElementById('heatmapBtnValues').classList.toggle('active', _heatmapShowValues);
                 document.getElementById('heatmapBtnSort').classList.remove('active');
+                document.getElementById('heatmapThresholdSlider').value = 0;
+                document.getElementById('heatmapThresholdValue').textContent = '0.00';
                 document.getElementById('heatmapInfo').textContent = `${_heatmapData.num_features} príznakov × ${_heatmapData.num_rows} riadkov`;
 
                 renderHeatmap();
@@ -3599,12 +3750,17 @@
         function toggleHeatmapValues() {
             _heatmapShowValues = !_heatmapShowValues;
             document.getElementById('heatmapBtnValues').classList.toggle('active', _heatmapShowValues);
-            // Toggle class on existing cells without re-render
-            document.querySelectorAll('#heatmapContainer .heatmap-table td').forEach(td => {
-                td.classList.toggle('show-values', _heatmapShowValues);
-            });
+            // Re-render to apply proper dynamic font sizes
+            renderHeatmap();
         }
         window.toggleHeatmapValues = toggleHeatmapValues;
+
+        function updateHeatmapThreshold(val) {
+            _heatmapThreshold = parseFloat(val);
+            document.getElementById('heatmapThresholdValue').textContent = _heatmapThreshold.toFixed(2);
+            renderHeatmap();
+        }
+        window.updateHeatmapThreshold = updateHeatmapThreshold;
 
         function toggleHeatmapSort() {
             _heatmapSorted = !_heatmapSorted;
@@ -3659,10 +3815,23 @@
             const names = [..._heatmapData.feature_names];
             const n = names.length;
 
+            // Dynamic sizing based on number of features
+            let cellSize, fontSize, headerHeight, headerFontSize, maxHeaderWidth;
+            if (n <= 10) {
+                cellSize = 38; fontSize = 10; headerHeight = 110; headerFontSize = 10; maxHeaderWidth = 90;
+            } else if (n <= 15) {
+                cellSize = 32; fontSize = 9; headerHeight = 100; headerFontSize = 9; maxHeaderWidth = 80;
+            } else if (n <= 22) {
+                cellSize = 26; fontSize = 7; headerHeight = 90; headerFontSize = 8; maxHeaderWidth = 70;
+            } else if (n <= 35) {
+                cellSize = 20; fontSize = 6; headerHeight = 80; headerFontSize = 7; maxHeaderWidth = 60;
+            } else {
+                cellSize = 16; fontSize = 5; headerHeight = 70; headerFontSize = 6; maxHeaderWidth = 50;
+            }
+
             // Determine ordering
             let order = Array.from({length: n}, (_, i) => i);
             if (_heatmapSorted && n > 2) {
-                // Cluster-like sort: hierarchical ordering by average absolute value
                 const avgAbs = order.map(i => {
                     let sum = 0;
                     for (let j = 0; j < n; j++) if (j !== i) sum += Math.abs(matrix[i][j]);
@@ -3681,27 +3850,43 @@
                 if (maxVal === 0) maxVal = 1;
             }
 
-            // Build table
-            let html = '<table class="heatmap-table"><thead><tr>';
-            html += '<th class="corner"></th>';
+            // Truncate long names for headers
+            const maxLabelLen = n <= 15 ? 18 : (n <= 22 ? 14 : 10);
+            const truncName = (name) => name.length > maxLabelLen ? name.substring(0, maxLabelLen - 1) + '…' : name;
+
+            // Build table with dynamic sizing
+            let html = `<table class="heatmap-table" style="font-size:${fontSize}px;"><thead><tr>`;
+            html += `<th class="corner" style="max-width:${maxHeaderWidth}px;"></th>`;
             for (const idx of order) {
-                html += `<th class="col-header" title="${names[idx]}">${names[idx]}</th>`;
+                html += `<th class="col-header" title="${names[idx]}" style="height:${headerHeight}px;font-size:${headerFontSize}px;max-width:${cellSize}px;">${truncName(names[idx])}</th>`;
             }
             html += '</tr></thead><tbody>';
 
+            const threshold = _heatmapThreshold;
+
             for (const ri of order) {
                 html += '<tr>';
-                html += `<th class="row-header" title="${names[ri]}">${names[ri]}</th>`;
+                html += `<th class="row-header" title="${names[ri]}" style="font-size:${headerFontSize}px;max-width:${maxHeaderWidth}px;">${truncName(names[ri])}</th>`;
                 for (const ci of order) {
                     const raw = matrix[ri][ci];
                     const norm = _heatmapMode === 'mi' ? raw / maxVal : raw;
-                    const bg = ri === ci && _heatmapMode === 'correlation'
-                        ? '#e0e0e0'
-                        : heatmapColor(norm, _heatmapMode);
-                    const tc = ri === ci ? '#999' : textColor(Math.abs(norm), _heatmapMode);
+                    const absVal = Math.abs(raw);
+                    const isDiag = ri === ci;
+                    const belowThreshold = !isDiag && threshold > 0 && absVal < threshold;
+
+                    let bg, tc;
+                    if (belowThreshold) {
+                        bg = '#f5f5f5'; tc = '#d0d0d0';
+                    } else if (isDiag && _heatmapMode === 'correlation') {
+                        bg = '#e0e0e0'; tc = '#999';
+                    } else {
+                        bg = heatmapColor(norm, _heatmapMode);
+                        tc = textColor(Math.abs(norm), _heatmapMode);
+                    }
                     const valClass = _heatmapShowValues ? ' show-values' : '';
+                    const filtClass = belowThreshold ? ' filtered-out' : '';
                     const displayVal = _heatmapMode === 'correlation' ? raw.toFixed(2) : raw.toFixed(3);
-                    html += `<td class="${valClass}" style="background:${bg};color:${tc};" data-row="${ri}" data-col="${ci}" data-val="${raw}">${displayVal}</td>`;
+                    html += `<td class="${valClass}${filtClass}" style="background:${bg};color:${tc};min-width:${cellSize}px;height:${cellSize}px;font-size:${_heatmapShowValues ? fontSize : 0}px;" data-row="${ri}" data-col="${ci}" data-val="${raw}">${displayVal}</td>`;
                 }
                 html += '</tr>';
             }
@@ -3788,6 +3973,11 @@
                 </div>
                 <div class="htb-group">
                     <button id="heatmapBtnSort" onclick="toggleHeatmapSort()">Zoradiť</button>
+                </div>
+                <div class="htb-group">
+                    <label>Prah |kor|:</label>
+                    <input id="heatmapThresholdSlider" type="range" min="0" max="0.95" step="0.05" value="0" style="width:120px;cursor:pointer;" oninput="updateHeatmapThreshold(this.value)">
+                    <span id="heatmapThresholdValue" style="font-weight:700;min-width:30px;font-size:12px;">0.00</span>
                 </div>
             </div>
             <div class="heatmap-container" id="heatmapContainer">

@@ -2229,6 +2229,120 @@ impl WasmMLPipeline {
         (psi_k - mean_psi + psi_n).max(0.0)
     }
 
+    /// Vypočíta Joint MI pre dvojice features s cieľovou premennou.
+    /// Joint MI = MI((X1, X2); Y) — koľko informácie dvojica spoločne nesie o Y.
+    /// Synergia = Joint MI - (MI(X1;Y) + MI(X2;Y)). Kladná = dvojica má synergiu.
+    ///
+    /// mode: "with_selected" — páry (nevybraná, vybraná)
+    ///       "among_unselected" — páry (nevybraná, nevybraná)
+    #[wasm_bindgen(js_name = computeSynergyAnalysis)]
+    pub fn compute_synergy_analysis(
+        &self, data: &str, format: &str, target_col: &str,
+        selected_indices: Vec<usize>, mode: &str
+    ) -> Result<JsValue, JsValue> {
+        if format != "csv" {
+            return Err(JsValue::from_str("Synergická analýza je dostupná len pre CSV formát"));
+        }
+
+        let (columns, headers, _num_rows, _) = self.parse_csv_data_cached(data, true)?;
+        let target_idx = headers.iter().position(|h| h == target_col)
+            .ok_or_else(|| JsValue::from_str(&format!("Cieľový stĺpec '{}' nebol nájdený", target_col)))?;
+
+        if columns.len() < 3 {
+            return Err(JsValue::from_str("Potrebné sú aspoň 3 stĺpce (2 features + target)"));
+        }
+
+        let target_data = &columns[target_idx];
+        let n = target_data.len();
+        let k = if n < 10 { 2 } else if n < 50 { 3 } else { 3 };
+
+        // Individuálne MI pre všetky features s targetom
+        let mut mi_individual: Vec<f64> = vec![0.0; columns.len()];
+        for i in 0..columns.len() {
+            if i == target_idx { continue; }
+            mi_individual[i] = Self::estimate_mi_ksg(&columns[i], target_data, k);
+        }
+
+        // Urči nevybrané indexy
+        let selected_set: std::collections::HashSet<usize> = selected_indices.iter().copied().collect();
+        let unselected_indices: Vec<usize> = (0..columns.len())
+            .filter(|&i| i != target_idx && !selected_set.contains(&i))
+            .collect();
+
+        // Vypočítaj Joint MI pre dvojice podľa módu
+        let mut results = Vec::new();
+
+        match mode {
+            "with_selected" => {
+                for &u_idx in &unselected_indices {
+                    for &s_idx in &selected_indices {
+                        if s_idx == target_idx { continue; }
+                        let joint_mi = crate::mi_estimator::estimate_joint_mi_ksg(
+                            &columns[u_idx], &columns[s_idx], target_data, k
+                        );
+                        let individual_sum = mi_individual[u_idx] + mi_individual[s_idx];
+                        let synergy = joint_mi - individual_sum;
+                        results.push(serde_json::json!({
+                            "idx1": u_idx,
+                            "name1": headers[u_idx],
+                            "idx2": s_idx,
+                            "name2": headers[s_idx],
+                            "mi1": mi_individual[u_idx],
+                            "mi2": mi_individual[s_idx],
+                            "joint_mi": joint_mi,
+                            "individual_sum": individual_sum,
+                            "synergy": synergy
+                        }));
+                    }
+                }
+            },
+            "among_unselected" => {
+                for a in 0..unselected_indices.len() {
+                    for b in (a + 1)..unselected_indices.len() {
+                        let i = unselected_indices[a];
+                        let j = unselected_indices[b];
+                        let joint_mi = crate::mi_estimator::estimate_joint_mi_ksg(
+                            &columns[i], &columns[j], target_data, k
+                        );
+                        let individual_sum = mi_individual[i] + mi_individual[j];
+                        let synergy = joint_mi - individual_sum;
+                        results.push(serde_json::json!({
+                            "idx1": i,
+                            "name1": headers[i],
+                            "idx2": j,
+                            "name2": headers[j],
+                            "mi1": mi_individual[i],
+                            "mi2": mi_individual[j],
+                            "joint_mi": joint_mi,
+                            "individual_sum": individual_sum,
+                            "synergy": synergy
+                        }));
+                    }
+                }
+            },
+            _ => return Err(JsValue::from_str("Neznámy mód analýzy (with_selected | among_unselected)"))
+        }
+
+        // Zoraď podľa synergy zostupne
+        results.sort_by(|a, b| {
+            let sa = a["synergy"].as_f64().unwrap_or(0.0);
+            let sb = b["synergy"].as_f64().unwrap_or(0.0);
+            sb.partial_cmp(&sa).unwrap_or(std::cmp::Ordering::Equal)
+        });
+
+        let result = serde_json::json!({
+            "mode": mode,
+            "pairs": results,
+            "feature_names": headers,
+            "mi_individual": mi_individual,
+            "target_col": target_col,
+            "target_idx": target_idx
+        });
+
+        serde_wasm_bindgen::to_value(&result)
+            .map_err(|e| JsValue::from_str(&format!("Chyba serializácie: {}", e)))
+    }
+
     /// Skontroluje redundanciu vybraných features na základe korelácie a MI (vylučuje target column)
     /// Ak je focus_feature zadaný (>= 0), kontroluje len páry s touto feature
     #[wasm_bindgen(js_name = checkFeatureRedundancy)]

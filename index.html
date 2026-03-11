@@ -1182,7 +1182,7 @@
                         </div>
                     </div>
 
-                    <button id="confirmTargetBtn">Potvrdiť výber a načítať do pipeline</button>
+                    <button id="confirmTargetBtn">Potvrdiť výber cieľovej premennej</button>
                     <div id="dataStatus" class="status"></div>
 
                     <!-- Optional: Target analysis -->
@@ -1232,9 +1232,6 @@
                     </button>
                     <button id="inspectDataBtn" disabled style="flex: 1; min-width: 150px;">
                         Zobraziť dáta
-                    </button>
-                    <button id="inspectProcessedBtn" disabled style="flex: 1; min-width: 150px;">
-                        Zobraziť spracované dáta
                     </button>
                 </div>
             </div>
@@ -1439,7 +1436,6 @@
             document.getElementById('parseDataBtn').onclick = parseData;
             document.getElementById('confirmTargetBtn').onclick = confirmTarget;
             document.getElementById('inspectDataBtn').onclick = inspectData;
-            document.getElementById('inspectProcessedBtn').onclick = inspectProcessedData;
             document.getElementById('editDataBtn').onclick = openDataEditor;
             document.getElementById('compareTargetAnalyzersBtn').onclick = compareTargetAnalyzers;
             document.getElementById('compareSelectorBtn').onclick = compareSelectors;
@@ -1691,7 +1687,6 @@
                 }
                 
                 document.getElementById('inspectDataBtn').disabled = false;
-                document.getElementById('inspectProcessedBtn').disabled = true;
                 document.getElementById('editDataBtn').disabled = false;
 
                 // Show feature exploration section and populate selector cards
@@ -1730,7 +1725,7 @@
 
                 document.getElementById('inspectDataBtn').disabled = false;
 
-                showStatus('success', `${result.message} (Train: ${Math.round(trainPercent * 100)}%, Test: ${Math.round((1 - trainPercent) * 100)}%)`, 'dataStatus');
+                showStatus('success', `${targetColumn} (Train: ${Math.round(trainPercent * 100)}%, Test: ${Math.round((1 - trainPercent) * 100)}%)`, 'dataStatus');
             } catch (error) {
                 showStatus('error', `Chyba: ${error}`, 'dataStatus');
             } finally {
@@ -2584,7 +2579,6 @@
                 // Render results
                 renderTrainingComparison(allResults, comparison.total_features, featureNames, resultsDiv);
                 statusSpan.textContent = `Hotovo – ${allResults.length} variantov natrénovaných`;
-                document.getElementById('inspectProcessedBtn').disabled = false;
             } catch (error) {
                 statusSpan.textContent = `Chyba: ${error}`;
                 resultsDiv.innerHTML = `<p style="color:#e74c3c;">Chyba pri trénovaní: ${error}</p>`;

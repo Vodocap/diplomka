@@ -3689,7 +3689,8 @@
         let _heatmapMode = 'correlation';  // 'correlation' | 'mi'
         let _heatmapShowValues = false;
         let _heatmapSorted = false;
-        let _heatmapThreshold = 0.0;    // Min |correlation| to highlight
+        let _heatmapThreshold = 0.0;    // Min |value| to highlight
+        let _heatmapMaxVal = 1.0;       // Max value in current matrix (for percentage slider)
 
         async function openHeatmapModal() {
             const data = window.rawDataString;
@@ -3709,13 +3710,14 @@
                 _heatmapShowValues = _heatmapData.num_features <= 15;
                 _heatmapSorted = false;
                 _heatmapThreshold = 0.0;
+                _heatmapMaxVal = 1.0;
                 
                 document.getElementById('heatmapBtnCorr').classList.add('active');
                 document.getElementById('heatmapBtnMI').classList.remove('active');
                 document.getElementById('heatmapBtnValues').classList.toggle('active', _heatmapShowValues);
                 document.getElementById('heatmapBtnSort').classList.remove('active');
                 document.getElementById('heatmapThresholdSlider').value = 0;
-                document.getElementById('heatmapThresholdValue').textContent = '0.00';
+                document.getElementById('heatmapThresholdValue').textContent = '0.000';
                 document.getElementById('heatmapInfo').textContent = `${_heatmapData.num_features} príznakov × ${_heatmapData.num_rows} riadkov`;
 
                 renderHeatmap();
@@ -3737,6 +3739,25 @@
             document.getElementById('heatmapBtnCorr').classList.toggle('active', mode === 'correlation');
             document.getElementById('heatmapBtnMI').classList.toggle('active', mode === 'mi');
             document.getElementById('heatmapTitle').textContent = mode === 'correlation' ? 'Matica korelácií (Pearson)' : 'Matica Mutual Information (KSG)';
+
+            // Recompute max value for new mode so slider covers 0–100 % of data range
+            if (mode === 'mi' && _heatmapData) {
+                const matrix = _heatmapData.mi_matrix;
+                const n = _heatmapData.feature_names.length;
+                let maxV = 0;
+                for (let i = 0; i < n; i++)
+                    for (let j = 0; j < n; j++)
+                        if (i !== j && matrix[i][j] > maxV) maxV = matrix[i][j];
+                _heatmapMaxVal = maxV > 0 ? maxV : 1.0;
+            } else {
+                _heatmapMaxVal = 1.0;
+            }
+
+            // Reset threshold to 0
+            _heatmapThreshold = 0.0;
+            document.getElementById('heatmapThresholdSlider').value = 0;
+            document.getElementById('heatmapThresholdValue').textContent = '0.000';
+
             renderHeatmap();
         }
         window.switchHeatmapMatrix = switchHeatmapMatrix;
@@ -3750,8 +3771,9 @@
         window.toggleHeatmapValues = toggleHeatmapValues;
 
         function updateHeatmapThreshold(val) {
-            _heatmapThreshold = parseFloat(val);
-            document.getElementById('heatmapThresholdValue').textContent = _heatmapThreshold.toFixed(2);
+            // Slider is 0–100 (%), map to actual value range of current matrix
+            _heatmapThreshold = (parseFloat(val) / 100) * _heatmapMaxVal;
+            document.getElementById('heatmapThresholdValue').textContent = _heatmapThreshold.toFixed(3);
             renderHeatmap();
         }
         window.updateHeatmapThreshold = updateHeatmapThreshold;
@@ -3969,9 +3991,9 @@
                     <button id="heatmapBtnSort" onclick="toggleHeatmapSort()">Zoradiť</button>
                 </div>
                 <div class="htb-group">
-                    <label>Prah |kor|:</label>
-                    <input id="heatmapThresholdSlider" type="range" min="0" max="0.95" step="0.05" value="0" style="width:120px;cursor:pointer;" oninput="updateHeatmapThreshold(this.value)">
-                    <span id="heatmapThresholdValue" style="font-weight:700;min-width:30px;font-size:12px;">0.00</span>
+                    <label>Prah:</label>
+                    <input id="heatmapThresholdSlider" type="range" min="0" max="100" step="1" value="0" style="width:120px;cursor:pointer;" oninput="updateHeatmapThreshold(this.value)">
+                    <span id="heatmapThresholdValue" style="font-weight:700;min-width:40px;font-size:12px;">0.000</span>
                 </div>
             </div>
             <div class="heatmap-container" id="heatmapContainer">

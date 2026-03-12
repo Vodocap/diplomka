@@ -799,7 +799,7 @@ impl WasmMLPipeline {
             result.rmse = result.mse.sqrt();
             result.mae = sum_abs_error / n;
             result.mape = sum_abs_pct_error / n;
-            result.r2_score = Self::safe_r2(&y_test, &predictions);
+            result.r2_score = smartcore::metrics::r2(&y_test, &predictions);
             
             // Median Absolute Error
             if !abs_errors.is_empty() {
@@ -1043,7 +1043,7 @@ impl WasmMLPipeline {
             result.rmse = result.mse.sqrt();
             result.mae = sum_abs_error / n;
             result.mape = sum_abs_pct_error / n;
-            result.r2_score = Self::safe_r2(&y_test, &predictions);
+            result.r2_score = smartcore::metrics::r2(&y_test, &predictions);
 
             // Median Absolute Error
             if !abs_errors.is_empty() {

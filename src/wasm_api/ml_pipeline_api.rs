@@ -6,6 +6,7 @@ use crate::feature_selection_strategies::factory::FeatureSelectorFactory;
 use crate::target_analysis::TargetAnalyzerFactory;
 use smartcore::linalg::basic::matrix::DenseMatrix;
 use smartcore::linalg::basic::arrays::Array;
+use smartcore::metrics::r2;
 use std::cell::RefCell;
 use statrs::function::gamma::digamma;
 
@@ -33,8 +34,8 @@ pub struct PipelineConfig {
 pub struct PipelineInfoResult {
     pub model_name: String,
     pub model_type: String,
-    pub processors: Vec<String>,  // Nové: zoznam procesorov
-    pub processor: Option<String>,  // Späť kompatibilita
+    pub processors: Vec<String>,  
+    pub processor: Option<String>,  
     pub selector: Option<String>,
     pub evaluation_mode: String,
 }
@@ -754,8 +755,6 @@ impl WasmMLPipeline {
             let mut sum_squared_error = 0.0;
             let mut sum_abs_error = 0.0;
             let mut sum_abs_pct_error = 0.0;
-            let y_mean = y_test.iter().sum::<f64>() / n;
-            let mut sum_squared_total = 0.0;
             let mut abs_errors = Vec::new();
             let mut correlation_sum = 0.0;
             let mut y_sum = 0.0;
@@ -769,7 +768,6 @@ impl WasmMLPipeline {
                 sum_squared_error += error * error;
                 sum_abs_error += error.abs();
                 abs_errors.push(error.abs());
-                sum_squared_total += (actual - y_mean).powi(2);
                 
                 // MAPE
                 if actual.abs() > 1e-10 {
@@ -788,11 +786,7 @@ impl WasmMLPipeline {
             result.rmse = result.mse.sqrt();
             result.mae = sum_abs_error / n;
             result.mape = sum_abs_pct_error / n;
-            result.r2_score = if sum_squared_total > 0.0 {
-                1.0 - (sum_squared_error / sum_squared_total)
-            } else {
-                0.0
-            };
+            result.r2_score = smartcore::metrics::r2(&y_test, &predictions);
             
             // Median Absolute Error
             if !abs_errors.is_empty() {
@@ -1005,8 +999,6 @@ impl WasmMLPipeline {
             let mut sum_squared_error = 0.0;
             let mut sum_abs_error = 0.0;
             let mut sum_abs_pct_error = 0.0;
-            let y_mean = y_test.iter().sum::<f64>() / n;
-            let mut sum_squared_total = 0.0;
             let mut abs_errors = Vec::new();
             let mut correlation_sum = 0.0;
             let mut y_sum = 0.0;
@@ -1020,7 +1012,6 @@ impl WasmMLPipeline {
                 sum_squared_error += error * error;
                 sum_abs_error += error.abs();
                 abs_errors.push(error.abs());
-                sum_squared_total += (actual - y_mean).powi(2);
 
                 // MAPE
                 if actual.abs() > 1e-10 {
@@ -1039,11 +1030,7 @@ impl WasmMLPipeline {
             result.rmse = result.mse.sqrt();
             result.mae = sum_abs_error / n;
             result.mape = sum_abs_pct_error / n;
-            result.r2_score = if sum_squared_total > 0.0 {
-                1.0 - (sum_squared_error / sum_squared_total)
-            } else {
-                0.0
-            };
+            result.r2_score = smartcore::metrics::r2(&y_test, &predictions);
 
             // Median Absolute Error
             if !abs_errors.is_empty() {

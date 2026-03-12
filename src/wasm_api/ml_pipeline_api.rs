@@ -165,13 +165,6 @@ impl WasmMLPipeline {
             }
         }
 
-        // TODO: Processor params - aplikujú sa na procesory v chain
-        // if let Some(params) = config.processor_params {
-        //     for (key, value) in params {
-        //         builder = builder.processor_param(&key, &value);
-        //     }
-        // }
-
         let pipeline = builder.build()
             .map_err(|e| JsValue::from_str(&e))?;
 

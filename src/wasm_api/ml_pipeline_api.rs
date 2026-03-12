@@ -115,19 +115,6 @@ pub struct WasmMLPipeline {
 
 #[wasm_bindgen]
 impl WasmMLPipeline {
-    /// Bezpečný výpočet R² — chráni pred delením nulou keď SS_tot == 0
-    /// (napr. všetky y hodnoty v testovacej sade sú rovnaké).
-    /// Skutočne záporné R² (model horšie ako priemer) zostávajú záporné.
-    fn safe_r2(y_true: &Vec<f64>, y_pred: &Vec<f64>) -> f64 {
-        let n = y_true.len();
-        if n == 0 { return 0.0; }
-        let mean = y_true.iter().sum::<f64>() / n as f64;
-        let ss_tot: f64 = y_true.iter().map(|&y| (y - mean).powi(2)).sum();
-        if ss_tot <= 0.0 { return 0.0; }
-        let result = r2(y_true, y_pred);
-        if result.is_nan() || result.is_infinite() { 0.0 } else { result }
-    }
-
     #[wasm_bindgen(constructor)]
     pub fn new() -> WasmMLPipeline {
         console_error_panic_hook::set_once();

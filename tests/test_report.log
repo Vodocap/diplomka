@@ -1,0 +1,739 @@
+2026-03-12 17:37:12,409 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:37:12,410 [INFO] ============================================================
+2026-03-12 17:37:12,411 [INFO] TEST: LinReg full pipeline (regression)
+2026-03-12 17:37:12,411 [INFO] ============================================================
+2026-03-12 17:37:12,454 [INFO] Selected model: linreg
+2026-03-12 17:37:12,464 [INFO] Eval mode set to: Regression
+2026-03-12 17:37:12,530 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:37:13,399 [INFO] Data parsed, target selection visible.
+2026-03-12 17:37:13,419 [INFO] Train/test split: 80%
+2026-03-12 17:37:13,496 [INFO] Target confirm status: Kalórie (Train: 80%, Test: 20%)
+2026-03-12 17:37:13,577 [INFO] Selected selector: variance
+2026-03-12 17:37:13,625 [INFO] Selected selector: correlation
+2026-03-12 17:37:15,821 [INFO] Selector comparison modal opened, content length: 2213
+2026-03-12 17:37:15,910 [INFO] Clicked 'Train from comparison' button inside modal.
+2026-03-12 17:37:16,419 [INFO] Training results rendered.
+2026-03-12 17:37:16,446 [INFO] Training results text (first 500 chars): Porovnanie výsledkov tréningu
+Metóda	Features	R²	RMSE	MAE	MAPE	MedAE	CORR	Čas (ms)
+Variance Threshold Selector	21/21	0.9857	55.692	46.067	5.27%	42.003	0.995	17
+Correlation Filter	19/21	0.9828	61.097	49.916	5.97%	46.073	0.994	7
+Bez selekcie (všetky features)	21/21	0.9857	55.692	46.067	5.27%	42.003	0.995	10
+Vlastný výber používateľa (best)	20/21	0.9876	52.035	44.553	5.00%	42.145	0.996	3
+Metriky regresie:
+• R² = Koeficient determinácie (max 1.0, môže byť záporné pre zlé modely, vyššia = lepšia) | R
+2026-03-12 17:37:16,446 [INFO] LinReg regression metrics validated.
+2026-03-12 17:37:16,446 [INFO] TEST PASSED: LinReg full pipeline
+2026-03-12 17:37:17,140 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:37:17,142 [INFO] ============================================================
+2026-03-12 17:37:17,142 [INFO] TEST: LinReg with all fast selectors
+2026-03-12 17:37:17,142 [INFO] ============================================================
+2026-03-12 17:37:17,200 [INFO] Selected model: linreg
+2026-03-12 17:37:17,211 [INFO] Eval mode set to: Regression
+2026-03-12 17:37:17,280 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:37:18,119 [INFO] Data parsed, target selection visible.
+2026-03-12 17:37:18,129 [INFO] Train/test split: 80%
+2026-03-12 17:37:18,194 [INFO] Target confirm status: Priemerná rýchlosť (Train: 80%, Test: 20%)
+2026-03-12 17:37:18,268 [INFO] All selectors toggled: 6/6
+2026-03-12 17:37:21,071 [INFO] Clicked 'Train from comparison' button inside modal.
+2026-03-12 17:37:21,581 [INFO] Training results rendered.
+2026-03-12 17:37:21,615 [INFO] Training results text (first 500 chars): Porovnanie výsledkov tréningu
+Metóda	Features	R²	RMSE	MAE	MAPE	MedAE	CORR	Čas (ms)
+Variance Threshold Selector	21/21	0.2854	1.603	1.036	4.76%	0.881	0.752	15
+Correlation Filter	18/21	-0.1343	2.020	1.479	6.92%	1.305	0.575	8
+Chi-Square Selector (best)	5/21	0.3297	1.553	1.183	5.44%	1.002	0.756	2
+Information Gain (vyžaduje diskrétne/binned dáta)	5/21	0.3297	1.553	1.183	5.44%	1.002	0.756	3
+Mutual Information (mRMR)	5/21	-0.1827	2.062	1.453	6.81%	1.160	0.539	2
+SMC Filter	5/21	0.2387	1.655	1.083	5.04%	0
+2026-03-12 17:37:21,615 [INFO] TEST PASSED: LinReg all selectors
+2026-03-12 17:37:22,314 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:37:22,316 [INFO] ============================================================
+2026-03-12 17:37:22,316 [INFO] TEST: LogReg classification with binned target
+2026-03-12 17:37:22,316 [INFO] ============================================================
+2026-03-12 17:37:22,368 [INFO] Selected model: logreg
+2026-03-12 17:37:22,375 [INFO] Eval mode set to: Classification
+2026-03-12 17:37:22,456 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:37:23,217 [INFO] Data parsed for logreg.
+2026-03-12 17:37:23,218 [INFO] Opening editor to bin column 'Aeróbny TE' for classification...
+2026-03-12 17:37:23,438 [INFO] Editor opened with table.
+2026-03-12 17:37:24,106 [INFO] Selected column 'Aeróbny TE' in editor.
+2026-03-12 17:37:24,426 [INFO] Selected 'binner' processor.
+2026-03-12 17:37:25,624 [INFO] Editor status after binner: Procesor "binner" aplikovaný na stĺpec "Aeróbny TE" (560 riadkov)
+2026-03-12 17:37:27,221 [INFO] Editor closed, changes applied.
+2026-03-12 17:37:27,341 [INFO] Target confirm (logreg): Aeróbny TE (Train: 80%, Test: 20%)
+2026-03-12 17:37:27,433 [INFO] Selected selector: variance
+2026-03-12 17:37:27,501 [INFO] Selected selector: correlation
+2026-03-12 17:37:27,589 [INFO] Selected selector: information_gain
+2026-03-12 17:37:29,647 [INFO] Selector comparison modal opened, content length: 2484
+2026-03-12 17:37:39,119 [INFO] Clicked 'Train from comparison' button inside modal.
+2026-03-12 17:37:39,640 [INFO] Training results rendered.
+2026-03-12 17:37:39,671 [INFO] Training results text (first 500 chars): Porovnanie výsledkov tréningu
+Metóda	Features	ACC	F1	PREC	REC	SPEC	FP	FN	MCC	Čas (ms)
+Variance Threshold Selector	21/21	0.0%	0.000	0.000	0.000	0.000	0	1	0.000	2235
+Correlation Filter	18/21	0.0%	0.000	0.000	0.000	0.000	0	1	0.000	1885
+Information Gain (vyžaduje diskrétne/binned dáta) (best)	5/21	0.9%	1.000	1.000	1.000	0.000	0	0	0.000	1017
+Bez selekcie (všetky features)	21/21	0.0%	0.000	0.000	0.000	0.000	0	1	0.000	2179
+Vlastný výber používateľa	19/21	0.0%	0.000	0.000	0.000	0.000	0	1	0.000	2073
+Metr
+2026-03-12 17:37:39,671 [INFO] LogReg classification metrics validated.
+2026-03-12 17:37:39,671 [INFO] TEST PASSED: LogReg classification with binned target
+2026-03-12 17:37:40,371 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:37:40,372 [INFO] ============================================================
+2026-03-12 17:37:40,373 [INFO] TEST: KNN regression (K=3)
+2026-03-12 17:37:40,373 [INFO] ============================================================
+2026-03-12 17:37:40,419 [INFO] Selected model: knn
+2026-03-12 17:37:40,433 [INFO] Eval mode set to: Regression
+2026-03-12 17:37:40,462 [INFO] KNN K = 3
+2026-03-12 17:37:40,528 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:37:41,348 [INFO] Data parsed, target selection visible.
+2026-03-12 17:37:41,368 [INFO] Train/test split: 80%
+2026-03-12 17:37:41,463 [INFO] Target confirm status: Kalórie (Train: 80%, Test: 20%)
+2026-03-12 17:37:41,528 [INFO] Selected selector: variance
+2026-03-12 17:37:41,593 [INFO] Selected selector: correlation
+2026-03-12 17:37:43,625 [INFO] Selector comparison modal opened, content length: 2213
+2026-03-12 17:37:43,706 [INFO] Clicked 'Train from comparison' button inside modal.
+2026-03-12 17:37:44,220 [INFO] Training results rendered.
+2026-03-12 17:37:44,245 [INFO] Training results text (first 500 chars): Porovnanie výsledkov tréningu
+Metóda	Features	R²	RMSE	MAE	MAPE	MedAE	CORR	Čas (ms)
+Variance Threshold Selector (best)	21/21	0.9380	116.183	74.027	6.95%	50.833	0.974	12
+Correlation Filter	19/21	0.9379	116.281	74.351	6.97%	53.167	0.973	4
+Bez selekcie (všetky features) (best)	21/21	0.9380	116.183	74.027	6.95%	50.833	0.974	5
+Vlastný výber používateľa (best)	20/21	0.9380	116.183	74.027	6.95%	50.833	0.974	4
+Metriky regresie:
+• R² = Koeficient determinácie (max 1.0, môže byť záporné pre zlé modely, vyš
+2026-03-12 17:37:44,246 [INFO] KNN regression metrics validated.
+2026-03-12 17:37:44,246 [INFO] TEST PASSED: KNN regression
+2026-03-12 17:37:44,926 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:37:44,926 [INFO] ============================================================
+2026-03-12 17:37:44,926 [INFO] TEST: KNN regression (K=7)
+2026-03-12 17:37:44,926 [INFO] ============================================================
+2026-03-12 17:37:44,969 [INFO] Selected model: knn
+2026-03-12 17:37:44,981 [INFO] Eval mode set to: Regression
+2026-03-12 17:37:45,005 [INFO] KNN K = 7
+2026-03-12 17:37:45,083 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:37:46,021 [INFO] Data parsed, target selection visible.
+2026-03-12 17:37:46,040 [INFO] Train/test split: 80%
+2026-03-12 17:37:46,127 [INFO] Target confirm status: Priemerná rýchlosť (Train: 80%, Test: 20%)
+2026-03-12 17:37:46,175 [INFO] Selected selector: mutual_information
+2026-03-12 17:37:46,223 [INFO] Selected selector: variance
+2026-03-12 17:37:48,834 [INFO] Selector comparison modal opened, content length: 2186
+2026-03-12 17:37:48,923 [INFO] Clicked 'Train from comparison' button inside modal.
+2026-03-12 17:37:49,439 [INFO] Training results rendered.
+2026-03-12 17:37:49,465 [INFO] Training results text (first 500 chars): Porovnanie výsledkov tréningu
+Metóda	Features	R²	RMSE	MAE	MAPE	MedAE	CORR	Čas (ms)
+Variance Threshold Selector	21/21	-1.5481	3.027	1.830	8.48%	1.486	0.147	24
+Mutual Information (mRMR) (best)	5/21	-0.9904	2.675	1.741	8.05%	1.443	0.316	9
+Bez selekcie (všetky features)	21/21	-1.5481	3.027	1.830	8.48%	1.486	0.147	7
+Vlastný výber používateľa	20/21	-1.5481	3.027	1.830	8.48%	1.486	0.147	4
+Metriky regresie:
+• R² = Koeficient determinácie (max 1.0, môže byť záporné pre zlé modely, vyššia = lepšia) | RMSE
+2026-03-12 17:37:49,465 [INFO] TEST PASSED: KNN regression K=7
+2026-03-12 17:37:50,149 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:37:50,150 [INFO] ============================================================
+2026-03-12 17:37:50,150 [INFO] TEST: KNN classification with binned target
+2026-03-12 17:37:50,150 [INFO] ============================================================
+2026-03-12 17:37:50,202 [INFO] Selected model: knn
+2026-03-12 17:37:50,211 [INFO] Eval mode set to: Classification
+2026-03-12 17:37:50,226 [INFO] KNN K = 5
+2026-03-12 17:37:50,290 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:37:51,117 [INFO] Opening editor to bin column 'Aeróbny TE' for classification...
+2026-03-12 17:37:51,311 [INFO] Editor opened with table.
+2026-03-12 17:37:51,956 [INFO] Selected column 'Aeróbny TE' in editor.
+2026-03-12 17:37:52,273 [INFO] Selected 'binner' processor.
+2026-03-12 17:37:53,474 [INFO] Editor status after binner: Procesor "binner" aplikovaný na stĺpec "Aeróbny TE" (560 riadkov)
+2026-03-12 17:37:55,067 [INFO] Editor closed, changes applied.
+2026-03-12 17:37:55,258 [INFO] Selected selector: variance
+2026-03-12 17:37:55,338 [INFO] Selected selector: correlation
+2026-03-12 17:37:57,490 [INFO] Selector comparison modal opened, content length: 2209
+2026-03-12 17:37:57,598 [INFO] Clicked 'Train from comparison' button inside modal.
+2026-03-12 17:37:58,113 [INFO] Training results rendered.
+2026-03-12 17:37:58,147 [INFO] Training results text (first 500 chars): Porovnanie výsledkov tréningu
+Metóda	Features	ACC	F1	PREC	REC	SPEC	FP	FN	MCC	Čas (ms)
+Variance Threshold Selector (best)	21/21	0.9%	1.000	1.000	1.000	0.000	0	0	0.000	16
+Correlation Filter (best)	18/21	0.9%	1.000	1.000	1.000	0.000	0	0	0.000	5
+Bez selekcie (všetky features) (best)	21/21	0.9%	1.000	1.000	1.000	0.000	0	0	0.000	5
+Vlastný výber používateľa (best)	20/21	0.9%	1.000	1.000	1.000	0.000	0	0	0.000	4
+Metriky klasifikácie:
+• ACC = Accuracy | F1 = F1 Score | PREC = Precision | REC = Recall/Sens
+2026-03-12 17:37:58,147 [INFO] TEST PASSED: KNN classification with binned target
+2026-03-12 17:37:58,837 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:37:58,838 [INFO] ============================================================
+2026-03-12 17:37:58,838 [INFO] TEST: Decision Tree regression (depth=5)
+2026-03-12 17:37:58,838 [INFO] ============================================================
+2026-03-12 17:37:58,877 [INFO] Selected model: tree
+2026-03-12 17:37:58,884 [INFO] Eval mode set to: Regression
+2026-03-12 17:37:58,900 [INFO] Tree max_depth = 5
+2026-03-12 17:37:58,958 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:37:59,750 [INFO] Data parsed, target selection visible.
+2026-03-12 17:37:59,770 [INFO] Train/test split: 80%
+2026-03-12 17:37:59,858 [INFO] Target confirm status: Kalórie (Train: 80%, Test: 20%)
+2026-03-12 17:37:59,924 [INFO] Selected selector: variance
+2026-03-12 17:37:59,978 [INFO] Selected selector: correlation
+2026-03-12 17:38:02,007 [INFO] Selector comparison modal opened, content length: 2213
+2026-03-12 17:38:02,059 [INFO] Clicked 'Train from comparison' button inside modal.
+2026-03-12 17:38:02,568 [INFO] Training results rendered.
+2026-03-12 17:38:02,592 [INFO] Training results text (first 500 chars): Porovnanie výsledkov tréningu
+Metóda	Features	R²	RMSE	MAE	MAPE	MedAE	CORR	Čas (ms)
+Variance Threshold Selector	21/21	0.8788	162.388	116.565	12.42%	79.170	0.939	8
+Correlation Filter	19/21	0.8788	162.388	116.565	12.42%	79.170	0.939	3
+Bez selekcie (všetky features)	21/21	0.8788	162.388	116.565	12.42%	79.170	0.939	3
+Vlastný výber používateľa (best)	20/21	0.9029	145.380	105.109	10.18%	78.097	0.952	2
+Metriky regresie:
+• R² = Koeficient determinácie (max 1.0, môže byť záporné pre zlé modely, vyššia = l
+2026-03-12 17:38:02,593 [INFO] TEST PASSED: Tree regression depth=5
+2026-03-12 17:38:03,304 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:38:03,305 [INFO] ============================================================
+2026-03-12 17:38:03,306 [INFO] TEST: Decision Tree regression (depth=15)
+2026-03-12 17:38:03,306 [INFO] ============================================================
+2026-03-12 17:38:03,367 [INFO] Selected model: tree
+2026-03-12 17:38:03,376 [INFO] Eval mode set to: Regression
+2026-03-12 17:38:03,392 [INFO] Tree max_depth = 15
+2026-03-12 17:38:03,450 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:38:04,246 [INFO] Data parsed, target selection visible.
+2026-03-12 17:38:04,261 [INFO] Train/test split: 80%
+2026-03-12 17:38:04,345 [INFO] Target confirm status: Priemerná rýchlosť (Train: 80%, Test: 20%)
+2026-03-12 17:38:04,405 [INFO] Selected selector: variance
+2026-03-12 17:38:04,466 [INFO] Selected selector: information_gain
+2026-03-12 17:38:06,441 [INFO] Selector comparison modal opened, content length: 2265
+2026-03-12 17:38:06,547 [INFO] Clicked 'Train from comparison' button inside modal.
+2026-03-12 17:38:07,055 [INFO] Training results rendered.
+2026-03-12 17:38:07,081 [INFO] Training results text (first 500 chars): Porovnanie výsledkov tréningu
+Metóda	Features	R²	RMSE	MAE	MAPE	MedAE	CORR	Čas (ms)
+Variance Threshold Selector	21/21	0.0547	1.844	1.394	6.50%	1.200	0.664	39
+Information Gain (vyžaduje diskrétne/binned dáta) (best)	5/21	0.4949	1.348	0.894	4.16%	0.600	0.777	4
+Bez selekcie (všetky features)	21/21	0.0547	1.844	1.394	6.50%	1.200	0.664	14
+Vlastný výber používateľa	20/21	0.0548	1.844	1.387	6.49%	1.100	0.692	13
+Metriky regresie:
+• R² = Koeficient determinácie (max 1.0, môže byť záporné pre zlé modely, v
+2026-03-12 17:38:07,081 [INFO] TEST PASSED: Tree regression depth=15
+2026-03-12 17:38:07,781 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:38:07,781 [INFO] ============================================================
+2026-03-12 17:38:07,782 [INFO] TEST: Decision Tree classification with binned target
+2026-03-12 17:38:07,782 [INFO] ============================================================
+2026-03-12 17:38:07,831 [INFO] Selected model: tree
+2026-03-12 17:38:07,839 [INFO] Eval mode set to: Classification
+2026-03-12 17:38:07,858 [INFO] Tree max_depth = 8
+2026-03-12 17:38:07,922 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:38:08,729 [INFO] Opening editor to bin column 'Aeróbny TE' for classification...
+2026-03-12 17:38:08,934 [INFO] Editor opened with table.
+2026-03-12 17:38:09,586 [INFO] Selected column 'Aeróbny TE' in editor.
+2026-03-12 17:38:09,908 [INFO] Selected 'binner' processor.
+2026-03-12 17:38:11,110 [INFO] Editor status after binner: Procesor "binner" aplikovaný na stĺpec "Aeróbny TE" (560 riadkov)
+2026-03-12 17:38:12,685 [INFO] Editor closed, changes applied.
+2026-03-12 17:38:12,875 [INFO] Selected selector: variance
+2026-03-12 17:38:12,965 [INFO] Selected selector: correlation
+2026-03-12 17:38:15,008 [INFO] Selector comparison modal opened, content length: 2209
+2026-03-12 17:38:15,118 [INFO] Clicked 'Train from comparison' button inside modal.
+2026-03-12 17:38:15,633 [INFO] Training results rendered.
+2026-03-12 17:38:15,670 [INFO] Training results text (first 500 chars): Porovnanie výsledkov tréningu
+Metóda	Features	ACC	F1	PREC	REC	SPEC	FP	FN	MCC	Čas (ms)
+Variance Threshold Selector (best)	21/21	0.9%	1.000	1.000	1.000	0.000	0	0	0.000	20
+Correlation Filter (best)	18/21	0.9%	1.000	1.000	1.000	0.000	0	0	0.000	5
+Bez selekcie (všetky features) (best)	21/21	0.9%	1.000	1.000	1.000	0.000	0	0	0.000	4
+Vlastný výber používateľa (best)	20/21	0.9%	1.000	1.000	1.000	0.000	0	0	0.000	4
+Metriky klasifikácie:
+• ACC = Accuracy | F1 = F1 Score | PREC = Precision | REC = Recall/Sens
+2026-03-12 17:38:15,670 [INFO] TEST PASSED: Tree classification with binned target
+2026-03-12 17:38:16,368 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:38:16,369 [INFO] TEST: Editor – scaler processor
+2026-03-12 17:38:16,405 [INFO] Selected model: linreg
+2026-03-12 17:38:16,475 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:38:19,565 [INFO] Scaler applied: Procesor "scaler" aplikovaný na stĺpec "Kalórie" (560 riadkov)
+2026-03-12 17:38:19,565 [INFO] TEST PASSED: Editor scaler
+2026-03-12 17:38:20,278 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:38:20,279 [INFO] TEST: Editor – minmax_scaler
+2026-03-12 17:38:20,327 [INFO] Selected model: linreg
+2026-03-12 17:38:20,398 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:38:23,517 [INFO] MinMax scaler applied: Procesor "minmax_scaler" aplikovaný na stĺpec "Vzdialenosť" (560 riadkov)
+2026-03-12 17:38:23,518 [INFO] TEST PASSED: Editor minmax_scaler
+2026-03-12 17:38:24,224 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:38:24,225 [INFO] TEST: Editor – robust_scaler
+2026-03-12 17:38:24,267 [INFO] Selected model: linreg
+2026-03-12 17:38:24,326 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:38:27,495 [INFO] Robust scaler applied: Procesor "robust_scaler" aplikovaný na stĺpec "Priemerný tep" (560 riadkov)
+2026-03-12 17:38:27,495 [INFO] TEST PASSED: Editor robust_scaler
+2026-03-12 17:38:28,198 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:38:28,198 [INFO] TEST: Editor – binner
+2026-03-12 17:38:28,230 [INFO] Selected model: linreg
+2026-03-12 17:38:28,288 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:38:31,510 [INFO] Binner applied: Procesor "binner" aplikovaný na stĺpec "Aeróbny TE" (560 riadkov)
+2026-03-12 17:38:31,510 [INFO] TEST PASSED: Editor binner
+2026-03-12 17:38:32,203 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:38:32,204 [INFO] TEST: Editor – log_transformer
+2026-03-12 17:38:32,260 [INFO] Selected model: linreg
+2026-03-12 17:38:32,323 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:38:35,459 [INFO] Log transformer applied: Procesor "log_transformer" aplikovaný na stĺpec "Kalórie" (560 riadkov)
+2026-03-12 17:38:35,459 [INFO] TEST PASSED: Editor log_transformer
+2026-03-12 17:38:36,160 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:38:36,161 [INFO] TEST: Editor – outlier_clipper
+2026-03-12 17:38:36,207 [INFO] Selected model: linreg
+2026-03-12 17:38:36,259 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:38:39,462 [INFO] Outlier clipper applied: Procesor "outlier_clipper" aplikovaný na stĺpec "Maximálna rýchlosť" (560 riadkov)
+2026-03-12 17:38:39,463 [INFO] TEST PASSED: Editor outlier_clipper
+2026-03-12 17:38:40,158 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:38:40,159 [INFO] TEST: Editor – null_handler on column with missing values
+2026-03-12 17:38:40,207 [INFO] Selected model: linreg
+2026-03-12 17:38:40,255 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:38:43,553 [INFO] Null handler applied: Procesor "null_handler" aplikovaný na stĺpec "Maximálny výkon" (560 riadkov)
+2026-03-12 17:38:43,553 [INFO] TEST PASSED: Editor null_handler
+2026-03-12 17:38:44,254 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:38:44,254 [INFO] TEST: Editor – delete column
+2026-03-12 17:38:44,304 [INFO] Selected model: linreg
+2026-03-12 17:38:44,360 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:38:47,316 [INFO] Delete column status: Stĺpec "Minimálna teplota" vymazaný, zostáva 21 stĺpcov
+2026-03-12 17:38:47,316 [INFO] TEST PASSED: Editor delete column
+2026-03-12 17:38:48,032 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:38:48,033 [INFO] TEST: Editor – find & replace
+2026-03-12 17:38:48,088 [INFO] Selected model: linreg
+2026-03-12 17:38:48,146 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:38:51,024 [INFO] Find & replace status: Nahradených 33 výskytov "3.0" → "3" v stĺpci "Aeróbny TE"
+2026-03-12 17:38:51,025 [INFO] TEST PASSED: Editor find & replace
+2026-03-12 17:38:51,758 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:38:51,759 [INFO] TEST: Editor – apply changes and close
+2026-03-12 17:38:51,798 [INFO] Selected model: linreg
+2026-03-12 17:38:51,860 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:38:56,522 [INFO] Parse status after editor close: Chyba pri aktualizácii: TypeError: Cannot set properties of null (setting 'innerHTML')
+2026-03-12 17:38:57,261 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:38:57,263 [INFO] TEST: Editor – download button exists
+2026-03-12 17:38:57,308 [INFO] Selected model: linreg
+2026-03-12 17:38:57,374 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:38:58,410 [INFO] TEST PASSED: Editor download button exists
+2026-03-12 17:38:59,101 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:38:59,103 [INFO] TEST: Target analyzers populated
+2026-03-12 17:38:59,155 [INFO] Selected model: linreg
+2026-03-12 17:38:59,206 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:39:00,607 [INFO] Target analyzer cards: 4
+2026-03-12 17:39:00,608 [INFO] TEST PASSED: Target analyzers populated
+2026-03-12 17:39:01,296 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:39:01,297 [INFO] TEST: Compare all target analyzers
+2026-03-12 17:39:01,352 [INFO] Selected model: linreg
+2026-03-12 17:39:01,406 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:41:03,750 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:41:03,752 [INFO] TEST: Analyzer details modal
+2026-03-12 17:41:03,814 [INFO] Selected model: linreg
+2026-03-12 17:41:03,875 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:41:06,761 [INFO] Analyzer details content length: 1476
+2026-03-12 17:41:07,334 [INFO] TEST PASSED: Analyzer details modal
+2026-03-12 17:41:08,035 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:41:08,036 [INFO] TEST: Heatmap correlation matrix
+2026-03-12 17:41:08,087 [INFO] Selected model: linreg
+2026-03-12 17:41:08,150 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:41:08,960 [INFO] Data parsed, target selection visible.
+2026-03-12 17:41:08,980 [INFO] Train/test split: 80%
+2026-03-12 17:41:09,065 [INFO] Target confirm status: Kalórie (Train: 80%, Test: 20%)
+2026-03-12 17:41:10,575 [INFO] Heatmap rows: 22
+2026-03-12 17:41:10,580 [INFO] TEST PASSED: Heatmap correlation matrix
+2026-03-12 17:41:11,263 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:41:11,264 [INFO] TEST: Heatmap MI switch
+2026-03-12 17:41:11,327 [INFO] Selected model: linreg
+2026-03-12 17:41:11,389 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:41:12,210 [INFO] Data parsed, target selection visible.
+2026-03-12 17:41:12,229 [INFO] Train/test split: 80%
+2026-03-12 17:41:12,307 [INFO] Target confirm status: Kalórie (Train: 80%, Test: 20%)
+2026-03-12 17:41:14,934 [INFO] TEST PASSED: Heatmap MI switch
+2026-03-12 17:41:15,641 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:41:15,642 [INFO] TEST: Heatmap toggle values
+2026-03-12 17:41:15,684 [INFO] Selected model: linreg
+2026-03-12 17:41:15,756 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:41:16,577 [INFO] Data parsed, target selection visible.
+2026-03-12 17:41:16,589 [INFO] Train/test split: 80%
+2026-03-12 17:41:16,688 [INFO] Target confirm status: Kalórie (Train: 80%, Test: 20%)
+2026-03-12 17:41:18,542 [INFO] TEST PASSED: Heatmap toggle values
+2026-03-12 17:41:19,254 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:41:19,255 [INFO] TEST: Heatmap toggle sort
+2026-03-12 17:41:19,299 [INFO] Selected model: linreg
+2026-03-12 17:41:19,351 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:41:20,162 [INFO] Data parsed, target selection visible.
+2026-03-12 17:41:20,182 [INFO] Train/test split: 80%
+2026-03-12 17:41:20,248 [INFO] Target confirm status: Kalórie (Train: 80%, Test: 20%)
+2026-03-12 17:41:22,356 [INFO] TEST PASSED: Heatmap toggle sort
+2026-03-12 17:41:23,064 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:41:23,065 [INFO] TEST: Heatmap close with Escape
+2026-03-12 17:41:23,115 [INFO] Selected model: linreg
+2026-03-12 17:41:23,165 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:41:23,974 [INFO] Data parsed, target selection visible.
+2026-03-12 17:41:23,994 [INFO] Train/test split: 80%
+2026-03-12 17:41:24,086 [INFO] Target confirm status: Kalórie (Train: 80%, Test: 20%)
+2026-03-12 17:41:26,089 [INFO] TEST PASSED: Heatmap close with Escape
+2026-03-12 17:41:26,809 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:41:26,810 [INFO] TEST: Heatmap legend
+2026-03-12 17:41:26,862 [INFO] Selected model: linreg
+2026-03-12 17:41:26,916 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:41:27,726 [INFO] Data parsed, target selection visible.
+2026-03-12 17:41:27,742 [INFO] Train/test split: 80%
+2026-03-12 17:41:27,837 [INFO] Target confirm status: Kalórie (Train: 80%, Test: 20%)
+2026-03-12 17:41:29,330 [INFO] TEST PASSED: Heatmap legend
+2026-03-12 17:41:30,031 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:41:30,033 [INFO] TEST: Variance selector
+2026-03-12 17:41:30,091 [INFO] Selected model: linreg
+2026-03-12 17:41:30,100 [INFO] Eval mode set to: Regression
+2026-03-12 17:41:30,164 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:41:31,012 [INFO] Data parsed, target selection visible.
+2026-03-12 17:41:31,030 [INFO] Train/test split: 80%
+2026-03-12 17:41:31,106 [INFO] Target confirm status: Kalórie (Train: 80%, Test: 20%)
+2026-03-12 17:41:31,167 [INFO] Selected selector: variance
+2026-03-12 17:41:33,211 [INFO] Selector comparison modal opened, content length: 2002
+2026-03-12 17:41:33,211 [INFO] TEST PASSED: Variance selector
+2026-03-12 17:41:33,922 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:41:33,923 [INFO] TEST: Correlation selector
+2026-03-12 17:41:33,970 [INFO] Selected model: linreg
+2026-03-12 17:41:33,981 [INFO] Eval mode set to: Regression
+2026-03-12 17:41:34,050 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:41:34,861 [INFO] Data parsed, target selection visible.
+2026-03-12 17:41:34,880 [INFO] Train/test split: 80%
+2026-03-12 17:41:34,976 [INFO] Target confirm status: Kalórie (Train: 80%, Test: 20%)
+2026-03-12 17:41:35,043 [INFO] Selected selector: correlation
+2026-03-12 17:41:37,140 [INFO] Selector comparison modal opened, content length: 1993
+2026-03-12 17:41:37,140 [INFO] TEST PASSED: Correlation selector
+2026-03-12 17:41:37,831 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:41:37,832 [INFO] TEST: Information gain selector
+2026-03-12 17:41:37,887 [INFO] Selected model: linreg
+2026-03-12 17:41:37,898 [INFO] Eval mode set to: Regression
+2026-03-12 17:41:37,972 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:41:38,787 [INFO] Data parsed, target selection visible.
+2026-03-12 17:41:38,806 [INFO] Train/test split: 80%
+2026-03-12 17:41:38,884 [INFO] Target confirm status: Kalórie (Train: 80%, Test: 20%)
+2026-03-12 17:41:38,975 [INFO] Selected selector: information_gain
+2026-03-12 17:41:40,988 [INFO] Selector comparison modal opened, content length: 2042
+2026-03-12 17:41:40,988 [INFO] TEST PASSED: Information gain selector
+2026-03-12 17:41:41,702 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:41:41,703 [INFO] TEST: Mutual information selector
+2026-03-12 17:41:41,756 [INFO] Selected model: linreg
+2026-03-12 17:41:41,768 [INFO] Eval mode set to: Regression
+2026-03-12 17:41:41,832 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:41:42,662 [INFO] Data parsed, target selection visible.
+2026-03-12 17:41:42,682 [INFO] Train/test split: 80%
+2026-03-12 17:41:42,785 [INFO] Target confirm status: Kalórie (Train: 80%, Test: 20%)
+2026-03-12 17:41:42,838 [INFO] Selected selector: mutual_information
+2026-03-12 17:41:45,373 [INFO] Selector comparison modal opened, content length: 1963
+2026-03-12 17:41:45,373 [INFO] TEST PASSED: Mutual information selector
+2026-03-12 17:41:46,078 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:41:46,079 [INFO] TEST: Chi-square selector
+2026-03-12 17:41:46,133 [INFO] Selected model: linreg
+2026-03-12 17:41:46,144 [INFO] Eval mode set to: Regression
+2026-03-12 17:41:46,220 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:41:47,022 [INFO] Data parsed, target selection visible.
+2026-03-12 17:41:47,043 [INFO] Train/test split: 80%
+2026-03-12 17:41:47,118 [INFO] Target confirm status: Kalórie (Train: 80%, Test: 20%)
+2026-03-12 17:41:47,190 [INFO] Selected selector: chi_square
+2026-03-12 17:41:49,189 [INFO] Selector comparison modal opened, content length: 1946
+2026-03-12 17:41:49,189 [INFO] TEST PASSED: Chi-square selector
+2026-03-12 17:41:49,873 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:41:49,874 [INFO] TEST: SMC selector
+2026-03-12 17:41:49,930 [INFO] Selected model: linreg
+2026-03-12 17:41:49,942 [INFO] Eval mode set to: Regression
+2026-03-12 17:41:50,003 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:41:50,839 [INFO] Data parsed, target selection visible.
+2026-03-12 17:41:50,855 [INFO] Train/test split: 80%
+2026-03-12 17:41:50,917 [INFO] Target confirm status: Kalórie (Train: 80%, Test: 20%)
+2026-03-12 17:41:50,989 [INFO] Selected selector: smc
+2026-03-12 17:41:52,992 [INFO] Selector comparison modal opened, content length: 1930
+2026-03-12 17:41:52,993 [INFO] TEST PASSED: SMC selector
+2026-03-12 17:41:53,697 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:41:53,698 [INFO] TEST: Inspect raw data modal
+2026-03-12 17:41:53,737 [INFO] Selected model: linreg
+2026-03-12 17:41:53,804 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:41:54,591 [INFO] Data parsed, target selection visible.
+2026-03-12 17:41:54,609 [INFO] Train/test split: 80%
+2026-03-12 17:41:54,704 [INFO] Target confirm status: Kalórie (Train: 80%, Test: 20%)
+2026-03-12 17:41:54,767 [INFO] Raw data modal content length: 2381
+2026-03-12 17:41:55,334 [INFO] TEST PASSED: Inspect raw data modal
+2026-03-12 17:41:56,029 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:41:56,031 [INFO] TEST: Inspect processed data
+2026-03-12 17:41:56,074 [INFO] Selected model: linreg
+2026-03-12 17:41:56,132 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:41:56,941 [INFO] Data parsed, target selection visible.
+2026-03-12 17:41:56,951 [INFO] Train/test split: 80%
+2026-03-12 17:41:57,024 [INFO] Target confirm status: Kalórie (Train: 80%, Test: 20%)
+2026-03-12 17:41:57,097 [INFO] Selected selector: variance
+2026-03-12 17:41:57,157 [INFO] Selected selector: correlation
+2026-03-12 17:41:59,146 [INFO] Selector comparison modal opened, content length: 2213
+2026-03-12 17:41:59,223 [INFO] Clicked 'Train from comparison' button inside modal.
+2026-03-12 17:41:59,736 [INFO] Training results rendered.
+2026-03-12 17:42:00,294 [INFO] TEST PASSED: Inspect processed data
+2026-03-12 17:42:00,993 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:42:00,994 [INFO] TEST: Initial UI state
+2026-03-12 17:42:31,930 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:42:31,931 [INFO] TEST: Model params visibility
+2026-03-12 17:42:32,059 [INFO] TEST PASSED: Model params visibility
+2026-03-12 17:42:32,744 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:42:32,744 [INFO] TEST: Eval mode options
+2026-03-12 17:42:32,812 [INFO] Eval mode options: ['-- Auto --', 'Classification', 'Regression']
+2026-03-12 17:42:32,812 [INFO] TEST PASSED: Eval mode options
+2026-03-12 17:42:33,502 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:42:33,502 [INFO] TEST: Data input method toggle
+2026-03-12 17:42:33,621 [INFO] TEST PASSED: Data input method toggle
+2026-03-12 17:42:34,316 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:42:34,317 [INFO] TEST: Train/test split slider
+2026-03-12 17:42:34,370 [INFO] Selected model: linreg
+2026-03-12 17:42:34,424 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:42:35,242 [INFO] Split slider: 70%
+2026-03-12 17:42:35,253 [INFO] TEST PASSED: Train/test split slider
+2026-03-12 17:42:35,952 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:42:35,954 [INFO] TEST: Pipeline info after build
+2026-03-12 17:42:36,003 [INFO] Selected model: knn
+2026-03-12 17:42:36,027 [INFO] KNN K = 5
+2026-03-12 17:42:52,023 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:42:52,024 [INFO] TEST: Selector select all/deselect all
+2026-03-12 17:42:52,060 [INFO] Selected model: linreg
+2026-03-12 17:42:52,140 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:42:53,053 [INFO] TEST PASSED: Selector select all toggle
+2026-03-12 17:42:53,789 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:42:53,790 [INFO] TEST: Empty data parse error
+2026-03-12 17:42:54,906 [INFO] Empty data status: Chyba: Error: Vložte dáta
+2026-03-12 17:42:54,907 [INFO] TEST PASSED: Empty data error
+2026-03-12 17:42:55,594 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:42:55,595 [INFO] TEST: Compare selectors without selection
+2026-03-12 17:42:55,642 [INFO] Selected model: linreg
+2026-03-12 17:42:55,691 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:42:57,556 [INFO] No-selection compare status: Vyberte aspoň jeden selektor na porovnanie
+2026-03-12 17:42:57,556 [INFO] TEST PASSED: Compare without selection error
+2026-03-12 17:42:58,249 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:42:58,250 [INFO] TEST: File upload with cycling CSV
+2026-03-12 17:42:58,291 [INFO] Selected model: linreg
+2026-03-12 17:42:58,352 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:42:58,925 [INFO] File info: Vybraný súbor: upravene_data(1).csv (69.51 KB)
+2026-03-12 17:42:59,014 [INFO] Target columns from file: 23
+2026-03-12 17:42:59,015 [INFO] TEST PASSED: File upload loads data
+2026-03-12 17:42:59,734 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:42:59,735 [INFO] ============================================================
+2026-03-12 17:42:59,735 [INFO] TEST: Embedded methods comparison (regression)
+2026-03-12 17:42:59,736 [INFO] ============================================================
+2026-03-12 17:42:59,791 [INFO] Selected model: linreg
+2026-03-12 17:42:59,799 [INFO] Eval mode set to: Regression
+2026-03-12 17:42:59,872 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:43:00,655 [INFO] Data parsed, target selection visible.
+2026-03-12 17:43:00,670 [INFO] Train/test split: 80%
+2026-03-12 17:43:00,756 [INFO] Target confirm status: Kalórie (Train: 80%, Test: 20%)
+2026-03-12 17:43:00,820 [INFO] Selected selector: variance
+2026-03-12 17:43:00,882 [INFO] Selected selector: correlation
+2026-03-12 17:43:02,902 [INFO] Selector comparison modal opened, content length: 2213
+2026-03-12 17:43:02,972 [INFO] Clicked 'Train from comparison' button inside modal.
+2026-03-12 17:43:03,488 [INFO] Training results rendered.
+2026-03-12 17:43:03,550 [INFO] Clicked embedded comparison button.
+2026-03-12 17:45:04,452 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:45:04,454 [INFO] ============================================================
+2026-03-12 17:45:04,454 [INFO] TEST: Matrix R² comparison (regression)
+2026-03-12 17:45:04,454 [INFO] ============================================================
+2026-03-12 17:45:04,492 [INFO] Selected model: linreg
+2026-03-12 17:45:04,502 [INFO] Eval mode set to: Regression
+2026-03-12 17:45:04,581 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:45:05,401 [INFO] Data parsed, target selection visible.
+2026-03-12 17:45:05,413 [INFO] Train/test split: 80%
+2026-03-12 17:45:05,516 [INFO] Target confirm status: Kalórie (Train: 80%, Test: 20%)
+2026-03-12 17:45:05,582 [INFO] Selected selector: variance
+2026-03-12 17:45:05,642 [INFO] Selected selector: correlation
+2026-03-12 17:45:07,667 [INFO] Selector comparison modal opened, content length: 2213
+2026-03-12 17:45:07,729 [INFO] Clicked 'Train from comparison' button inside modal.
+2026-03-12 17:45:08,240 [INFO] Training results rendered.
+2026-03-12 17:45:08,313 [INFO] Clicked Matrix R² comparison button.
+2026-03-12 17:45:08,324 [INFO] Matrix R² results length: 1061
+2026-03-12 17:45:08,325 [INFO] TEST PASSED: Matrix R² comparison
+2026-03-12 17:45:09,010 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:45:09,010 [INFO] TEST: Regression metrics sanity
+2026-03-12 17:45:09,034 [INFO] Selected model: linreg
+2026-03-12 17:45:09,042 [INFO] Eval mode set to: Regression
+2026-03-12 17:45:09,111 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:45:09,957 [INFO] Data parsed, target selection visible.
+2026-03-12 17:45:09,969 [INFO] Train/test split: 80%
+2026-03-12 17:45:10,041 [INFO] Target confirm status: Kalórie (Train: 80%, Test: 20%)
+2026-03-12 17:45:10,092 [INFO] Selected selector: variance
+2026-03-12 17:45:10,142 [INFO] Selected selector: correlation
+2026-03-12 17:45:12,169 [INFO] Selector comparison modal opened, content length: 2213
+2026-03-12 17:45:12,239 [INFO] Clicked 'Train from comparison' button inside modal.
+2026-03-12 17:45:12,754 [INFO] Training results rendered.
+2026-03-12 17:45:12,780 [INFO] Training results text (first 500 chars): Porovnanie výsledkov tréningu
+Metóda	Features	R²	RMSE	MAE	MAPE	MedAE	CORR	Čas (ms)
+Variance Threshold Selector	21/21	0.9857	55.692	46.067	5.27%	42.003	0.995	11
+Correlation Filter	19/21	0.9828	61.097	49.916	5.97%	46.073	0.994	6
+Bez selekcie (všetky features)	21/21	0.9857	55.692	46.067	5.27%	42.003	0.995	7
+Vlastný výber používateľa (best)	20/21	0.9876	52.035	44.553	5.00%	42.145	0.996	4
+Metriky regresie:
+• R² = Koeficient determinácie (max 1.0, môže byť záporné pre zlé modely, vyššia = lepšia) | RM
+2026-03-12 17:45:12,781 [INFO] Numeric values found in metrics: 25
+2026-03-12 17:45:12,781 [INFO] R² value: 1.0
+2026-03-12 17:45:12,781 [INFO] TEST PASSED: Regression metrics sanity
+2026-03-12 17:45:13,480 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:45:13,481 [INFO] TEST: Classification metrics sanity
+2026-03-12 17:45:13,532 [INFO] Selected model: logreg
+2026-03-12 17:45:13,542 [INFO] Eval mode set to: Classification
+2026-03-12 17:45:13,618 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:45:14,417 [INFO] Opening editor to bin column 'Aeróbny TE' for classification...
+2026-03-12 17:45:14,615 [INFO] Editor opened with table.
+2026-03-12 17:45:15,274 [INFO] Selected column 'Aeróbny TE' in editor.
+2026-03-12 17:45:15,598 [INFO] Selected 'binner' processor.
+2026-03-12 17:45:16,799 [INFO] Editor status after binner: Procesor "binner" aplikovaný na stĺpec "Aeróbny TE" (560 riadkov)
+2026-03-12 17:45:18,400 [INFO] Editor closed, changes applied.
+2026-03-12 17:45:18,576 [INFO] Selected selector: variance
+2026-03-12 17:45:18,698 [INFO] Selected selector: correlation
+2026-03-12 17:45:20,708 [INFO] Selector comparison modal opened, content length: 2209
+2026-03-12 17:45:29,273 [INFO] Clicked 'Train from comparison' button inside modal.
+2026-03-12 17:45:29,787 [INFO] Training results rendered.
+2026-03-12 17:45:29,822 [INFO] Training results text (first 500 chars): Porovnanie výsledkov tréningu
+Metóda	Features	ACC	F1	PREC	REC	SPEC	FP	FN	MCC	Čas (ms)
+Variance Threshold Selector (best)	21/21	0.0%	0.000	0.000	0.000	0.000	0	1	0.000	2206
+Correlation Filter (best)	18/21	0.0%	0.000	0.000	0.000	0.000	0	1	0.000	1912
+Bez selekcie (všetky features) (best)	21/21	0.0%	0.000	0.000	0.000	0.000	0	1	0.000	2221
+Vlastný výber používateľa (best)	20/21	0.0%	0.000	0.000	0.000	0.000	0	1	0.000	2151
+Metriky klasifikácie:
+• ACC = Accuracy | F1 = F1 Score | PREC = Precision | REC = 
+2026-03-12 17:45:29,823 [INFO] Numeric values in classification metrics: 24
+2026-03-12 17:45:29,823 [INFO] TEST PASSED: Classification metrics sanity
+2026-03-12 17:45:30,535 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:45:30,537 [INFO] ============================================================
+2026-03-12 17:45:30,537 [INFO] E2E: LinReg regression full flow
+2026-03-12 17:45:30,537 [INFO] ============================================================
+2026-03-12 17:45:30,584 [INFO] Selected model: linreg
+2026-03-12 17:45:30,593 [INFO] Eval mode set to: Regression
+2026-03-12 17:45:30,659 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:45:31,481 [INFO] Data parsed, target selection visible.
+2026-03-12 17:45:31,492 [INFO] Train/test split: 75%
+2026-03-12 17:45:31,584 [INFO] Target confirm status: Kalórie (Train: 75%, Test: 25%)
+2026-03-12 17:45:33,606 [INFO] Heatmap opened and closed.
+2026-03-12 17:45:33,667 [INFO] Selected selector: variance
+2026-03-12 17:45:33,730 [INFO] Selected selector: correlation
+2026-03-12 17:45:33,798 [INFO] Selected selector: information_gain
+2026-03-12 17:45:34,419 [INFO] Selector comparison modal opened, content length: 2488
+2026-03-12 17:45:34,498 [INFO] Clicked 'Train from comparison' button inside modal.
+2026-03-12 17:45:35,008 [INFO] Training results rendered.
+2026-03-12 17:45:35,034 [INFO] Training results text (first 500 chars): Porovnanie výsledkov tréningu
+Metóda	Features	R²	RMSE	MAE	MAPE	MedAE	CORR	Čas (ms)
+Variance Threshold Selector	21/21	0.9863	54.660	43.750	4.59%	36.687	0.995	13
+Correlation Filter	19/21	0.9837	59.548	46.643	5.11%	37.918	0.994	6
+Information Gain (vyžaduje diskrétne/binned dáta)	5/21	0.9698	81.088	63.567	5.82%	50.830	0.986	2
+Bez selekcie (všetky features)	21/21	0.9863	54.660	43.750	4.59%	36.687	0.995	7
+Vlastný výber používateľa (best)	19/21	0.9873	52.528	42.757	4.35%	38.403	0.995	6
+Metriky regresie
+2026-03-12 17:45:35,035 [INFO] E2E PASSED: LinReg regression
+2026-03-12 17:45:35,706 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:45:35,708 [INFO] ============================================================
+2026-03-12 17:45:35,708 [INFO] E2E: LogReg classification full flow with editor
+2026-03-12 17:45:35,708 [INFO] ============================================================
+2026-03-12 17:45:35,752 [INFO] Selected model: logreg
+2026-03-12 17:45:35,763 [INFO] Eval mode set to: Classification
+2026-03-12 17:45:35,824 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:45:36,634 [INFO] Opening editor to bin column 'Aeróbny TE' for classification...
+2026-03-12 17:45:36,854 [INFO] Editor opened with table.
+2026-03-12 17:45:37,535 [INFO] Selected column 'Aeróbny TE' in editor.
+2026-03-12 17:45:37,856 [INFO] Selected 'binner' processor.
+2026-03-12 17:45:39,062 [INFO] Editor status after binner: Procesor "binner" aplikovaný na stĺpec "Aeróbny TE" (560 riadkov)
+2026-03-12 17:45:40,671 [INFO] Editor closed, changes applied.
+2026-03-12 17:45:40,879 [INFO] Selected selector: variance
+2026-03-12 17:45:40,948 [INFO] Selected selector: correlation
+2026-03-12 17:45:43,004 [INFO] Selector comparison modal opened, content length: 2209
+2026-03-12 17:45:51,544 [INFO] Clicked 'Train from comparison' button inside modal.
+2026-03-12 17:45:52,054 [INFO] Training results rendered.
+2026-03-12 17:45:52,093 [INFO] Training results text (first 500 chars): Porovnanie výsledkov tréningu
+Metóda	Features	ACC	F1	PREC	REC	SPEC	FP	FN	MCC	Čas (ms)
+Variance Threshold Selector (best)	21/21	0.0%	0.000	0.000	0.000	0.000	0	1	0.000	2184
+Correlation Filter (best)	18/21	0.0%	0.000	0.000	0.000	0.000	0	1	0.000	1973
+Bez selekcie (všetky features) (best)	21/21	0.0%	0.000	0.000	0.000	0.000	0	1	0.000	2158
+Vlastný výber používateľa (best)	20/21	0.0%	0.000	0.000	0.000	0.000	0	1	0.000	2181
+Metriky klasifikácie:
+• ACC = Accuracy | F1 = F1 Score | PREC = Precision | REC = 
+2026-03-12 17:45:52,093 [INFO] E2E PASSED: LogReg classification
+2026-03-12 17:45:52,797 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:45:52,799 [INFO] ============================================================
+2026-03-12 17:45:52,799 [INFO] E2E: KNN regression full flow
+2026-03-12 17:45:52,799 [INFO] ============================================================
+2026-03-12 17:45:52,846 [INFO] Selected model: knn
+2026-03-12 17:45:52,857 [INFO] Eval mode set to: Regression
+2026-03-12 17:45:52,881 [INFO] KNN K = 5
+2026-03-12 17:45:52,952 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:45:53,767 [INFO] Data parsed, target selection visible.
+2026-03-12 17:45:53,783 [INFO] Train/test split: 80%
+2026-03-12 17:45:53,869 [INFO] Target confirm status: Priemerná rýchlosť (Train: 80%, Test: 20%)
+2026-03-12 17:45:53,923 [INFO] Selected selector: variance
+2026-03-12 17:45:53,980 [INFO] Selected selector: correlation
+2026-03-12 17:45:55,999 [INFO] Selector comparison modal opened, content length: 2201
+2026-03-12 17:45:56,088 [INFO] Clicked 'Train from comparison' button inside modal.
+2026-03-12 17:45:56,599 [INFO] Training results rendered.
+2026-03-12 17:45:56,626 [INFO] Training results text (first 500 chars): Porovnanie výsledkov tréningu
+Metóda	Features	R²	RMSE	MAE	MAPE	MedAE	CORR	Čas (ms)
+Variance Threshold Selector (best)	21/21	-1.4897	2.992	1.794	8.35%	1.450	0.158	22
+Correlation Filter	18/21	-1.9195	3.240	1.890	8.79%	1.540	0.134	15
+Bez selekcie (všetky features) (best)	21/21	-1.4897	2.992	1.794	8.35%	1.450	0.158	6
+Vlastný výber používateľa	20/21	-1.4997	2.998	1.802	8.39%	1.450	0.155	3
+Metriky regresie:
+• R² = Koeficient determinácie (max 1.0, môže byť záporné pre zlé modely, vyššia = lepšia) | RM
+2026-03-12 17:45:56,626 [INFO] E2E PASSED: KNN regression
+2026-03-12 17:45:57,342 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:45:57,343 [INFO] ============================================================
+2026-03-12 17:45:57,343 [INFO] E2E: Tree regression full flow
+2026-03-12 17:45:57,344 [INFO] ============================================================
+2026-03-12 17:45:57,395 [INFO] Selected model: tree
+2026-03-12 17:45:57,406 [INFO] Eval mode set to: Regression
+2026-03-12 17:45:57,422 [INFO] Tree max_depth = 10
+2026-03-12 17:45:57,482 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:45:58,267 [INFO] Data parsed, target selection visible.
+2026-03-12 17:45:58,287 [INFO] Train/test split: 80%
+2026-03-12 17:45:58,370 [INFO] Target confirm status: Kalórie (Train: 80%, Test: 20%)
+2026-03-12 17:45:58,435 [INFO] Selected selector: variance
+2026-03-12 17:45:58,491 [INFO] Selected selector: correlation
+2026-03-12 17:46:00,505 [INFO] Selector comparison modal opened, content length: 2213
+2026-03-12 17:46:00,621 [INFO] Clicked 'Train from comparison' button inside modal.
+2026-03-12 17:46:01,132 [INFO] Training results rendered.
+2026-03-12 17:46:01,157 [INFO] Training results text (first 500 chars): Porovnanie výsledkov tréningu
+Metóda	Features	R²	RMSE	MAE	MAPE	MedAE	CORR	Čas (ms)
+Variance Threshold Selector	21/21	0.9184	133.272	84.907	7.43%	59.905	0.961	36
+Correlation Filter (best)	19/21	0.9411	113.174	81.715	7.55%	66.395	0.970	8
+Bez selekcie (všetky features)	21/21	0.9184	133.272	84.907	7.43%	59.905	0.961	8
+Vlastný výber používateľa	20/21	0.9251	127.704	72.644	6.05%	43.908	0.965	7
+Metriky regresie:
+• R² = Koeficient determinácie (max 1.0, môže byť záporné pre zlé modely, vyššia = lepšia) 
+2026-03-12 17:46:01,157 [INFO] E2E PASSED: Tree regression
+2026-03-12 17:46:01,856 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:46:01,858 [INFO] ============================================================
+2026-03-12 17:46:01,858 [INFO] E2E: Tree classification full flow with editor
+2026-03-12 17:46:01,858 [INFO] ============================================================
+2026-03-12 17:46:01,894 [INFO] Selected model: tree
+2026-03-12 17:46:01,905 [INFO] Eval mode set to: Classification
+2026-03-12 17:46:01,923 [INFO] Tree max_depth = 6
+2026-03-12 17:46:01,994 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:46:02,799 [INFO] Opening editor to bin column 'Aeróbny TE' for classification...
+2026-03-12 17:46:03,005 [INFO] Editor opened with table.
+2026-03-12 17:46:03,652 [INFO] Selected column 'Aeróbny TE' in editor.
+2026-03-12 17:46:03,973 [INFO] Selected 'binner' processor.
+2026-03-12 17:46:05,173 [INFO] Editor status after binner: Procesor "binner" aplikovaný na stĺpec "Aeróbny TE" (560 riadkov)
+2026-03-12 17:46:06,782 [INFO] Editor closed, changes applied.
+2026-03-12 17:46:07,001 [INFO] Selected selector: variance
+2026-03-12 17:46:07,068 [INFO] Selected selector: correlation
+2026-03-12 17:46:09,073 [INFO] Selector comparison modal opened, content length: 2209
+2026-03-12 17:46:09,170 [INFO] Clicked 'Train from comparison' button inside modal.
+2026-03-12 17:46:09,688 [INFO] Training results rendered.
+2026-03-12 17:46:09,743 [INFO] Training results text (first 500 chars): Porovnanie výsledkov tréningu
+Metóda	Features	ACC	F1	PREC	REC	SPEC	FP	FN	MCC	Čas (ms)
+Variance Threshold Selector (best)	21/21	0.9%	1.000	1.000	1.000	0.000	0	0	0.000	13
+Correlation Filter (best)	18/21	0.9%	1.000	1.000	1.000	0.000	0	0	0.000	5
+Bez selekcie (všetky features) (best)	21/21	0.9%	1.000	1.000	1.000	0.000	0	0	0.000	5
+Vlastný výber používateľa (best)	20/21	0.9%	1.000	1.000	1.000	0.000	0	0	0.000	3
+Metriky klasifikácie:
+• ACC = Accuracy | F1 = F1 Score | PREC = Precision | REC = Recall/Sens
+2026-03-12 17:46:09,743 [INFO] E2E PASSED: Tree classification
+2026-03-12 17:46:10,434 [INFO] Page loaded, WASM initialized.
+2026-03-12 17:46:10,436 [INFO] ============================================================
+2026-03-12 17:46:10,436 [INFO] E2E: KNN classification full flow with editor
+2026-03-12 17:46:10,437 [INFO] ============================================================
+2026-03-12 17:46:10,481 [INFO] Selected model: knn
+2026-03-12 17:46:10,491 [INFO] Eval mode set to: Classification
+2026-03-12 17:46:10,518 [INFO] KNN K = 3
+2026-03-12 17:46:10,597 [INFO] Pipeline build status: Pipeline vytvorený!
+2026-03-12 17:46:11,432 [INFO] Opening editor to bin column 'Aeróbny TE' for classification...
+2026-03-12 17:46:11,646 [INFO] Editor opened with table.
+2026-03-12 17:46:12,280 [INFO] Selected column 'Aeróbny TE' in editor.
+2026-03-12 17:46:12,602 [INFO] Selected 'binner' processor.
+2026-03-12 17:46:13,841 [INFO] Editor status after binner: Procesor "binner" aplikovaný na stĺpec "Aeróbny TE" (560 riadkov)
+2026-03-12 17:46:15,455 [INFO] Editor closed, changes applied.
+2026-03-12 17:46:15,623 [INFO] Selected selector: variance
+2026-03-12 17:46:15,681 [INFO] Selected selector: correlation
+2026-03-12 17:46:17,741 [INFO] Selector comparison modal opened, content length: 2209
+2026-03-12 17:46:17,838 [INFO] Clicked 'Train from comparison' button inside modal.
+2026-03-12 17:46:18,351 [INFO] Training results rendered.
+2026-03-12 17:46:18,392 [INFO] Training results text (first 500 chars): Porovnanie výsledkov tréningu
+Metóda	Features	ACC	F1	PREC	REC	SPEC	FP	FN	MCC	Čas (ms)
+Variance Threshold Selector (best)	21/21	0.9%	1.000	1.000	1.000	0.000	0	0	0.000	16
+Correlation Filter (best)	18/21	0.9%	1.000	1.000	1.000	0.000	0	0	0.000	5
+Bez selekcie (všetky features) (best)	21/21	0.9%	1.000	1.000	1.000	0.000	0	0	0.000	4
+Vlastný výber používateľa (best)	20/21	0.9%	1.000	1.000	1.000	0.000	0	0	0.000	4
+Metriky klasifikácie:
+• ACC = Accuracy | F1 = F1 Score | PREC = Precision | REC = Recall/Sens
+2026-03-12 17:46:18,392 [INFO] E2E PASSED: KNN classification

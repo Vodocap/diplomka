@@ -112,6 +112,10 @@ impl ProcessorFactory {
             "binner" => vec!["bins"],
             "null_handler" => vec!["null_repr", "strategy"],
             "log_transformer" => vec!["offset"],
+            "ordinal_encoder" => vec!["sort_mode"],
+            "target_encoder" => vec!["smoothing"],
+            "outlier_clipper" => vec!["method", "threshold"],
+            "time_converter" => vec!["input_format", "output_unit"],
             _ => vec![],
         }
     }

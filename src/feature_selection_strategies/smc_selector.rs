@@ -2,6 +2,7 @@ use smartcore::linalg::basic::matrix::DenseMatrix;
 use smartcore::linalg::basic::arrays::Array;
 use super::FeatureSelector;
 use std::cell::RefCell;
+use crate::mi_estimator;
 
 /// SMC (Squared Multiple Correlation) Feature Selector.
 ///
@@ -13,6 +14,7 @@ use std::cell::RefCell;
 pub struct SmcSelector {
     top_k: usize,
     details_cache: RefCell<String>,
+    scores_cache: RefCell<Option<Vec<(usize, f64)>>>,
 }
 
 impl SmcSelector {
@@ -20,65 +22,8 @@ impl SmcSelector {
         Self {
             top_k: 10,
             details_cache: RefCell::new(String::new()),
+            scores_cache: RefCell::new(None),
         }
-    }
-
-    /// Pearson korelácia (signed)
-    fn pearson_corr(x: &[f64], y: &[f64]) -> f64 {
-        let n = x.len() as f64;
-        if n == 0.0 { return 0.0; }
-        let mean_x = x.iter().sum::<f64>() / n;
-        let mean_y = y.iter().sum::<f64>() / n;
-        let mut num = 0.0;
-        let mut den_x = 0.0;
-        let mut den_y = 0.0;
-        for (xi, yi) in x.iter().zip(y.iter()) {
-            let dx = xi - mean_x;
-            let dy = yi - mean_y;
-            num += dx * dy;
-            den_x += dx * dx;
-            den_y += dy * dy;
-        }
-        let den = (den_x * den_y).sqrt();
-        if den == 0.0 { 0.0 } else { num / den }
-    }
-
-    /// Invertuje maticu Gauss-Jordan elimináciou. Vracia None ak singulárna.
-    fn invert_matrix(mat: &[Vec<f64>]) -> Option<Vec<Vec<f64>>> {
-        let n = mat.len();
-        let mut aug: Vec<Vec<f64>> = mat.iter().enumerate().map(|(i, row)| {
-            let mut r = row.clone();
-            for j in 0..n {
-                r.push(if i == j { 1.0 } else { 0.0 });
-            }
-            r
-        }).collect();
-
-        for col in 0..n {
-            let mut max_row = col;
-            let mut max_val = aug[col][col].abs();
-            for row in (col + 1)..n {
-                if aug[row][col].abs() > max_val {
-                    max_val = aug[row][col].abs();
-                    max_row = row;
-                }
-            }
-            if max_val < 1e-12 { return None; }
-            aug.swap(col, max_row);
-
-            let pivot = aug[col][col];
-            for j in 0..(2 * n) {
-                aug[col][j] /= pivot;
-            }
-            for row in 0..n {
-                if row == col { continue; }
-                let factor = aug[row][col];
-                for j in 0..(2 * n) {
-                    aug[row][j] -= factor * aug[col][j];
-                }
-            }
-        }
-        Some(aug.iter().map(|row| row[n..].to_vec()).collect())
     }
 
     /// Regularizuje korelačnú maticu (pridá lambda na diagonálu)
@@ -91,10 +36,10 @@ impl SmcSelector {
     /// Vypočíta SMC targetu (posledný stĺpec) z korelačnej matice
     fn compute_target_smc(corr: &[Vec<f64>]) -> f64 {
         let n = corr.len();
-        let inv = Self::invert_matrix(corr).unwrap_or_else(|| {
+        let inv = mi_estimator::invert_matrix(corr).unwrap_or_else(|| {
             let mut reg = corr.to_vec();
             Self::regularize(&mut reg, 0.01);
-            Self::invert_matrix(&reg).unwrap_or_else(|| vec![vec![1.0; n]; n])
+            mi_estimator::invert_matrix(&reg).unwrap_or_else(|| vec![vec![1.0; n]; n])
         });
         let target_idx = n - 1;
         let vif = inv[target_idx][target_idx];
@@ -113,7 +58,7 @@ impl SmcSelector {
         for (ni, &i) in kept.iter().enumerate() {
             corr[ni][ni] = 1.0;
             for (nj, &j) in kept.iter().enumerate().skip(ni + 1) {
-                let c = Self::pearson_corr(&columns[i], &columns[j]);
+                let c = mi_estimator::pearson_correlation(&columns[i], &columns[j]);
                 corr[ni][nj] = c;
                 corr[nj][ni] = c;
             }
@@ -122,7 +67,7 @@ impl SmcSelector {
         let target_idx = total - 1;
         corr[target_idx][target_idx] = 1.0;
         for (ni, &i) in kept.iter().enumerate() {
-            let c = Self::pearson_corr(&columns[i], y);
+            let c = mi_estimator::pearson_correlation(&columns[i], y);
             corr[ni][target_idx] = c;
             corr[target_idx][ni] = c;
         }
@@ -171,7 +116,7 @@ impl FeatureSelector for SmcSelector {
         for i in 0..cols {
             corr_full[i][i] = 1.0;
             for j in (i + 1)..cols {
-                let c = Self::pearson_corr(&columns[i], &columns[j]);
+                let c = mi_estimator::pearson_correlation(&columns[i], &columns[j]);
                 corr_full[i][j] = c;
                 corr_full[j][i] = c;
             }
@@ -181,7 +126,7 @@ impl FeatureSelector for SmcSelector {
         corr_full[target_idx][target_idx] = 1.0;
         let mut target_corrs = Vec::with_capacity(cols);
         for i in 0..cols {
-            let c = Self::pearson_corr(&columns[i], y);
+            let c = mi_estimator::pearson_correlation(&columns[i], y);
             corr_full[i][target_idx] = c;
             corr_full[target_idx][i] = c;
             target_corrs.push(c);
@@ -207,10 +152,10 @@ impl FeatureSelector for SmcSelector {
         // 4. Compute SMC for each feature individually (how well other features predict it)
         let mut feature_smc: Vec<f64> = vec![0.0; cols];
         {
-            let inv = Self::invert_matrix(&corr_full).unwrap_or_else(|| {
+            let inv = mi_estimator::invert_matrix(&corr_full).unwrap_or_else(|| {
                 let mut reg = corr_full.clone();
                 Self::regularize(&mut reg, 0.01);
-                Self::invert_matrix(&reg).unwrap_or_else(|| vec![vec![1.0; total]; total])
+                mi_estimator::invert_matrix(&reg).unwrap_or_else(|| vec![vec![1.0; total]; total])
             });
             for i in 0..cols {
                 let vif = inv[i][i];
@@ -345,6 +290,10 @@ impl FeatureSelector for SmcSelector {
 
         *self.details_cache.borrow_mut() = html;
 
+        // Cache scores for get_feature_scores
+        let scores: Vec<(usize, f64)> = importance.iter().map(|&(idx, drop, _)| (idx, drop)).collect();
+        *self.scores_cache.borrow_mut() = Some(scores);
+
         let mut result = selected;
         result.sort();
         result
@@ -356,18 +305,23 @@ impl FeatureSelector for SmcSelector {
     }
 
     fn get_feature_scores(&self, x: &DenseMatrix<f64>, y: &[f64]) -> Option<Vec<(usize, f64)>> {
+        // Reuse scores computed during get_selected_indices if available
+        if let Some(ref cached) = *self.scores_cache.borrow() {
+            return Some(cached.clone());
+        }
+
+        // Fallback: compute from scratch (e.g. called before get_selected_indices)
         let (rows, cols) = x.shape();
         let columns: Vec<Vec<f64>> = (0..cols)
             .map(|j| (0..rows).map(|i| *x.get((i, j))).collect())
             .collect();
 
-        // Build full correlation matrix
         let total = cols + 1;
         let mut corr = vec![vec![0.0f64; total]; total];
         for i in 0..cols {
             corr[i][i] = 1.0;
             for j in (i + 1)..cols {
-                let c = Self::pearson_corr(&columns[i], &columns[j]);
+                let c = mi_estimator::pearson_correlation(&columns[i], &columns[j]);
                 corr[i][j] = c;
                 corr[j][i] = c;
             }
@@ -375,19 +329,19 @@ impl FeatureSelector for SmcSelector {
         let target_idx = cols;
         corr[target_idx][target_idx] = 1.0;
         for i in 0..cols {
-            let c = Self::pearson_corr(&columns[i], y);
+            let c = mi_estimator::pearson_correlation(&columns[i], y);
             corr[i][target_idx] = c;
             corr[target_idx][i] = c;
         }
 
         let baseline_smc = Self::compute_target_smc(&corr);
-
         let scores: Vec<(usize, f64)> = (0..cols).map(|i| {
             let smc_without = Self::compute_target_smc_without(&columns, y, i);
             let drop = (baseline_smc - smc_without).max(0.0);
             (i, drop)
         }).collect();
 
+        *self.scores_cache.borrow_mut() = Some(scores.clone());
         Some(scores)
     }
 
@@ -400,19 +354,3 @@ impl FeatureSelector for SmcSelector {
     }
 }
 
-impl SmcSelector {
-    fn extract_columns(&self, x: &DenseMatrix<f64>, indices: &[usize]) -> DenseMatrix<f64> {
-        let shape = x.shape();
-        let rows = shape.0;
-        let cols = indices.len();
-        let mut data = vec![vec![0.0; cols]; rows];
-
-        for (new_col, &old_col) in indices.iter().enumerate() {
-            for row in 0..rows {
-                data[row][new_col] = *x.get((row, old_col));
-            }
-        }
-
-        DenseMatrix::from_2d_vec(&data).unwrap()
-    }
-}

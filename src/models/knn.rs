@@ -25,14 +25,17 @@ impl IModel for KnnWrapper
     {
         let mut params = KNNRegressorParameters::default();
         params.k = self.k; 
-        self.model = Some(KNNRegressor::fit(&x, &y, params).unwrap());
+        match KNNRegressor::fit(&x, &y, params) {
+            Ok(m) => self.model = Some(m),
+            Err(e) => web_sys::console::error_1(&format!("KNN fit failed: {:?}", e).into()),
+        }
     }
 
     fn predict(&self, input: &[f64]) -> Vec<f64> 
     {
         let x = DenseMatrix::from_2d_vec(&vec![input.to_vec()]).unwrap();
         self.model.as_ref()
-            .map(|m: &KNNRegressor<f64, f64, DenseMatrix<f64>, Vec<f64>, Euclidian<f64>>| m.predict(&x).unwrap())
+            .and_then(|m: &KNNRegressor<f64, f64, DenseMatrix<f64>, Vec<f64>, Euclidian<f64>>| m.predict(&x).ok())
             .unwrap_or_default()
     }
 

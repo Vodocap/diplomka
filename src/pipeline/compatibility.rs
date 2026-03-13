@@ -38,6 +38,10 @@ impl CompatibilityRegistry {
         self.model_types.insert("logreg".to_string(), "classification".to_string());
         self.model_types.insert("knn".to_string(), "both".to_string());
         self.model_types.insert("tree".to_string(), "both".to_string());
+        self.model_types.insert("rf".to_string(), "both".to_string());
+        self.model_types.insert("svm".to_string(), "both".to_string());
+        self.model_types.insert("gbt".to_string(), "both".to_string());
+        self.model_types.insert("polynom".to_string(), "regression".to_string());
 
         // Kompatibilné procesory (všetky modely môžu použiť všetky procesory)
         let all_processors = vec![
@@ -52,17 +56,27 @@ impl CompatibilityRegistry {
             "null_handler".to_string(),
             "outlier_clipper".to_string(),
             "log_transformer".to_string(),
-            "power_transformer".to_string()
+            "power_transformer".to_string(),
+            "time_converter".to_string(),
+            "comma_to_dot".to_string(),
+            "thousands_separator_remover".to_string(),
+            "ordinal_encoder".to_string(),
+            "frequency_encoder".to_string(),
+            "target_encoder".to_string(),
         ];
         self.compatible_processors.insert("linreg".to_string(), all_processors.clone());
         self.compatible_processors.insert("logreg".to_string(), all_processors.clone());
         self.compatible_processors.insert("knn".to_string(), all_processors.clone());
         self.compatible_processors.insert("tree".to_string(), all_processors.clone());
+        self.compatible_processors.insert("rf".to_string(), all_processors.clone());
+        self.compatible_processors.insert("svm".to_string(), all_processors.clone());
+        self.compatible_processors.insert("gbt".to_string(), all_processors.clone());
+        self.compatible_processors.insert("polynom".to_string(), all_processors.clone());
 
         // Kompatibilné selektory pre regression
         self.compatible_selectors.insert(
             "regression".to_string(), 
-            vec!["variance".to_string(), "correlation".to_string(), "mutual_information".to_string()]
+            vec!["variance".to_string(), "correlation".to_string(), "mutual_information".to_string(), "smc".to_string()]
         );
 
         // Kompatibilné selektory pre classification
@@ -73,7 +87,8 @@ impl CompatibilityRegistry {
                 "correlation".to_string(), 
                 "chi_square".to_string(), 
                 "information_gain".to_string(),
-                "mutual_information".to_string()
+                "mutual_information".to_string(),
+                "smc".to_string(),
             ]
         );
     }

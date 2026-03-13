@@ -56,37 +56,29 @@ impl MLPipeline {
     /// Vykoná feature selection pomocou cached indices (pre predikciu)
     fn select_features_cached(&self, x: &DenseMatrix<f64>) -> DenseMatrix<f64> {
         if let Some(ref indices) = self.selected_indices {
-            web_sys::console::log_1(&format!("✅ select_features_cached: input {}x{}, cached_indices: {:?}", 
-                x.shape().0, x.shape().1, indices).into());
-            
-            // CRITICAL: Check for empty indices
             if indices.is_empty() {
-                web_sys::console::error_1(&"🔴 CRITICAL BUG: cached indices is empty! This will cause 0-feature matrix!".into());
-                panic!("Feature selector returned empty indices - cannot proceed with 0 features!");
+                web_sys::console::error_1(&"select_features_cached: cached indices is empty, returning original data".into());
+                return x.clone();
             }
-            
-            // Extrahujeme stĺpce podľa cached indices
+
             let shape = x.shape();
             let rows = shape.0;
             let cols = indices.len();
             let mut data = vec![vec![0.0; cols]; rows];
-            
+
             for (new_col, &old_col) in indices.iter().enumerate() {
                 for row in 0..rows {
                     data[row][new_col] = *x.get((row, old_col));
                 }
             }
-            
-            let result = DenseMatrix::from_2d_vec(&data).unwrap_or_else(|e| {
-                panic!("CRITICAL BUG: Failed to create matrix from selected features! Error: {:?}, data shape: {}x{}, indices: {:?}", 
-                    e, rows, cols, indices);
-            });
-            web_sys::console::log_1(&format!("✅ select_features_cached: output {}x{}", 
-                result.shape().0, result.shape().1).into());
-            result
+
+            DenseMatrix::from_2d_vec(&data).unwrap_or_else(|e| {
+                web_sys::console::error_1(&format!(
+                    "select_features_cached: failed to create matrix: {:?}, returning original data", e
+                ).into());
+                x.clone()
+            })
         } else {
-            web_sys::console::log_1(&format!("⚠️ select_features_cached: NO SELECTION - indices: {}", 
-                self.selected_indices.is_some()).into());
             x.clone()
         }
     }
@@ -99,16 +91,14 @@ impl MLPipeline {
 
     /// Trénuje model
     pub fn train(&mut self, x: DenseMatrix<f64>, y: Vec<f64>) -> Result<(), String> {
-        web_sys::console::log_1(&format!("🚀 train() START: input {}x{}, selector: {}, cached_indices: {:?}", 
-            x.shape().0, x.shape().1, self.selector.is_some(), self.selected_indices).into());
-        
+        web_sys::console::log_1(&format!("🚀 train() START: {}x{}, selector: {}",
+            x.shape().0, x.shape().1, self.selector.is_some()).into());
+
         // First apply feature selection (if exists) to get the reduced feature set
         let selected_x = if let Some(ref selector) = self.selector {
             if self.selected_indices.is_none() {
-                web_sys::console::log_1(&"📌 Getting selected indices from selector...".into());
                 let indices = selector.get_selected_indices(&x, &y);
-                web_sys::console::log_1(&format!("📌 Got indices: {:?}", indices).into());
-                
+
                 // CRITICAL: Validate indices
                 if indices.is_empty() {
                     web_sys::console::error_1(&"🔴 CRITICAL: Selector returned EMPTY indices!".into());
@@ -117,68 +107,44 @@ impl MLPipeline {
                         selector.get_name(), x.shape().0, x.shape().1
                     ));
                 }
-                
+
                 self.selected_indices = Some(indices);
             }
-            let selected = self.select_features_cached(&x);
-            web_sys::console::log_1(&format!("🎯 after feature selection: {}x{}", selected.shape().0, selected.shape().1).into());
-            selected
+            self.select_features_cached(&x)
         } else if self.selected_indices.is_some() {
             // External indices set (e.g. from comparison training) - use them without a selector
-            web_sys::console::log_1(&"📌 Using externally set feature indices (no selector)".into());
-            let selected = self.select_features_cached(&x);
-            web_sys::console::log_1(&format!("🎯 after external feature selection: {}x{}", selected.shape().0, selected.shape().1).into());
-            selected
+            self.select_features_cached(&x)
         } else {
-            web_sys::console::log_1(&"⚠️ NO selector and NO indices - using x as-is".into());
             x.clone()
         };
-        
-        // Now fit processor on the SELECTED features
+
+        // Fit processor on the selected features, then preprocess
         if let Some(ref mut processor) = self.processor {
-            web_sys::console::log_1(&format!("📐 Fitting processor '{}' on SELECTED {}x{} data", 
-                processor.get_name(), selected_x.shape().0, selected_x.shape().1).into());
             processor.fit(&selected_x);
-            web_sys::console::log_1(&"✅ Processor fitted on selected features".into());
         }
-        
-        // Apply preprocessing to the selected features
-        web_sys::console::log_1(&"🔧 Applying preprocessing to selected features...".into());
         let processed_x = self.preprocess(&selected_x);
-        web_sys::console::log_1(&format!("🔧 after preprocess: {}x{}", processed_x.shape().0, processed_x.shape().1).into());
-        
+
         // Store expected feature count for validation during predict
         self.expected_features = Some(processed_x.shape().1);
-        web_sys::console::log_1(&format!("📊 prepared_x for training: {}x{}, expected_features: {:?}", 
-            processed_x.shape().0, processed_x.shape().1, self.expected_features).into());
-        
-        // Tréning
-        web_sys::console::log_1(&format!("🎓 Calling model.train() with data: {}x{}, y len: {}", 
-            processed_x.shape().0, processed_x.shape().1, y.len()).into());
+
         self.model.train(processed_x, y);
-        web_sys::console::log_1(&"✅ model.train() completed".into());
+        web_sys::console::log_1(&format!("✅ train() completed: model={}, features={}",
+            self.model_name, self.expected_features.unwrap_or(0)).into());
         Ok(())
     }
 
     /// Predikcia s preprocessing a feature selection
     pub fn predict(&self, input: Vec<f64>) -> Result<Vec<f64>, String> {
-        web_sys::console::log_1(&format!("� predict() START: input len={}, selector={}, cached_indices={:?}, expected={:?}", 
-            input.len(), self.selector.is_some(), self.selected_indices, self.expected_features).into());
-        
         // Konvertujeme Vec<f64> na DenseMatrix (1 riadok)
         let input_matrix = DenseMatrix::from_2d_vec(&vec![input.clone()])
             .map_err(|e| format!("Chyba pri konverzii input vektora: {:?}", e))?;
-        
-        web_sys::console::log_1(&format!("🔮 input_matrix: {}x{}", input_matrix.shape().0, input_matrix.shape().1).into());
-        
+
         // Apply feature selection FIRST (using cached indices)
         let selected = self.select_features_cached(&input_matrix);
-        web_sys::console::log_1(&format!("🎯 after feature selection: {}x{}", selected.shape().0, selected.shape().1).into());
-        
+
         // Then apply preprocessing to the SELECTED features
         let prepared = self.preprocess(&selected);
-        web_sys::console::log_1(&format!("🔧 after preprocessing: {}x{}", prepared.shape().0, prepared.shape().1).into());
-        
+
         // Validation: check feature count matches what model expects
         if let Some(expected_count) = self.expected_features {
             let actual_count = prepared.shape().1;
@@ -189,32 +155,13 @@ impl MLPipeline {
                 ));
             }
         }
-        web_sys::console::log_1(&"✅ Feature count validation passed".into());
-        if let Some(expected) = self.expected_features {
-            web_sys::console::log_1(&format!("🔵 Validating: expected {} features, got {}", expected, prepared.shape().1).into());
-            if prepared.shape().1 != expected {
-                let err_msg = format!(
-                    "Feature count mismatch: model expects {} features, got {} after selection",
-                    expected, prepared.shape().1
-                );
-                web_sys::console::log_1(&format!("❌ {}", err_msg).into());
-                return Err(err_msg);
-            }
-        } else {
-            web_sys::console::log_1(&"⚠️ No expected_features set - skipping validation".into());
-        }
-        
-        // Extrahujeme prvý riadok ako Vec<f64>
+
+        // Extrahujeme prvy riadok ako Vec<f64>
         let prepared_vec: Vec<f64> = (0..prepared.shape().1)
             .map(|col_idx| *prepared.get((0, col_idx)))
             .collect();
-        
-        web_sys::console::log_1(&format!("🔵 prepared_vec len: {}, calling model.predict()", prepared_vec.len()).into());
-        
-        // Predikcia
-        let result = self.model.predict(&prepared_vec);
-        web_sys::console::log_1(&format!("✅ predict() succeeded, result: {:?}", result).into());
-        Ok(result)
+
+        Ok(self.model.predict(&prepared_vec))
     }
 
     /// Vyhodnotí model na testovacích dátach

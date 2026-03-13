@@ -49,6 +49,9 @@ impl DataProcessor for CommaToDotProcessor {
 // ThousandsSeparatorRemover - odstráni čiarky ako oddeľovače tisícov
 // ============================================================================
 
+/// Tento procesor pracuje na textovej úrovni v WASM API (nahradzuje čiarky ako
+/// oddelšovače tisícov v textových dátach). Na DenseMatrix úrovni je no-op,
+/// pretože data sú už parsované ako f64.
 pub struct ThousandsSeparatorRemover;
 
 impl ThousandsSeparatorRemover {
@@ -125,7 +128,7 @@ impl DataProcessor for OrdinalEncoder {
                 }
             }
 
-            if self.sort_mode == "alphabetical" {
+            if self.sort_mode == "ascending" || self.sort_mode == "alphabetical" {
                 unique_vals.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
             }
 
@@ -187,7 +190,7 @@ impl DataProcessor for OrdinalEncoder {
                 max: None,
                 options: Some(vec![
                     "appearance".to_string(),
-                    "alphabetical".to_string(),
+                    "ascending".to_string(),
                 ]),
             },
         ]
@@ -305,12 +308,14 @@ impl DataProcessor for TargetEncoder {
         let (rows, cols) = data.shape();
         if cols == 0 || rows == 0 { return; }
 
+        // Compute global mean across ALL values (not per-column)
+        let total_vals: f64 = (0..rows).flat_map(|i| (0..cols).map(move |j| *data.get((i, j)))).sum();
+        self.global_mean = total_vals / (rows * cols) as f64;
+
         let mut maps = Vec::new();
 
         for j in 0..cols {
-            let all_vals: Vec<f64> = (0..rows).map(|i| *data.get((i, j))).collect();
-            let global_mean = all_vals.iter().sum::<f64>() / rows as f64;
-            self.global_mean = global_mean;
+            let global_mean = self.global_mean;
 
             let mut group_sums: HashMap<u64, f64> = HashMap::new();
             let mut group_counts: HashMap<u64, usize> = HashMap::new();

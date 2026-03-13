@@ -107,19 +107,3 @@ impl FeatureSelector for VarianceSelector
     }
 }
 
-impl VarianceSelector {
-    fn extract_columns(&self, x: &DenseMatrix<f64>, indices: &[usize]) -> DenseMatrix<f64> {
-        let shape = x.shape();
-        let rows = shape.0;
-        let cols = indices.len();
-        let mut data = vec![vec![0.0; cols]; rows];
-        
-        for (new_col, &old_col) in indices.iter().enumerate() {
-            for row in 0..rows {
-                data[row][new_col] = *x.get((row, old_col));
-            }
-        }
-        
-        DenseMatrix::from_2d_vec(&data).unwrap()
-    }
-}

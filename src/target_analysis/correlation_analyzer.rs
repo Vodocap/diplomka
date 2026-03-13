@@ -1,6 +1,6 @@
 use super::{TargetAnalyzer, TargetCandidate};
-use std::collections::HashSet;
 use std::cell::RefCell;
+use crate::mi_estimator;
 
 /// Analyzátor cieľovej premennej na základe Pearsonovej korelácie.
 /// Pre každú premennú vypočíta sumu štvorcov korelácií so všetkými
@@ -18,34 +18,6 @@ impl CorrelationAnalyzer {
         }
     }
 
-    fn pearson_corr(x: &[f64], y: &[f64]) -> f64 {
-        let n = x.len() as f64;
-        if n == 0.0 { return 0.0; }
-        let mean_x = x.iter().sum::<f64>() / n;
-        let mean_y = y.iter().sum::<f64>() / n;
-        let mut num = 0.0;
-        let mut den_x = 0.0;
-        let mut den_y = 0.0;
-        for (xi, yi) in x.iter().zip(y.iter()) {
-            let dx = xi - mean_x;
-            let dy = yi - mean_y;
-            num += dx * dy;
-            den_x += dx * dx;
-            den_y += dy * dy;
-        }
-        let den = (den_x * den_y).sqrt();
-        if den == 0.0 { 0.0 } else { num / den }
-    }
-
-    fn classify_column(values: &[f64], n: usize) -> (usize, String) {
-        let mut uniq = HashSet::new();
-        for &v in values { uniq.insert(v.to_bits()); }
-        let unique_count = uniq.len();
-        let is_cat = unique_count <= 10 || (unique_count as f64 / n as f64) < 0.05;
-        let stype = if is_cat { "classification" } else { "regression" };
-        (unique_count, stype.to_string())
-    }
-
     /// Vypočíta korelačnú maticu s cachovaním
     fn compute_corr_matrix(&self, columns: &[Vec<f64>]) -> Vec<Vec<f64>> {
         // Skontroluj cache
@@ -59,7 +31,7 @@ impl CorrelationAnalyzer {
         for i in 0..num_cols {
             corr_matrix[i][i] = 1.0;
             for j in (i+1)..num_cols {
-                let c = Self::pearson_corr(&columns[i], &columns[j]);
+                let c = mi_estimator::pearson_correlation(&columns[i], &columns[j]);
                 corr_matrix[i][j] = c;
                 corr_matrix[j][i] = c;
             }
@@ -104,7 +76,7 @@ impl TargetAnalyzer for CorrelationAnalyzer {
 
         let mut candidates = Vec::new();
         for col_idx in 0..num_cols {
-            let (unique_count, stype) = Self::classify_column(&columns[col_idx], n);
+            let (unique_count, stype) = super::classify_column(&columns[col_idx], n);
 
             let mean = columns[col_idx].iter().sum::<f64>() / n as f64;
             let variance = columns[col_idx].iter().map(|v| (v - mean).powi(2)).sum::<f64>() / n as f64;

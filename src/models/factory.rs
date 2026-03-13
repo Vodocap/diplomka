@@ -1,4 +1,4 @@
-use super::{IModel, LinRegWrapper, LogRegWrapper, KnnWrapper, TreeWrapper};
+use super::{IModel, LinRegWrapper, LogRegWrapper, KnnWrapper, TreeWrapper, RandomForestWrapper, SvmWrapper, GradientBoostingWrapper, PolyRegWrapper};
 
 /// Factory pre vytváranie modelov podľa názvu
 pub struct ModelFactory;
@@ -11,6 +11,10 @@ impl ModelFactory {
             "logreg" | "logistic_regression" => Ok(Box::new(LogRegWrapper::new())),
             "knn" => Ok(Box::new(KnnWrapper::new())),
             "tree" | "decision_tree" => Ok(Box::new(TreeWrapper::new())),
+            "rf" | "random_forest" => Ok(Box::new(RandomForestWrapper::new())),
+            "svm" => Ok(Box::new(SvmWrapper::new())),
+            "gbt" | "gradient_boosting" => Ok(Box::new(GradientBoostingWrapper::new())),
+            "polynom" | "polynomial_regression" => Ok(Box::new(PolyRegWrapper::new())),
             _ => Err(format!("Neznámy model: {}", model_type)),
         }
     }
@@ -19,9 +23,13 @@ impl ModelFactory {
     pub fn available_models() -> Vec<&'static str> {
         vec![
             "linreg",
-            "logreg", 
+            "logreg",
             "knn",
             "tree",
+            "rf",
+            "svm",
+            "gbt",
+            "polynom",
         ]
     }
 
@@ -32,6 +40,10 @@ impl ModelFactory {
             "logreg" => Some("Logistická Regresia - binárna klasifikácia"),
             "knn" => Some("K-Nearest Neighbors - klasifikácia alebo regresia"),
             "tree" => Some("Rozhodovací strom - klasifikácia alebo regresia"),
+            "rf" => Some("Random Forest - ensemble stromov, regresia alebo klasifikácia"),
+            "svm" => Some("Support Vector Machine - SVM s RBF/lineárnym kernelom"),
+            "gbt" => Some("Gradient Boosting Trees - boosting stromov, regresia alebo klasifikácia"),
+            "polynom" => Some("Polynomiálna Regresia - OLS s polynomiálnymi features (degree 1–8)"),
             _ => None,
         }
     }
@@ -41,8 +53,12 @@ impl ModelFactory {
         match model_type {
             "linreg" => Some("regression"),
             "logreg" => Some("classification"),
-            "knn" => Some("both"), // KNN môže byť oboje
+            "knn" => Some("both"),
             "tree" => Some("both"),
+            "rf" => Some("both"),
+            "svm" => Some("both"),
+            "gbt" => Some("both"),
+            "polynom" => Some("regression"),
             _ => None,
         }
     }
@@ -51,8 +67,13 @@ impl ModelFactory {
     pub fn get_supported_params(model_type: &str) -> Vec<&'static str> {
         match model_type {
             "knn" => vec!["k"],
-            "tree" => vec!["max_depth"],
-            "linreg" | "logreg" => vec![],
+            "tree" => vec!["max_depth", "min_samples_split"],
+            "linreg" => vec!["solver"],
+            "logreg" => vec!["alpha"],
+            "rf" => vec!["n_estimators", "max_depth", "min_samples_leaf"],
+            "svm" => vec!["c", "eps", "kernel", "gamma"],
+            "gbt" => vec!["n_estimators", "max_depth", "learning_rate"],
+            "polynom" => vec!["degree"],
             _ => vec![],
         }
     }

@@ -62,7 +62,8 @@ impl ModelEvaluator {
         let specificity = if tn + fp > 0.0 { tn / (tn + fp) } else { 0.0 };
         report.add_metric("specificity".to_string(), specificity);
 
-        // Sensitivity = Recall (pre úplnosť)
+        // Sensitivity = Recall = TPR (True Positive Rate)
+        // Included alongside recall for compatibility with medical/statistical terminology.
         let sensitivity = if tp + fn_ > 0.0 { tp / (tp + fn_) } else { 0.0 };
         report.add_metric("sensitivity".to_string(), sensitivity);
 

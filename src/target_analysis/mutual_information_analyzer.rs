@@ -1,6 +1,6 @@
 use super::{TargetAnalyzer, TargetCandidate};
 use crate::mi_estimator;
-use std::collections::HashSet;
+
 use std::cell::RefCell;
 
 /// Analyzátor cieľovej premennej na základe Mutual Information (KSG estimátor).
@@ -19,14 +19,6 @@ impl MutualInformationAnalyzer {
         }
     }
 
-    fn classify_column(values: &[f64], n: usize) -> (usize, String) {
-        let mut uniq = HashSet::new();
-        for &v in values { uniq.insert(v.to_bits()); }
-        let unique_count = uniq.len();
-        let is_cat = unique_count <= 10 || (unique_count as f64 / n as f64) < 0.05;
-        let stype = if is_cat { "classification" } else { "regression" };
-        (unique_count, stype.to_string())
-    }
 }
 
 impl TargetAnalyzer for MutualInformationAnalyzer {
@@ -62,7 +54,7 @@ impl TargetAnalyzer for MutualInformationAnalyzer {
 
         let mut candidates = Vec::new();
         for col_idx in 0..num_cols {
-            let (unique_count, stype) = Self::classify_column(&columns[col_idx], n);
+            let (unique_count, stype) = super::classify_column(&columns[col_idx], n);
 
             let mean = columns[col_idx].iter().sum::<f64>() / n as f64;
             let variance = columns[col_idx].iter().map(|v| (v - mean).powi(2)).sum::<f64>() / n as f64;

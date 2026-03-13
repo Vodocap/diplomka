@@ -106,6 +106,10 @@ impl DataProcessor for SelectiveProcessor {
 
     fn transform(&self, data: &DenseMatrix<f64>) -> DenseMatrix<f64> {
         if self.applicable_columns.is_empty() {
+            web_sys::console::warn_1(&format!(
+                "SelectiveProcessor({}): transform called with no applicable columns (was fit() called?)",
+                self.processor.get_name()
+            ).into());
             return data.clone();
         }
 

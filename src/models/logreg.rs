@@ -37,17 +37,19 @@ impl IModel for LogRegWrapper {
         let mut params = LogisticRegressionParameters::default();
         params.alpha = self.alpha;
         
-        // Konverzia f64 na u32 pre klasifikáciu
         let y_labels: Vec<u32> = y.iter().map(|&v| v.round() as u32).collect();
-        self.model = Some(LogisticRegression::fit(&x, &y_labels, params).unwrap());
+        match LogisticRegression::fit(&x, &y_labels, params) {
+            Ok(m) => self.model = Some(m),
+            Err(e) => web_sys::console::error_1(&format!("Logistic Regression fit failed: {:?}", e).into()),
+        }
     }
 
     fn predict(&self, input: &[f64]) -> Vec<f64> {
         let x = DenseMatrix::from_2d_vec(&vec![input.to_vec()]).unwrap();
         self.model.as_ref()
-            .map(|m| {
-                let predictions: Vec<u32> = m.predict(&x).unwrap();
-                predictions.iter().map(|&v| v as f64).collect()
+            .and_then(|m| {
+                let predictions: Result<Vec<u32>, _> = m.predict(&x);
+                predictions.ok().map(|p| p.iter().map(|&v| v as f64).collect())
             })
             .unwrap_or_default()
     }

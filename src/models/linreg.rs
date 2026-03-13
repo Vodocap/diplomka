@@ -50,14 +50,17 @@ impl IModel for LinRegWrapper
             _ => LinearRegressionSolverName::QR,
         };
         
-        self.model = Some(LinearRegression::fit(&x, &y, params).unwrap());
+        match LinearRegression::fit(&x, &y, params) {
+            Ok(m) => self.model = Some(m),
+            Err(e) => web_sys::console::error_1(&format!("Linear Regression fit failed: {:?}", e).into()),
+        }
     }
 
     fn predict(&self, input: &[f64]) -> Vec<f64> 
     {
         let x = DenseMatrix::from_2d_vec(&vec![input.to_vec()]).unwrap();
         self.model.as_ref()
-            .map(|m| m.predict(&x).unwrap())
+            .and_then(|m| m.predict(&x).ok())
             .unwrap_or_default()
     }
 }

@@ -128,19 +128,19 @@ impl WasmFactory {
 
     /// Získa kompatibilné procesory pre model
     #[wasm_bindgen(js_name = getCompatibleProcessors)]
-    pub fn get_compatible_processors(&self, _model_name: &str) -> JsValue {
+    pub fn get_compatible_processors(&self, model_name: &str) -> JsValue {
         use crate::pipeline::compatibility::CompatibilityRegistry;
         let registry = CompatibilityRegistry::instance().lock().unwrap();
-        let processors = registry.get_compatible_processors(_model_name);
+        let processors = registry.get_compatible_processors(model_name);
         serde_wasm_bindgen::to_value(&processors).unwrap()
     }
 
     /// Získa kompatibilné selektory pre model
     #[wasm_bindgen(js_name = getCompatibleSelectors)]
-    pub fn get_compatible_selectors(&self, _model_name: &str) -> JsValue {
+    pub fn get_compatible_selectors(&self, model_name: &str) -> JsValue {
         use crate::pipeline::compatibility::CompatibilityRegistry;
         let registry = CompatibilityRegistry::instance().lock().unwrap();
-        let selectors = registry.get_compatible_selectors(_model_name);
+        let selectors = registry.get_compatible_selectors(model_name);
         serde_wasm_bindgen::to_value(&selectors).unwrap()
     }
 

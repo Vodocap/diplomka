@@ -4,9 +4,10 @@ use crate::pipeline::{MLPipeline, MLPipelineBuilder};
 use crate::data_loading::DataLoaderFactory;
 use crate::feature_selection_strategies::factory::FeatureSelectorFactory;
 use crate::target_analysis::TargetAnalyzerFactory;
+use crate::mi_estimator;
 use smartcore::linalg::basic::matrix::DenseMatrix;
 use smartcore::linalg::basic::arrays::Array;
-use smartcore::metrics::r2;
+
 use std::cell::RefCell;
 use statrs::function::gamma::digamma;
 
@@ -1187,14 +1188,14 @@ impl WasmMLPipeline {
             .collect();
 
         // 3. Invertuj korelačnú maticu R⁻¹ (s regularizáciou ak singulárna)
-        let r_inv = Self::invert_matrix_gauss(&corr_xx).unwrap_or_else(|| {
+        let r_inv = mi_estimator::invert_matrix(&corr_xx).unwrap_or_else(|| {
             // Regularizácia: R + λI
             let mut reg = corr_xx.clone();
             let lambda = 0.01;
             for i in 0..k {
                 reg[i][i] += lambda;
             }
-            Self::invert_matrix_gauss(&reg).unwrap_or_else(|| {
+            mi_estimator::invert_matrix(&reg).unwrap_or_else(|| {
                 // Fallback: identita
                 let mut id = vec![vec![0.0; k]; k];
                 for i in 0..k { id[i][i] = 1.0; }
@@ -1242,53 +1243,6 @@ impl WasmMLPipeline {
         });
 
         Ok(serde_wasm_bindgen::to_value(&result).unwrap())
-    }
-
-    /// Gauss-Jordan eliminácia pre inverziu matice
-    fn invert_matrix_gauss(mat: &[Vec<f64>]) -> Option<Vec<Vec<f64>>> {
-        let n = mat.len();
-        if n == 0 { return None; }
-
-        // Augmented matrix [mat | I]
-        let mut aug: Vec<Vec<f64>> = mat.iter().enumerate().map(|(i, row)| {
-            let mut r = row.clone();
-            for j in 0..n {
-                r.push(if i == j { 1.0 } else { 0.0 });
-            }
-            r
-        }).collect();
-
-        for col in 0..n {
-            // Partial pivoting
-            let mut max_row = col;
-            let mut max_val = aug[col][col].abs();
-            for row in (col + 1)..n {
-                if aug[row][col].abs() > max_val {
-                    max_val = aug[row][col].abs();
-                    max_row = row;
-                }
-            }
-            if max_val < 1e-12 {
-                return None; // Singulárna
-            }
-            aug.swap(col, max_row);
-
-            let pivot = aug[col][col];
-            for j in 0..(2 * n) {
-                aug[col][j] /= pivot;
-            }
-
-            for row in 0..n {
-                if row == col { continue; }
-                let factor = aug[row][col];
-                for j in 0..(2 * n) {
-                    aug[row][j] -= factor * aug[col][j];
-                }
-            }
-        }
-
-        let inv: Vec<Vec<f64>> = aug.iter().map(|row| row[n..].to_vec()).collect();
-        Some(inv)
     }
 
     /// Evaluácia (split dáta)
@@ -1722,7 +1676,7 @@ impl WasmMLPipeline {
             corr_matrix[i][i] = 1.0;
             for j in (i+1)..num_cols {
                 let col_j: Vec<f64> = all_data.iter().map(|r| r[j]).collect();
-                let c = Self::pearson_corr(&col_i, &col_j);
+                let c = mi_estimator::pearson_correlation(&col_i, &col_j);
                 corr_matrix[i][j] = c;
                 corr_matrix[j][i] = c;
             }
@@ -2209,9 +2163,9 @@ impl WasmMLPipeline {
         (psi_k - mean_psi + psi_n).max(0.0)
     }
 
-    /// Vypočíta Joint MI pre dvojice features s cieľovou premennou.
-    /// Joint MI = MI((X1, X2); Y) — koľko informácie dvojica spoločne nesie o Y.
-    /// Synergia = Joint MI - (MI(X1;Y) + MI(X2;Y)). Kladná = dvojica má synergiu.
+    /// Vypočíta Synergická MI pre dvojice features s cieľovou premennou.
+    /// Synergická MI = MI((X1, X2); Y) — koľko informácie dvojica spoločne nesie o Y.
+    /// Prínos Synergickej MI = Synergická MI - (MI(X1;Y) + MI(X2;Y)). Kladná = dvojica má synergiu.
     ///
     /// mode: "with_selected" — páry (nevybraná, vybraná)
     ///       "among_unselected" — páry (nevybraná, nevybraná)
@@ -2249,7 +2203,7 @@ impl WasmMLPipeline {
             .filter(|&i| i != target_idx && !selected_set.contains(&i))
             .collect();
 
-        // Vypočítaj Joint MI pre dvojice podľa módu
+        // Vypočítaj Synergická MI pre dvojice podľa módu
         let mut results = Vec::new();
 
         match mode {
@@ -3102,25 +3056,6 @@ impl WasmMLPipeline {
         });
 
         Ok(serde_wasm_bindgen::to_value(&result).unwrap())
-    }
-
-    fn pearson_corr(x: &[f64], y: &[f64]) -> f64 {
-        let n = x.len() as f64;
-        if n == 0.0 { return 0.0; }
-        let mean_x = x.iter().sum::<f64>() / n;
-        let mean_y = y.iter().sum::<f64>() / n;
-        let mut num = 0.0;
-        let mut den_x = 0.0;
-        let mut den_y = 0.0;
-        for (xi, yi) in x.iter().zip(y.iter()) {
-            let dx = xi - mean_x;
-            let dy = yi - mean_y;
-            num += dx * dy;
-            den_x += dx * dx;
-            den_y += dy * dy;
-        }
-        let den = (den_x * den_y).sqrt();
-        if den == 0.0 { 0.0 } else { num / den }
     }
 
     /// Vytvori porovnávaciu HTML tabulku pre viaceré selektory

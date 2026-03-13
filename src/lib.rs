@@ -11,7 +11,6 @@ mod target_analysis;
 mod embedded;
 pub mod mi_estimator;
 
-pub use data_loading::csv_loader::CsvLoader;
 pub use data_loading::{DataLoader, DataLoaderFactory, LoadedData, CsvDataLoader, JsonDataLoader};
 pub use models::{IModel, LinRegWrapper, KnnWrapper, LogRegWrapper, TreeWrapper, factory::ModelFactory};
 pub use processing::{DataProcessor, StandardScaler, Binner, OneHotEncoder, factory::ProcessorFactory, TimeConverter,

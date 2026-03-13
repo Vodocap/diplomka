@@ -14,6 +14,19 @@ pub use entropy_analyzer::EntropyAnalyzer;
 pub use smc_analyzer::SmcAnalyzer;
 pub use factory::TargetAnalyzerFactory;
 
+use std::collections::HashSet;
+
+/// Klasifikuje stĺpec hodnôt ako classification/regression na základe počtu unikátnych hodnôt.
+/// Vracia (unique_count, suggested_type).
+pub fn classify_column(values: &[f64], n: usize) -> (usize, String) {
+    let mut uniq = HashSet::new();
+    for &v in values { uniq.insert(v.to_bits()); }
+    let unique_count = uniq.len();
+    let is_cat = unique_count <= 10 || (unique_count as f64 / n as f64) < 0.05;
+    let stype = if is_cat { "classification" } else { "regression" };
+    (unique_count, stype.to_string())
+}
+
 /// Výsledok analýzy jedného stĺpca ako potenciálnej cieľovej premennej
 #[derive(Debug, Clone)]
 pub struct TargetCandidate {

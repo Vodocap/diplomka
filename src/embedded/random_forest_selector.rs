@@ -3,8 +3,9 @@ use smartcore::linalg::basic::matrix::DenseMatrix;
 use smartcore::linalg::basic::arrays::Array;
 use crate::mi_estimator;
 
-/// Random Forest/Decision Tree feature importance selector
-/// Používa Gini importance (klasifikácia) alebo variance reduction (regresia)
+/// Correlation-based feature importance selector (embedded method).
+/// Uses absolute Pearson correlation with the target as a proxy for feature importance,
+/// since SmartCore does not expose tree-based feature_importances.
 pub struct RandomForestSelector {
     is_classification: bool,
 }

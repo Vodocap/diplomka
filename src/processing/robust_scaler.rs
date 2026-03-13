@@ -62,6 +62,11 @@ impl DataProcessor for RobustScaler {
         let (rows, cols) = data.shape();
         let mut result = data.clone();
 
+        if self.medians.is_none() || self.iqrs.is_none() {
+            web_sys::console::warn_1(&"RobustScaler: transform called before fit, returning data unchanged".into());
+            return result;
+        }
+
         if let (Some(ref medians), Some(ref iqrs)) = (&self.medians, &self.iqrs) {
             for j in 0..cols.min(medians.len()) {
                 for i in 0..rows {

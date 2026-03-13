@@ -39,7 +39,7 @@ impl MLPipelineDirector {
             .model(model)
             .processor("scaler")
             .feature_selector("chi_square")
-            .selector_param("k", &k_features.to_string())
+            .selector_param("num_features", &k_features.to_string())
             .evaluation_mode("classification")
             .build()
     }

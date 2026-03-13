@@ -2,9 +2,8 @@ use crate::processing::DataProcessor;
 use smartcore::linalg::basic::matrix::DenseMatrix;
 use smartcore::linalg::basic::arrays::Array;
 
-/// Procesor pre nahradenie null hodnôt
+/// Procesor pre nahradenie null hodnôt (NaN → replacement strategy)
 pub struct NullValueHandler {
-    null_values: Vec<String>, // Možné reprezentácie null hodnôt ("", "NA", "null", "NaN")
     replacement_strategy: ReplacementStrategy,
 }
 
@@ -17,18 +16,11 @@ pub enum ReplacementStrategy {
 }
 
 impl NullValueHandler {
-    pub fn new(null_values: Vec<String>, replacement_strategy: ReplacementStrategy) -> Self {
-        Self {
-            null_values,
-            replacement_strategy,
-        }
+    pub fn new(replacement_strategy: ReplacementStrategy) -> Self {
+        Self { replacement_strategy }
     }
 
-    pub fn with_params(null_repr: &str, strategy: &str, constant_value: Option<f64>) -> Self {
-        let null_values = null_repr.split(',')
-            .map(|s| s.trim().to_string())
-            .collect();
-
+    pub fn with_params(_null_repr: &str, strategy: &str, constant_value: Option<f64>) -> Self {
         let replacement_strategy = match strategy {
             "mean" => ReplacementStrategy::Mean,
             "median" => ReplacementStrategy::Median,
@@ -37,7 +29,7 @@ impl NullValueHandler {
             _ => ReplacementStrategy::Zero,
         };
 
-        Self::new(null_values, replacement_strategy)
+        Self::new(replacement_strategy)
     }
 
     fn calculate_column_mean(&self, data: &DenseMatrix<f64>, col: usize) -> f64 {
@@ -124,9 +116,7 @@ impl DataProcessor for NullValueHandler {
     fn set_param(&mut self, key: &str, value: &str) -> Result<(), String> {
         match key {
             "null_repr" => {
-                self.null_values = value.split(',')
-                    .map(|s| s.trim().to_string())
-                    .collect();
+                // null_repr is a data-loading concern; NullValueHandler only handles NaN at the matrix level
                 Ok(())
             }
             "strategy" => {

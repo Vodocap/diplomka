@@ -1,6 +1,6 @@
 use super::{TargetAnalyzer, TargetCandidate};
-use std::collections::HashSet;
 use std::cell::RefCell;
+use crate::mi_estimator;
 
 /// Analyzátor cieľovej premennej na základe Squared Multiple Correlation (SMC).
 /// SMC_j = 1 - 1/(R⁻¹)_jj, kde R je korelačná matica.
@@ -17,74 +17,6 @@ impl SmcAnalyzer {
         Self {
             corr_cache: RefCell::new(None),
         }
-    }
-
-    fn pearson_corr(x: &[f64], y: &[f64]) -> f64 {
-        let n = x.len() as f64;
-        if n == 0.0 { return 0.0; }
-        let mean_x = x.iter().sum::<f64>() / n;
-        let mean_y = y.iter().sum::<f64>() / n;
-        let mut num = 0.0;
-        let mut den_x = 0.0;
-        let mut den_y = 0.0;
-        for (xi, yi) in x.iter().zip(y.iter()) {
-            let dx = xi - mean_x;
-            let dy = yi - mean_y;
-            num += dx * dy;
-            den_x += dx * dx;
-            den_y += dy * dy;
-        }
-        let den = (den_x * den_y).sqrt();
-        if den == 0.0 { 0.0 } else { num / den }
-    }
-
-    /// Invertuje maticu pomocou Gauss-Jordan eliminácie.
-    /// Vracia None ak je matica singulárna.
-    fn invert_matrix(mat: &[Vec<f64>]) -> Option<Vec<Vec<f64>>> {
-        let n = mat.len();
-        // Augmented matrix [mat | I]
-        let mut aug: Vec<Vec<f64>> = mat.iter().enumerate().map(|(i, row)| {
-            let mut r = row.clone();
-            for j in 0..n {
-                r.push(if i == j { 1.0 } else { 0.0 });
-            }
-            r
-        }).collect();
-
-        for col in 0..n {
-            // Partial pivoting
-            let mut max_row = col;
-            let mut max_val = aug[col][col].abs();
-            for row in (col + 1)..n {
-                if aug[row][col].abs() > max_val {
-                    max_val = aug[row][col].abs();
-                    max_row = row;
-                }
-            }
-            if max_val < 1e-12 {
-                return None; // Singular
-            }
-            aug.swap(col, max_row);
-
-            let pivot = aug[col][col];
-            for j in 0..(2 * n) {
-                aug[col][j] /= pivot;
-            }
-
-            for row in 0..n {
-                if row == col { continue; }
-                let factor = aug[row][col];
-                for j in 0..(2 * n) {
-                    aug[row][j] -= factor * aug[col][j];
-                }
-            }
-        }
-
-        // Extract inverse from right half
-        let inv: Vec<Vec<f64>> = aug.iter().map(|row| {
-            row[n..].to_vec()
-        }).collect();
-        Some(inv)
     }
 
     /// Regularizuje korelačnú maticu pridaním malej hodnoty na diagonálu
@@ -104,7 +36,7 @@ impl SmcAnalyzer {
         for i in 0..num_cols {
             corr_matrix[i][i] = 1.0;
             for j in (i+1)..num_cols {
-                let c = Self::pearson_corr(&columns[i], &columns[j]);
+                let c = mi_estimator::pearson_correlation(&columns[i], &columns[j]);
                 corr_matrix[i][j] = c;
                 corr_matrix[j][i] = c;
             }
@@ -113,14 +45,6 @@ impl SmcAnalyzer {
         corr_matrix
     }
 
-    fn classify_column(values: &[f64], n: usize) -> (usize, String) {
-        let mut uniq = HashSet::new();
-        for &v in values { uniq.insert(v.to_bits()); }
-        let unique_count = uniq.len();
-        let is_cat = unique_count <= 10 || (unique_count as f64 / n as f64) < 0.05;
-        let stype = if is_cat { "classification" } else { "regression" };
-        (unique_count, stype.to_string())
-    }
 }
 
 impl TargetAnalyzer for SmcAnalyzer {
@@ -156,10 +80,10 @@ impl TargetAnalyzer for SmcAnalyzer {
         *self.corr_cache.borrow_mut() = Some(corr_matrix.clone());
 
         // Try to invert; if singular, regularize
-        let inv = Self::invert_matrix(&corr_matrix).unwrap_or_else(|| {
+        let inv = mi_estimator::invert_matrix(&corr_matrix).unwrap_or_else(|| {
             let mut reg = corr_matrix.clone();
             Self::regularize_corr_matrix(&mut reg, 0.01);
-            Self::invert_matrix(&reg).unwrap_or_else(|| {
+            mi_estimator::invert_matrix(&reg).unwrap_or_else(|| {
                 // Fallback: identity-like
                 vec![vec![1.0; num_cols]; num_cols]
             })
@@ -167,7 +91,7 @@ impl TargetAnalyzer for SmcAnalyzer {
 
         let mut candidates = Vec::new();
         for col_idx in 0..num_cols {
-            let (unique_count, stype) = Self::classify_column(&columns[col_idx], n);
+            let (unique_count, stype) = super::classify_column(&columns[col_idx], n);
 
             let mean = columns[col_idx].iter().sum::<f64>() / n as f64;
             let variance = columns[col_idx].iter().map(|v| (v - mean).powi(2)).sum::<f64>() / n as f64;

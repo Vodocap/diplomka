@@ -1,16 +1,20 @@
-//! Zdieľaný modul pre výpočet Mutual Information (KSG estimátor).
+//! Zdieľaný modul pre výpočet Mutual Information.
 //! Používa sa v `feature_selection_strategies::mutual_information_selector`
 //! aj v `target_analysis::mutual_information_analyzer`.
 //!
-//! Optimalizácie:
+//! Estimátory:
+//! - **Diskrétny (histogram)**: presný pre ordinálne/diskrétne premenné (málo unikátnych hodnôt).
+//!   O(n) – veľmi rýchly. Auto-detekcia: ak oba stĺpce majú ≤ 100 unikátnych hodnôt.
+//! - **KSG (k-NN)**: pre skutočne spojité premenné. O(n·k·log n).
+//!
+//! Optimalizácie KSG:
 //! - KD-tree (crate `kdtree`) s Chebyshevovou vzdialenosťou pre k-NN query
-//!   → O(k log n) na query namiesto O(n)
-//! - Zoradené polia + binárne vyhľadávanie pre počítanie marginálnych susedov
-//!   → O(log n) namiesto O(n)
-//! - Celková zložitosť: ~O(n k log n) namiesto O(n²)
+//! - Zoradené polia + binárne vyhľadávanie pre marginálne 1D range queries
+//! - Joint MI: 2D KD-tree pre (x1, x2) marginál – O(n log n)
 
 use statrs::function::gamma::digamma;
 use kdtree::KdTree;
+use std::collections::HashMap;
 
 // ═══════════════════════════════════════════════════════════════════════
 //  Zdieľané štatistické utility
@@ -54,6 +58,118 @@ pub fn estimate_mi_proxy(x: &[f64], y: &[f64]) -> f64 {
     let corr = pearson_correlation(x, y);
     let mi_proxy = -0.5 * (1.0 - corr * corr).max(0.0).ln();
     mi_proxy.max(0.0)
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  Diskrétny (histogram) MI estimátor
+// ═══════════════════════════════════════════════════════════════════════
+
+/// Vráti počet unikátnych hodnôt v stĺpci.
+fn unique_count(x: &[f64]) -> usize {
+    let mut seen: HashMap<u64, ()> = HashMap::new();
+    for &v in x { seen.insert(v.to_bits(), ()); }
+    seen.len()
+}
+
+/// Diskrétny MI estimátor pre ordinálne/kategoriálne premenné.
+/// Buduje spoločnú frekvenčnú tabuľku a počíta MI = Σ P(x,y) log(P(x,y)/(P(x)P(y))).
+/// Presný, O(n), vhodný pre dáta s malým počtom unikátnych hodnôt.
+fn estimate_mi_discrete(x: &[f64], y: &[f64]) -> f64 {
+    let n = x.len();
+    if n == 0 || x.len() != y.len() { return 0.0; }
+
+    // Priradíme index každej unikátnej hodnote
+    let mut x_map: HashMap<u64, usize> = HashMap::new();
+    let mut y_map: HashMap<u64, usize> = HashMap::new();
+    for &v in x { let l = x_map.len(); x_map.entry(v.to_bits()).or_insert(l); }
+    for &v in y { let l = y_map.len(); y_map.entry(v.to_bits()).or_insert(l); }
+
+    let nx = x_map.len();
+    let ny = y_map.len();
+
+    // Spoločná frekvenčná tabuľka
+    let mut joint = vec![vec![0usize; ny]; nx];
+    for i in 0..n {
+        let xi = x_map[&x[i].to_bits()];
+        let yi = y_map[&y[i].to_bits()];
+        joint[xi][yi] += 1;
+    }
+
+    // Marginálne početnosti
+    let x_count: Vec<usize> = joint.iter().map(|row| row.iter().sum()).collect();
+    let y_count: Vec<usize> = (0..ny)
+        .map(|j| joint.iter().map(|row| row[j]).sum())
+        .collect();
+
+    let n_f = n as f64;
+    let mut mi = 0.0f64;
+    for xi in 0..nx {
+        for yi in 0..ny {
+            let c = joint[xi][yi];
+            if c == 0 { continue; }
+            let pxy = c as f64 / n_f;
+            let px  = x_count[xi] as f64 / n_f;
+            let py  = y_count[yi] as f64 / n_f;
+            mi += pxy * (pxy / (px * py)).ln();
+        }
+    }
+    mi.max(0.0)
+}
+
+/// Diskrétny Joint MI estimátor: MI((X1,X2); Y).
+/// Používa 3-premennú frekvenčnú tabuľku.
+fn estimate_joint_mi_discrete(x1: &[f64], x2: &[f64], y: &[f64]) -> f64 {
+    let n = x1.len();
+    if n == 0 || x2.len() != n || y.len() != n { return 0.0; }
+
+    let mut x1_map: HashMap<u64, usize> = HashMap::new();
+    let mut x2_map: HashMap<u64, usize> = HashMap::new();
+    let mut y_map:  HashMap<u64, usize> = HashMap::new();
+    for &v in x1 { let l = x1_map.len(); x1_map.entry(v.to_bits()).or_insert(l); }
+    for &v in x2 { let l = x2_map.len(); x2_map.entry(v.to_bits()).or_insert(l); }
+    for &v in y  { let l = y_map.len();  y_map.entry(v.to_bits()).or_insert(l); }
+
+    let n1 = x1_map.len();
+    let n2 = x2_map.len();
+    let ny = y_map.len();
+
+    // 3D joint count: joint[x1][x2][y]
+    let mut joint = vec![vec![vec![0usize; ny]; n2]; n1];
+    for i in 0..n {
+        let i1 = x1_map[&x1[i].to_bits()];
+        let i2 = x2_map[&x2[i].to_bits()];
+        let iy = y_map[&y[i].to_bits()];
+        joint[i1][i2][iy] += 1;
+    }
+
+    // Marginálne: P(x1,x2) a P(y)
+    let mut xy_count = vec![vec![0usize; n2]; n1];
+    let mut y_count  = vec![0usize; ny];
+    for i1 in 0..n1 {
+        for i2 in 0..n2 {
+            for iy in 0..ny {
+                let c = joint[i1][i2][iy];
+                xy_count[i1][i2] += c;
+                y_count[iy] += c;
+            }
+        }
+    }
+
+    let n_f = n as f64;
+    let mut mi = 0.0f64;
+    for i1 in 0..n1 {
+        for i2 in 0..n2 {
+            for iy in 0..ny {
+                let c = joint[i1][i2][iy];
+                if c == 0 { continue; }
+                let pxxy = c as f64 / n_f;
+                let pxy  = xy_count[i1][i2] as f64 / n_f;
+                let py   = y_count[iy] as f64 / n_f;
+                mi += pxxy * (pxxy / (pxy * py)).ln();
+            }
+        }
+    }
+    mi.max(0.0)
 }
 
 /// Chebyshevova (L∞) vzdialenosť medzi dvoma bodmi.
@@ -124,8 +240,13 @@ impl SortedIndex {
 /// # Argumenty
 /// * `x` - prvá premenná (vektor hodnôt)
 /// * `y` - druhá premenná (vektor hodnôt)
-/// * `k` - počet najbližších susedov pre KSG odhad
+/// * `k` - počet najbližších susedov pre KSG odhad (ignoruje sa pri diskrétnych dátach)
 pub fn estimate_mi_ksg(x: &[f64], y: &[f64], k: usize) -> f64 {
+    // Auto-detekcia: diskrétne dáta (málo unikátnych hodnôt) → histogram estimátor
+    // KSG predpokladá spojité dáta a zlyhá pri väzoch (epsilon=0 → artefakty MI≈10)
+    if unique_count(x) <= 100 && unique_count(y) <= 100 {
+        return estimate_mi_discrete(x, y);
+    }
     let n = x.len();
     if n <= k {
         return 0.0;
@@ -188,8 +309,12 @@ pub fn estimate_mi_ksg(x: &[f64], y: &[f64], k: usize) -> f64 {
 /// * `x1` - prvá premenná dvojice
 /// * `x2` - druhá premenná dvojice
 /// * `y`  - cieľová premenná
-/// * `k`  - počet najbližších susedov pre KSG odhad
+/// * `k`  - počet najbližších susedov pre KSG odhad (ignoruje sa pri diskrétnych dátach)
 pub fn estimate_joint_mi_ksg(x1: &[f64], x2: &[f64], y: &[f64], k: usize) -> f64 {
+    // Auto-detekcia: diskrétne dáta → 3-premenný histogram
+    if unique_count(x1) <= 100 && unique_count(x2) <= 100 && unique_count(y) <= 100 {
+        return estimate_joint_mi_discrete(x1, x2, y);
+    }
     let n = x1.len();
     if n <= k || x1.len() != x2.len() || x1.len() != y.len() {
         return 0.0;
@@ -205,6 +330,13 @@ pub fn estimate_joint_mi_ksg(x1: &[f64], x2: &[f64], y: &[f64], k: usize) -> f64
     let mut tree = KdTree::with_capacity(3, n);
     for i in 0..n {
         tree.add(&points[i], i).unwrap();
+    }
+
+    // 2D KD-tree pre (x1, x2) marginál — O(log n) range query namiesto O(n) brute-force
+    let points_xy: Vec<[f64; 2]> = (0..n).map(|i| [x1[i], x2[i]]).collect();
+    let mut tree_xy = KdTree::with_capacity(2, n);
+    for i in 0..n {
+        tree_xy.add(&points_xy[i], i).unwrap();
     }
 
     // Zoradený index pre y marginal (1D range-counting)
@@ -223,13 +355,17 @@ pub fn estimate_joint_mi_ksg(x1: &[f64], x2: &[f64], y: &[f64], k: usize) -> f64
             .map(|(d, _)| *d)
             .unwrap_or(f64::INFINITY);
 
-        // Počítanie v (x1, x2) marginále: max(|x1_i-x1_j|, |x2_i-x2_j|) < epsilon
-        let mut nxy = 0usize;
-        for j in 0..n {
-            if j == i { continue; }
-            let d = (x1[i] - x1[j]).abs().max((x2[i] - x2[j]).abs());
-            if d < epsilon { nxy += 1; }
-        }
+        // O(log n) range query v (x1, x2) marginále pomocou 2D KD-tree
+        let nxy = if epsilon == f64::INFINITY {
+            0
+        } else {
+            tree_xy
+                .within(&points_xy[i], epsilon, &chebyshev)
+                .unwrap()
+                .into_iter()
+                .filter(|(_, idx)| **idx != i)
+                .count()
+        };
 
         // Počítanie v y marginále (zoradený index pre O(log n))
         let ny = y_sorted.count_within(y[i], epsilon, i);
@@ -278,4 +414,51 @@ pub fn compute_mi_matrix(columns: &[Vec<f64>], k: usize) -> Vec<Vec<f64>> {
     }
 
     mi_matrix
+}
+
+/// Invertuje maticu pomocou Gauss-Jordan eliminácie s parciálnym pivotovaním.
+/// Vracia None ak je matica singulárna (max pivot < 1e-12).
+pub fn invert_matrix(mat: &[Vec<f64>]) -> Option<Vec<Vec<f64>>> {
+    let n = mat.len();
+    if n == 0 { return None; }
+
+    // Augmented matrix [mat | I]
+    let mut aug: Vec<Vec<f64>> = mat.iter().enumerate().map(|(i, row)| {
+        let mut r = row.clone();
+        for j in 0..n {
+            r.push(if i == j { 1.0 } else { 0.0 });
+        }
+        r
+    }).collect();
+
+    for col in 0..n {
+        // Partial pivoting
+        let mut max_row = col;
+        let mut max_val = aug[col][col].abs();
+        for row in (col + 1)..n {
+            if aug[row][col].abs() > max_val {
+                max_val = aug[row][col].abs();
+                max_row = row;
+            }
+        }
+        if max_val < 1e-12 {
+            return None; // Singulárna
+        }
+        aug.swap(col, max_row);
+
+        let pivot = aug[col][col];
+        for j in 0..(2 * n) {
+            aug[col][j] /= pivot;
+        }
+
+        for row in 0..n {
+            if row == col { continue; }
+            let factor = aug[row][col];
+            for j in 0..(2 * n) {
+                aug[row][j] -= factor * aug[col][j];
+            }
+        }
+    }
+
+    Some(aug.iter().map(|row| row[n..].to_vec()).collect())
 }

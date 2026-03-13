@@ -61,6 +61,11 @@ impl DataProcessor for MinMaxScaler {
         let (rows, cols) = data.shape();
         let mut result = data.clone();
 
+        if self.min_vals.is_none() || self.max_vals.is_none() {
+            web_sys::console::warn_1(&"MinMaxScaler: transform called before fit, returning data unchanged".into());
+            return result;
+        }
+
         if let (Some(ref min_vals), Some(ref max_vals)) = (&self.min_vals, &self.max_vals) {
             for j in 0..cols.min(min_vals.len()) {
                 let range = max_vals[j] - min_vals[j];

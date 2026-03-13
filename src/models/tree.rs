@@ -59,7 +59,10 @@ impl IModel for TreeWrapper
         params.max_depth = Some(self.max_depth as u16);
         params.min_samples_split = self.min_samples_split as usize;
 
-        self.model = Some(DecisionTreeRegressor::fit(&x, &y, params).unwrap());
+        match DecisionTreeRegressor::fit(&x, &y, params) {
+            Ok(m) => self.model = Some(m),
+            Err(e) => web_sys::console::error_1(&format!("Decision Tree fit failed: {:?}", e).into()),
+        }
     }
 
     fn predict(&self, input: &[f64]) -> Vec<f64> 

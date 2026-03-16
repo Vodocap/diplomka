@@ -187,7 +187,7 @@ function renderHeatmap() {
             <span>0</span>
             <div class="lg-bar" style="background:linear-gradient(to right, white, rgb(180,140,220), rgb(80,40,180));"></div>
             <span>${maxVal.toFixed(3)}</span>
-            <span style="margin-left:15px;color:#999;">Mutual Information (nats) · MI=0 pre nepočítané páry (|corr|&lt;0.3)</span>`;
+            <span style="margin-left:15px;color:#999;">Mutual Information (nats) · pre diskrétne/ordinálne dáta sa používa histogramový odhad</span>`;
     }
 
     // Tooltip on hover

@@ -9,7 +9,6 @@ use smartcore::linalg::basic::matrix::DenseMatrix;
 use smartcore::linalg::basic::arrays::Array;
 
 use std::cell::RefCell;
-use statrs::function::gamma::digamma;
 
 #[derive(Serialize, Deserialize)]
 pub struct SelectorCompareConfig {
@@ -1929,22 +1928,11 @@ impl WasmMLPipeline {
             }
         }
 
-        // MI matica - počítaj len pre páry s vyššou koreláciou (optimalizácia)
-        // Pre ostatné páry nechaj 0.0 (lazy evaluation)
-        let mut mi_matrix = vec![vec![0.0f64; num_cols]; num_cols];
+        // MI matica sa musí počítať pre všetky páry.
+        // Zdieľaný estimátor si sám zvolí diskrétny histogram pre ordinálne dáta
+        // a KSG pre spojité dáta, takže netreba heuristicky skipovať páry podľa korelácie.
         let k_neighbors = if n < 10 { 2 } else if n < 50 { 3 } else { 5 };
-        
-        for i in 0..num_cols {
-            mi_matrix[i][i] = 0.0;  // MI so sebou samým je 0
-            for j in (i+1)..num_cols {
-                // Počítaj MI len ak je korelácia aspoň 0.3 (inak to nie je zaujímavé)
-                if corr_matrix[i][j].abs() > 0.3 {
-                    let mi = Self::estimate_mi_ksg(&columns[i], &columns[j], k_neighbors);
-                    mi_matrix[i][j] = mi;
-                    mi_matrix[j][i] = mi;
-                }
-            }
-        }
+        let mi_matrix = crate::mi_estimator::compute_mi_matrix(columns, k_neighbors);
 
         // SMC matica (placeholder - zatiaľ len nuly)
         let smc_matrix = vec![vec![0.0f64; num_cols]; num_cols];
@@ -2121,46 +2109,8 @@ impl WasmMLPipeline {
         entropy
     }
 
-    /// KSG odhad mutual information medzi dvoma spojitými premennými
     fn estimate_mi_ksg(x_col: &[f64], y: &[f64], k: usize) -> f64 {
-        let n = x_col.len();
-        if n <= k { 
-            return 0.0; 
-        }
-
-        let mut nx_vec = vec![0usize; n];
-        let mut ny_vec = vec![0usize; n];
-
-        for i in 0..n {
-            let mut distances = Vec::with_capacity(n - 1);
-            for j in 0..n {
-                if i == j { continue; }
-                let dx = (x_col[i] - x_col[j]).abs();
-                let dy = (y[i] - y[j]).abs();
-                distances.push(dx.max(dy));
-            }
-            distances.sort_by(|a, b| a.partial_cmp(b).unwrap());
-            let epsilon = distances[k - 1];
-
-            let mut nx = 0usize;
-            let mut ny = 0usize;
-            for j in 0..n {
-                if i == j { continue; }
-                if (x_col[i] - x_col[j]).abs() < epsilon { nx += 1; }
-                if (y[i] - y[j]).abs() < epsilon { ny += 1; }
-            }
-            nx_vec[i] = nx;
-            ny_vec[i] = ny;
-        }
-
-        let psi_k = digamma(k as f64);
-        let psi_n = digamma(n as f64);
-        let mut mean_psi = 0.0;
-        for i in 0..n {
-            mean_psi += digamma((nx_vec[i] + 1) as f64) + digamma((ny_vec[i] + 1) as f64);
-        }
-        mean_psi /= n as f64;
-        (psi_k - mean_psi + psi_n).max(0.0)
+        crate::mi_estimator::estimate_mi_ksg(x_col, y, k)
     }
 
     /// Vypočíta Synergická MI pre dvojice features s cieľovou premennou.

@@ -3390,11 +3390,6 @@
             html += 'Synergická MI = MI((F1, F2); target) — koľko informácie dvojica spoločne nesie o cieľovej premennej.<br>';
             html += 'Prínos Synergickej MI = Synergická MI − (MI(F1;target) + MI(F2;target)). <strong style="color:#27ae60;">Kladná hodnota = dvojica má synergiu</strong> (spolu nesú VIAC informácie ako samostatne).</p>';
 
-            if (withSelected && selectedSet.size > 0) {
-                html += '<div style="margin-bottom:10px;padding:7px 12px;background:#e8f4fd;border-left:4px solid #2980b9;border-radius:3px;font-size:12px;">';
-                html += '<strong style="color:#2980b9;">&#9654; Vybrané features (vždy vľavo, modré)</strong> — tieto sú fixne v ľavom stĺpci ako anchor.';
-                html += '</div>';
-            }
 
             if (pairs.length === 0) {
                 html += '<p style="color:#6c757d;font-style:italic;">Nenašli sa žiadne dvojice na analýzu.</p>';
@@ -3436,7 +3431,7 @@
             html += '<thead><tr>';
             html += '<th style="padding:8px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;width:28px;">#</th>';
             const f1Header = withSelected
-                ? '<th style="padding:8px 6px;border:1px solid #dee2e6;background:#1a6fa0;color:white;text-align:left;">Feature 1 (VYBRANÁ ✓)</th>'
+                ? '<th style="padding:8px 6px;border:1px solid #dee2e6;background:#1a6fa0;color:white;text-align:left;">Feature 1 (Už zvolená)</th>'
                 : '<th style="padding:8px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:left;">Feature 1</th>';
             html += f1Header;
             html += '<th style="padding:8px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;" title="MI(F1; target)">MI₁</th>';
@@ -3467,11 +3462,6 @@
                 const synergyStyle = hasSynergy ? 'font-weight:bold;color:#1e8449;' : 'color:#e74c3c;';
                 const rankBadge    = isTop3 ? `${rankLabels[rank]} ` : '';
 
-                // F1: vybraná feature → modrý badge
-                const isF1Selected = withSelected && selectedSet.has(p.idx1);
-                const f1Badge = isF1Selected
-                    ? '<span style="display:inline-block;padding:1px 5px;background:#1a6fa0;color:white;border-radius:3px;font-size:10px;font-weight:bold;margin-right:4px;">VYBRANÁ</span>'
-                    : '';
                 const f1NameStyle = isF1Selected ? 'color:#1a6fa0;font-weight:bold;' : 'color:#cc0000;';
 
                 html += `<tr style="${rowStyle}">`;

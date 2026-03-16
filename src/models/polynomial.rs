@@ -10,6 +10,8 @@ pub struct PolyRegWrapper
 {
     /// Koeficienty: [intercept, x1, x2, ..., xp, x1², x2², ..., xp², ...]
     coefficients: Option<Vec<f64>>,
+    /// Fallback predikcia pri numerickom zlyhaní modelu.
+    y_mean: f64,
     degree: usize,
     n_features: usize,
 }
@@ -21,6 +23,7 @@ impl PolyRegWrapper
         Self
         {
             coefficients: None,
+            y_mean: 0.0,
             degree: 2,
             n_features: 0,
         }
@@ -73,6 +76,11 @@ impl IModel for PolyRegWrapper
     {
         let (n_rows, n_cols) = x.shape();
         self.n_features = n_cols;
+        self.y_mean = if y.is_empty() {
+            0.0
+        } else {
+            y.iter().sum::<f64>() / y.len() as f64
+        };
 
         // Zostav stĺpcové vektory pre ols_regression.
         // Poradie: x1..xp, x1²..xp², ..., x1^d..xp^d
@@ -107,10 +115,23 @@ impl IModel for PolyRegWrapper
         {
             Ok(result) =>
             {
-                self.coefficients = Some(result.coefficients);
+                // OLS môže vrátiť neplatné koeficienty pri silnej multikolinearite.
+                // V takom prípade nepoužijeme model a predict() použije fallback y_mean.
+                if result.coefficients.iter().all(|c| c.is_finite())
+                {
+                    self.coefficients = Some(result.coefficients);
+                }
+                else
+                {
+                    self.coefficients = None;
+                    web_sys::console::warn_1(
+                        &"Polynomial Regression produced non-finite coefficients; using fallback mean prediction".into()
+                    );
+                }
             }
             Err(e) =>
             {
+                self.coefficients = None;
                 web_sys::console::error_1(
                     &format!("Polynomial Regression fit failed: {:?}", e).into()
                 );
@@ -122,7 +143,7 @@ impl IModel for PolyRegWrapper
     {
         match &self.coefficients
         {
-            None => vec![0.0],
+            None => vec![self.y_mean],
             Some(coefs) =>
             {
                 let expanded = Self::expand_row(input, self.degree);
@@ -136,7 +157,7 @@ impl IModel for PolyRegWrapper
                         pred += coefs[i + 1] * x_val;
                     }
                 }
-                vec![pred]
+                if pred.is_finite() { vec![pred] } else { vec![self.y_mean] }
             }
         }
     }

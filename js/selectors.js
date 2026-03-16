@@ -867,8 +867,7 @@ async function generatePdfReport(allResults, totalFeatures, featureNames, isClas
         }
 
         // ── Page 4+5: Correlation & MI Matrices ──
-        // Generate heatmap images if data is available
-        if (_heatmapData) {
+        const appendHeatmapMatrixPages = async () => {
             for (const matrixMode of ['correlation', 'mi']) {
                 pdf.addPage();
                 pdf.setFillColor(204, 0, 0);
@@ -896,6 +895,11 @@ async function generatePdfReport(allResults, totalFeatures, featureNames, isClas
                     pdf.text(`(Maticu ${matrixMode} sa nepodarilo vygenerovať: ${e})`, margin, 35);
                 }
             }
+        };
+
+        // Generate heatmap images if data is available
+        if (_heatmapData) {
+            await appendHeatmapMatrixPages();
         } else {
             // Try to compute heatmap data on the fly
             try {
@@ -903,49 +907,183 @@ async function generatePdfReport(allResults, totalFeatures, featureNames, isClas
                 await new Promise(r => setTimeout(r, 50));
                 const rawResult = pipeline.getFeatureMatrices(window.rawDataString, window.dataFormat);
                 _heatmapData = convertWasmResult(rawResult);
-                
-                for (const matrixMode of ['correlation', 'mi']) {
-                    pdf.addPage();
-                    pdf.setFillColor(204, 0, 0);
-                    pdf.rect(0, 0, pageWidth, 18, 'F');
-                    pdf.setTextColor(255, 255, 255);
-                    pdf.setFontSize(14);
-                    pdf.setFont('helvetica', 'bold');
-                    const matrixTitle = matrixMode === 'correlation'
-                        ? 'Matica korelácií (Pearson)'
-                        : 'Matica Mutual Information (KSG)';
-                    pdf.text(matrixTitle, pageWidth / 2, 12, { align: 'center' });
 
-                    try {
-                        const heatmapCanvas = renderHeatmapToCanvas(matrixMode);
-                        const imgData = heatmapCanvas.toDataURL('image/png');
-                        const imgW = usableWidth;
-                        const imgH = (heatmapCanvas.height / heatmapCanvas.width) * imgW;
-                        const maxImgH = pageHeight - 35;
-                        const finalH = Math.min(imgH, maxImgH);
-                        const finalW = (finalH / imgH) * imgW;
-                        pdf.addImage(imgData, 'PNG', margin + (usableWidth - finalW) / 2, 25, finalW, finalH);
-                    } catch (e) {
-                        pdf.setTextColor(150, 150, 150);
-                        pdf.setFontSize(10);
-                        pdf.text(`(Maticu ${matrixMode} sa nepodarilo vygenerovať)`, margin, 35);
-                    }
-                }
+                await appendHeatmapMatrixPages();
             } catch (e) {
                 console.warn('Could not compute matrices for PDF:', e);
             }
         }
 
-        // Save
-        const filename = `ml-pipeline-report-${now.toISOString().slice(0,10)}.pdf`;
+        // ── Optional: Matrix R² vs Model R² section (regression only) ──
+        if (!isClassification) {
+            try {
+                const matrixR2Results = document.getElementById('matrixR2Results');
+                if (matrixR2Results) {
+                    // If user did not run comparison yet, generate it before export.
+                    if (!matrixR2Results.textContent || !matrixR2Results.textContent.trim()) {
+                        statusSpan.textContent = 'Počítam sekciu Model R² vs Maticové R²...';
+                        await compareMatrixR2(allResults, totalFeatures, featureNames);
+                        await new Promise(r => setTimeout(r, 80));
+                    }
+
+                    const matrixR2Section = matrixR2Results.parentElement;
+                    if (matrixR2Section && matrixR2Results.textContent && matrixR2Results.textContent.trim()) {
+                        pdf.addPage();
+                        pdf.setFillColor(204, 0, 0);
+                        pdf.rect(0, 0, pageWidth, 18, 'F');
+                        pdf.setTextColor(255, 255, 255);
+                        pdf.setFontSize(14);
+                        pdf.setFont('helvetica', 'bold');
+                        pdf.text('Porovnanie Model R² vs Maticové R²', pageWidth / 2, 12, { align: 'center' });
+
+                        try {
+                            const canvas = await html2canvas(matrixR2Section, {
+                                backgroundColor: '#ffffff',
+                                scale: 2,
+                                logging: false,
+                                useCORS: true,
+                                width: Math.min(matrixR2Section.scrollWidth, 1400)
+                            });
+                            const imgData = canvas.toDataURL('image/png');
+                            const imgW = usableWidth;
+                            const imgH = (canvas.height / canvas.width) * imgW;
+                            const maxImgH = pageHeight - 35;
+                            const finalH = Math.min(imgH, maxImgH);
+                            const finalW = (finalH / imgH) * imgW;
+                            pdf.addImage(imgData, 'PNG', margin + (usableWidth - finalW) / 2, 25, finalW, finalH);
+                        } catch (e) {
+                            pdf.setTextColor(150, 150, 150);
+                            pdf.setFontSize(10);
+                            pdf.text('(Sekciu Model R² vs Maticové R² sa nepodarilo zachytiť)', margin, 35);
+                        }
+                    }
+                }
+            } catch (e) {
+                console.warn('Could not include Matrix R² section in PDF:', e);
+            }
+        }
+
+        // Save PDF + text report for copy/paste into Word
+        const dateStamp = now.toISOString().slice(0,10);
+        const filename = `ml-pipeline-report-${dateStamp}.pdf`;
+        const txtFilename = `ml-pipeline-report-${dateStamp}.txt`;
         pdf.save(filename);
-        statusSpan.textContent = `PDF uložené: ${filename}`;
+
+        const textReport = buildPlainTextReport(allResults, totalFeatures, featureNames, isClassification, now);
+        downloadTextFile(textReport, txtFilename);
+
+        statusSpan.textContent = `PDF a TXT uložené: ${filename}, ${txtFilename}`;
         statusSpan.style.color = '#27ae60';
     } catch (err) {
         console.error('PDF generation error:', err);
         statusSpan.textContent = `Chyba pri generovaní PDF: ${err}`;
         statusSpan.style.color = '#e74c3c';
     }
+}
+
+function buildPlainTextReport(allResults, totalFeatures, featureNames, isClassification, now) {
+    const lines = [];
+    const targetCol = window._lastComparisonResult ? window._lastComparisonResult.target_column : '-';
+    const taskType = isClassification ? 'Klasifikacia' : 'Regresia';
+
+    lines.push('ML Pipeline - textovy report');
+    lines.push('====================================');
+    lines.push(`Datum: ${now.toLocaleDateString('sk-SK')} ${now.toLocaleTimeString('sk-SK')}`);
+    lines.push(`Cielova premenna: ${targetCol}`);
+    lines.push(`Typ ulohy: ${taskType}`);
+    lines.push(`Pocet features: ${totalFeatures}`);
+    lines.push('');
+
+    lines.push('Vysledky trenovania');
+    lines.push('------------------------------------');
+
+    if (isClassification) {
+        lines.push('Metoda | Features | ACC | F1 | PREC | REC | SPEC | FP | FN | MCC | Cas(ms)');
+    } else {
+        lines.push('Metoda | Features | R2 | RMSE | MAE | MAPE | MedAE | CORR | Cas(ms)');
+    }
+
+    allResults.forEach(r => {
+        const base = `${r.name} | ${r.count}/${totalFeatures}`;
+        if (r.error) {
+            lines.push(`${base} | CHYBA: ${r.error}`);
+            return;
+        }
+        if (!r.result) {
+            lines.push(`${base} | N/A`);
+            return;
+        }
+
+        if (isClassification) {
+            lines.push([
+                base,
+                `${(r.result.accuracy * 100).toFixed(1)}%`,
+                r.result.f1_score.toFixed(3),
+                r.result.precision.toFixed(3),
+                r.result.recall.toFixed(3),
+                r.result.specificity.toFixed(3),
+                String(Math.round(r.result.false_positives)),
+                String(Math.round(r.result.false_negatives)),
+                r.result.mcc.toFixed(3),
+                r.timeMs ? r.timeMs.toFixed(0) : '-'
+            ].join(' | '));
+        } else {
+            const mapeText = (r.result.mape !== undefined && r.result.mape !== null)
+                ? `${r.result.mape.toFixed(2)}%`
+                : 'N/A';
+            lines.push([
+                base,
+                r.result.r2_score.toFixed(4),
+                r.result.rmse.toFixed(3),
+                r.result.mae.toFixed(3),
+                mapeText,
+                r.result.median_absolute_error.toFixed(3),
+                r.result.pearson_correlation.toFixed(3),
+                r.timeMs ? r.timeMs.toFixed(0) : '-'
+            ].join(' | '));
+        }
+    });
+
+    lines.push('');
+    lines.push('Vybrane features jednotlivymi metodami');
+    lines.push('------------------------------------');
+
+    allResults.forEach(r => {
+        if (r.indices === null) {
+            lines.push(`${r.name} (${r.count}): bez selekcie (vsetky features)`);
+            return;
+        }
+        const names = r.indices && featureNames.length > 0
+            ? r.indices.map(i => featureNames[i] || `[${i}]`).join(', ')
+            : (r.indices || []).join(', ');
+        lines.push(`${r.name} (${r.count}): ${names || 'N/A'}`);
+    });
+
+    if (!isClassification) {
+        const matrixR2Section = document.getElementById('matrixR2Results');
+        if (matrixR2Section && matrixR2Section.textContent && matrixR2Section.textContent.trim()) {
+            lines.push('');
+            lines.push('Sekcia Model R2 vs Maticove R2');
+            lines.push('------------------------------------');
+            lines.push(matrixR2Section.textContent.replace(/\s+/g, ' ').trim());
+        }
+    }
+
+    lines.push('');
+    lines.push('Koniec reportu');
+    return lines.join('\n');
+}
+
+function downloadTextFile(content, filename) {
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
 }
 
 // Render heatmap matrix to an offscreen canvas for PDF export
@@ -1126,7 +1264,7 @@ function renderSynergyResults(result, div, selectedSet = new Set()) {
 
     if (withSelected && selectedSet.size > 0) {
         html += '<div style="margin-bottom:10px;padding:7px 12px;background:#e8f4fd;border-left:4px solid #2980b9;border-radius:3px;font-size:12px;">';
-        html += '<strong style="color:#2980b9;">&#9654; Vybrané features (vždy vľavo, modré)</strong> — tieto sú fixne v ľavom stĺpci ako anchor.';
+        html += '<strong style="color:#2980b9;">&#9654; V ľavom stĺpci sú vždy vybrané premenné, v pravom sú tie ktoré neboli vybrané</strong>';
         html += '</div>';
     }
 
@@ -1170,7 +1308,7 @@ function renderSynergyResults(result, div, selectedSet = new Set()) {
     html += '<thead><tr>';
     html += '<th style="padding:8px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;width:28px;">#</th>';
     const f1Header = withSelected
-        ? '<th style="padding:8px 6px;border:1px solid #dee2e6;background:#1a6fa0;color:white;text-align:left;">Feature 1 (VYBRANÁ ✓)</th>'
+        ? '<th style="padding:8px 6px;border:1px solid #dee2e6;background:#1a6fa0;color:white;text-align:left;">Feature 1</th>'
         : '<th style="padding:8px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:left;">Feature 1</th>';
     html += f1Header;
     html += '<th style="padding:8px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;" title="MI(F1; target)">MI₁</th>';
@@ -1201,16 +1339,9 @@ function renderSynergyResults(result, div, selectedSet = new Set()) {
         const synergyStyle = hasSynergy ? 'font-weight:bold;color:#1e8449;' : 'color:#e74c3c;';
         const rankBadge    = isTop3 ? `${rankLabels[rank]} ` : '';
 
-        // F1: vybraná feature → modrý badge
-        const isF1Selected = withSelected && selectedSet.has(p.idx1);
-        const f1Badge = isF1Selected
-            ? '<span style="display:inline-block;padding:1px 5px;background:#1a6fa0;color:white;border-radius:3px;font-size:10px;font-weight:bold;margin-right:4px;">VYBRANÁ</span>'
-            : '';
-        const f1NameStyle = isF1Selected ? 'color:#1a6fa0;font-weight:bold;' : 'color:#cc0000;';
-
         html += `<tr style="${rowStyle}">`;
         html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-size:14px;">${rankBadge || (hasSynergy ? '✓' : '')}</td>`;
-        html += `<td style="padding:6px;border:1px solid #dee2e6;">${f1Badge}<strong style="${f1NameStyle}">F${p.idx1}</strong>: ${p.name1}</td>`;
+        html += `<td style="padding:6px;border:1px solid #dee2e6;"<strong style="color:#cc0000;">F${p.idx1}</strong>: ${p.name1}</td>`;
         html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;">${p.mi1.toFixed(4)}</td>`;
         html += `<td style="padding:6px;border:1px solid #dee2e6;"><strong style="color:#cc0000;">F${p.idx2}</strong>: ${p.name2}</td>`;
         html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;">${p.mi2.toFixed(4)}</td>`;

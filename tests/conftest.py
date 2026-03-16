@@ -1,5 +1,5 @@
 """
-Playwright test configuration for ML Pipeline WASM application.
+Playwright test configuration for Aplikácia na podporu rozhodavnia pri tréningu predikčných modelov.
 Starts the local server automatically before tests and stops it after.
 """
 import pytest

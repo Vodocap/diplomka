@@ -633,7 +633,7 @@ async function generatePdfReport(allResults, totalFeatures, featureNames, isClas
         pdf.setTextColor(255, 255, 255);
         pdf.setFontSize(18);
         pdf.setFont('helvetica', 'bold');
-        pdf.text('ML Pipeline - Report výsledkov', pageWidth / 2, 16, { align: 'center' });
+        pdf.text('Aplikácia na podporu rozhodavnia pri tréningu predikčných modelov - Report výsledkov', pageWidth / 2, 16, { align: 'center' });
 
         pdf.setTextColor(80, 80, 80);
         pdf.setFontSize(10);
@@ -986,7 +986,7 @@ function buildPlainTextReport(allResults, totalFeatures, featureNames, isClassif
     const targetCol = window._lastComparisonResult ? window._lastComparisonResult.target_column : '-';
     const taskType = isClassification ? 'Klasifikacia' : 'Regresia';
 
-    lines.push('ML Pipeline - textovy report');
+    lines.push('Aplikácia na podporu rozhodavnia pri tréningu predikčných modelov - textovy report');
     lines.push('====================================');
     lines.push(`Datum: ${now.toLocaleDateString('sk-SK')} ${now.toLocaleTimeString('sk-SK')}`);
     lines.push(`Cielova premenna: ${targetCol}`);

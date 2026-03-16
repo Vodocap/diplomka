@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <base href="./">
-    <title>ML Pipeline - WASM App</title>
+    <title>Aplikácia na podporu rozhodavnia pri tréningu predikčných modelov</title>
     <style>
         * {
             margin: 0;
@@ -1077,7 +1077,7 @@
 
     <div class="container">
         <header>
-            <h1>ML Pipeline Application</h1>
+            <h1>Aplikácia na podporu rozhodavnia pri tréningu predikčných modelov</h1>
             <p>Kompletná Machine Learning Pipeline s podporou viacerých modelov a formátov</p>
         </header>
 
@@ -2899,7 +2899,7 @@
                 pdf.setTextColor(255, 255, 255);
                 pdf.setFontSize(18);
                 pdf.setFont('helvetica', 'bold');
-                pdf.text('ML Pipeline - Report výsledkov', pageWidth / 2, 16, { align: 'center' });
+                pdf.text('Aplikácia na podporu rozhodavnia pri tréningu predikčných modelov - Report výsledkov', pageWidth / 2, 16, { align: 'center' });
 
                 pdf.setTextColor(80, 80, 80);
                 pdf.setFontSize(10);

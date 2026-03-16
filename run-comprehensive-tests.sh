@@ -60,7 +60,7 @@ if [ ${#TEST_TARGETS[@]} -eq 0 ]; then
 fi
 
 echo "══════════════════════════════════════════════════════════════"
-echo "  ML Pipeline – Playwright Tests (Headless)"
+echo "  Aplikácia na podporu rozhodavnia pri tréningu predikčných modelov – Playwright Tests (Headless)"
 echo "══════════════════════════════════════════════════════════════"
 echo "  Targets: ${TEST_TARGETS[*]}"
 [ ${#PYTEST_EXTRA[@]} -gt 0 ] && echo "  Extra:   ${PYTEST_EXTRA[*]}"

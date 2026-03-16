@@ -1,5 +1,5 @@
 #!/bin/bash
-# Run all Playwright tests for the ML Pipeline WASM app
+# Run all Playwright tests for the Aplikácia na podporu rozhodavnia pri tréningu predikčných modelov app
 # Usage:
 #   ./run-tests.sh              - Run all tests (headed - vidíš browser)
 #   ./run-tests.sh --headless   - Run headless (bez okna)

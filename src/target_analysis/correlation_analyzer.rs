@@ -1,5 +1,4 @@
 use super::{TargetAnalyzer, TargetCandidate};
-use std::cell::RefCell;
 use crate::mi_estimator;
 
 /// Analyzátor cieľovej premennej na základe Pearsonovej korelácie.
@@ -7,39 +6,16 @@ use crate::mi_estimator;
 /// ostatnými premennými: Score_j = Σ r²_jk.
 /// Vyššie skóre = premenná má silnejšie lineárne väzby s ostatnými.
 pub struct CorrelationAnalyzer {
-    /// Cache pre korelačnú maticu
-    corr_cache: RefCell<Option<Vec<Vec<f64>>>>,
 }
 
 impl CorrelationAnalyzer {
     pub fn new() -> Self {
-        Self {
-            corr_cache: RefCell::new(None),
-        }
+        Self {}
     }
 
     /// Vypočíta korelačnú maticu s cachovaním
     fn compute_corr_matrix(&self, columns: &[Vec<f64>]) -> Vec<Vec<f64>> {
-        // Skontroluj cache
-        if let Some(cached) = self.corr_cache.borrow().as_ref() {
-            return cached.clone();
-        }
-
-        let num_cols = columns.len();
-        let mut corr_matrix = vec![vec![0.0f64; num_cols]; num_cols];
-        
-        for i in 0..num_cols {
-            corr_matrix[i][i] = 1.0;
-            for j in (i+1)..num_cols {
-                let c = mi_estimator::pearson_correlation(&columns[i], &columns[j]);
-                corr_matrix[i][j] = c;
-                corr_matrix[j][i] = c;
-            }
-        }
-
-        // Cache the result
-        *self.corr_cache.borrow_mut() = Some(corr_matrix.clone());
-        corr_matrix
+        mi_estimator::compute_corr_matrix_cached(columns)
     }
 }
 

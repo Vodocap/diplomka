@@ -137,10 +137,8 @@ impl FeatureSelector for CorrelationSelector
         let shape = x.shape();
         let cols = shape.1;
         
-        // Extract all columns
-        let columns: Vec<Vec<f64>> = (0..cols)
-            .map(|i| (0..shape.0).map(|row| *x.get((row, i))).collect())
-            .collect();
+        // Extract all columns through ndarray-backed helper to avoid repeated per-column scans.
+        let columns = mi_estimator::dense_matrix_to_columns_ndarray(x);
 
         // ─── Compute Pearson + Spearman for each feature vs target ───
         // ─── Auto-select based on normality of feature distribution ───
@@ -167,6 +165,7 @@ impl FeatureSelector for CorrelationSelector
         *self.feature_correlations.borrow_mut() = correlations.clone();
         
         // ─── Inter-feature correlation matrix (for multicollinearity removal) ───
+        let raw_corr_matrix = mi_estimator::compute_corr_matrix_cached(&columns);
         let mut corr_matrix = vec![vec![0.0f64; cols]; cols];
         let mut target_corr = Vec::with_capacity(cols);
         
@@ -174,7 +173,7 @@ impl FeatureSelector for CorrelationSelector
             corr_matrix[i][i] = 1.0;
             target_corr.push(correlations[i].chosen_corr);
             for j in (i+1)..cols {
-                let c = Self::pearson_correlation(&columns[i], &columns[j]).abs();
+                let c = raw_corr_matrix[i][j].abs();
                 corr_matrix[i][j] = c;
                 corr_matrix[j][i] = c;
             }

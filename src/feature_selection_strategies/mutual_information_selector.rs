@@ -52,14 +52,12 @@ impl FeatureSelector for MutualInformationSelector {
     }
 
     fn get_selected_indices(&self, x: &DenseMatrix<f64>, y: &[f64]) -> Vec<usize> {
-        let (rows, cols) = x.shape();
+        let (_rows, cols) = x.shape();
         let effective_k = self.top_k.min(cols);
         let k_nn = self.k_neighbors;
 
-        // Extrakcia stĺpcov
-        let columns: Vec<Vec<f64>> = (0..cols)
-            .map(|j| (0..rows).map(|i| *x.get((i, j))).collect())
-            .collect();
+        // Extrakcia stĺpcov cez ndarray helper.
+        let columns = mi_estimator::dense_matrix_to_columns_ndarray(x);
 
         // 1. Relevancia: MI(feature_i, target) pre každý feature
         let relevance: Vec<f64> = (0..cols)
@@ -67,7 +65,7 @@ impl FeatureSelector for MutualInformationSelector {
             .collect();
 
         // 2. Inter-feature MI matica (symetrická, všetky páry)
-        let mi_matrix = mi_estimator::compute_mi_matrix(&columns, k_nn);
+        let mi_matrix = mi_estimator::compute_mi_matrix_cached(&columns, k_nn);
 
         // ─── 3. mRMR greedy selection ───
         // mRMR score = relevance(f) - (1/|S|) * sum_{s in S} MI(f, s)
@@ -272,10 +270,8 @@ impl FeatureSelector for MutualInformationSelector {
     }
     
     fn get_feature_scores(&self, x: &DenseMatrix<f64>, y: &[f64]) -> Option<Vec<(usize, f64)>> {
-        let (rows, cols) = x.shape();
-        let columns: Vec<Vec<f64>> = (0..cols)
-            .map(|j| (0..rows).map(|i| *x.get((i, j))).collect())
-            .collect();
+        let (_rows, cols) = x.shape();
+        let columns = mi_estimator::dense_matrix_to_columns_ndarray(x);
         let scores: Vec<(usize, f64)> = (0..cols)
             .map(|j| (j, mi_estimator::estimate_mi_ksg(&columns[j], y, self.k_neighbors)))
             .collect();

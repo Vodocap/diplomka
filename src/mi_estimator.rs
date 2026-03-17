@@ -15,6 +15,53 @@
 use statrs::function::gamma::digamma;
 use kdtree::KdTree;
 use std::collections::HashMap;
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
+use std::sync::Mutex;
+use once_cell::sync::Lazy;
+use ndarray::{Array2, Axis};
+use smartcore::linalg::basic::arrays::Array;
+use smartcore::linalg::basic::matrix::DenseMatrix;
+
+#[derive(Default)]
+struct MatrixCache {
+    corr_matrices: HashMap<u64, Vec<Vec<f64>>>,
+    mi_matrices: HashMap<u64, Vec<Vec<f64>>>,
+}
+
+impl MatrixCache {
+    const MAX_CACHE_ITEMS: usize = 8;
+
+    fn get_corr(&self, key: u64) -> Option<Vec<Vec<f64>>> {
+        self.corr_matrices.get(&key).cloned()
+    }
+
+    fn insert_corr(&mut self, key: u64, value: Vec<Vec<f64>>) {
+        self.corr_matrices.insert(key, value);
+        self.trim_if_needed();
+    }
+
+    fn get_mi(&self, key: u64) -> Option<Vec<Vec<f64>>> {
+        self.mi_matrices.get(&key).cloned()
+    }
+
+    fn insert_mi(&mut self, key: u64, value: Vec<Vec<f64>>) {
+        self.mi_matrices.insert(key, value);
+        self.trim_if_needed();
+    }
+
+    fn trim_if_needed(&mut self) {
+        if self.corr_matrices.len() > Self::MAX_CACHE_ITEMS {
+            self.corr_matrices.clear();
+        }
+        if self.mi_matrices.len() > Self::MAX_CACHE_ITEMS {
+            self.mi_matrices.clear();
+        }
+    }
+}
+
+static MATRIX_CACHE_SINGLETON: Lazy<Mutex<MatrixCache>> =
+    Lazy::new(|| Mutex::new(MatrixCache::default()));
 
 // ═══════════════════════════════════════════════════════════════════════
 //  Zdieľané štatistické utility
@@ -392,6 +439,77 @@ fn adaptive_k(n: usize, k: usize) -> usize {
     else { k }
 }
 
+fn columns_fingerprint(columns: &[Vec<f64>], tag: u64, k: usize) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    tag.hash(&mut hasher);
+    columns.len().hash(&mut hasher);
+    k.hash(&mut hasher);
+
+    if let Some(first) = columns.first() {
+        first.len().hash(&mut hasher);
+    }
+
+    for col in columns {
+        col.len().hash(&mut hasher);
+        for v in col {
+            v.to_bits().hash(&mut hasher);
+        }
+    }
+
+    hasher.finish()
+}
+
+/// Prevedie `DenseMatrix<f64>` na stĺpcovú reprezentáciu cez `ndarray`.
+///
+/// Výhoda: údaje sa do dočasnej 2D štruktúry načítajú raz a následne sa
+/// stĺpce vyťahujú cez `Axis(1)` namiesto opakovaného `x.get((row,col))`
+/// v každom selektore osobitne.
+pub fn dense_matrix_to_columns_ndarray(x: &DenseMatrix<f64>) -> Vec<Vec<f64>> {
+    let (rows, cols) = x.shape();
+    let mut flat = Vec::with_capacity(rows * cols);
+    for i in 0..rows {
+        for j in 0..cols {
+            flat.push(*x.get((i, j)));
+        }
+    }
+
+    let arr = match Array2::from_shape_vec((rows, cols), flat) {
+        Ok(v) => v,
+        Err(_) => return vec![vec![]; cols],
+    };
+
+    arr.axis_iter(Axis(1)).map(|col| col.to_vec()).collect()
+}
+
+/// Vypočíta (alebo načíta z cache) Pearsonovu korelačnú maticu.
+pub fn compute_corr_matrix_cached(columns: &[Vec<f64>]) -> Vec<Vec<f64>> {
+    let key = columns_fingerprint(columns, 0xC0AA_u64, 0);
+
+    if let Ok(cache) = MATRIX_CACHE_SINGLETON.lock() {
+        if let Some(hit) = cache.get_corr(key) {
+            return hit;
+        }
+    }
+
+    let num_cols = columns.len();
+    let mut corr_matrix = vec![vec![0.0f64; num_cols]; num_cols];
+
+    for i in 0..num_cols {
+        corr_matrix[i][i] = 1.0;
+        for j in (i + 1)..num_cols {
+            let c = pearson_correlation(&columns[i], &columns[j]);
+            corr_matrix[i][j] = c;
+            corr_matrix[j][i] = c;
+        }
+    }
+
+    if let Ok(mut cache) = MATRIX_CACHE_SINGLETON.lock() {
+        cache.insert_corr(key, corr_matrix.clone());
+    }
+
+    corr_matrix
+}
+
 /// Vypočíta symetrickú MI maticu pre všetky páry stĺpcov.
 /// Počíta len vrchný trojuholník a zrkadlí (MI je symetrická).
 ///
@@ -414,6 +532,25 @@ pub fn compute_mi_matrix(columns: &[Vec<f64>], k: usize) -> Vec<Vec<f64>> {
     }
 
     mi_matrix
+}
+
+/// Vypočíta (alebo načíta z cache) MI maticu pre dané stĺpce a `k`.
+pub fn compute_mi_matrix_cached(columns: &[Vec<f64>], k: usize) -> Vec<Vec<f64>> {
+    let key = columns_fingerprint(columns, 0xBEEF_u64, k);
+
+    if let Ok(cache) = MATRIX_CACHE_SINGLETON.lock() {
+        if let Some(hit) = cache.get_mi(key) {
+            return hit;
+        }
+    }
+
+    let mi = compute_mi_matrix(columns, k);
+
+    if let Ok(mut cache) = MATRIX_CACHE_SINGLETON.lock() {
+        cache.insert_mi(key, mi.clone());
+    }
+
+    mi
 }
 
 /// Invertuje maticu pomocou Gauss-Jordan eliminácie s parciálnym pivotovaním.

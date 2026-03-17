@@ -1,22 +1,15 @@
 use super::{TargetAnalyzer, TargetCandidate};
 use crate::mi_estimator;
 
-use std::cell::RefCell;
-
 /// Analyzátor cieľovej premennej na základe Mutual Information (KSG estimátor).
 /// Zachytáva aj nelineárne vzťahy medzi premennými, na rozdiel od korelácie.
 pub struct MutualInformationAnalyzer {
     k_neighbors: usize,
-    /// Cache pre MI maticu - aby sme ju nemuseli prerátavať v get_details_html()
-    mi_cache: RefCell<Option<Vec<Vec<f64>>>>,
 }
 
 impl MutualInformationAnalyzer {
     pub fn new() -> Self {
-        Self { 
-            k_neighbors: 3,
-            mi_cache: RefCell::new(None),
-        }
+        Self { k_neighbors: 3 }
     }
 
 }
@@ -46,11 +39,8 @@ impl TargetAnalyzer for MutualInformationAnalyzer {
         let num_cols = columns.len();
         let n = if num_cols > 0 { columns[0].len() } else { return vec![]; };
 
-        // Vypočítame MI maticu a uložíme do cache
-        let mi_matrix = mi_estimator::compute_mi_matrix(columns, self.k_neighbors);
-        
-        // Uložíme do cache pre get_details_html()
-        *self.mi_cache.borrow_mut() = Some(mi_matrix.clone());
+        // Vypočítame MI maticu cez zdieľanú cache.
+        let mi_matrix = mi_estimator::compute_mi_matrix_cached(columns, self.k_neighbors);
 
         let mut candidates = Vec::new();
         for col_idx in 0..num_cols {
@@ -89,12 +79,7 @@ impl TargetAnalyzer for MutualInformationAnalyzer {
         let num_cols = columns.len();
         if num_cols > 50 { return String::new(); }
 
-        // Použijeme cache ak existuje, inak vypočítame znova
-        let mi_matrix = if let Some(cached) = self.mi_cache.borrow().as_ref() {
-            cached.clone()
-        } else {
-            mi_estimator::compute_mi_matrix(columns, self.k_neighbors)
-        };
+        let mi_matrix = mi_estimator::compute_mi_matrix_cached(columns, self.k_neighbors);
 
         // Find max MI for color scaling
         let max_mi = mi_matrix.iter()

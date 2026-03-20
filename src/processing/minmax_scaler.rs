@@ -3,15 +3,18 @@ use smartcore::linalg::basic::arrays::{Array, MutArray};
 use super::{DataProcessor, ProcessorParam, ColumnType};
 
 /// MinMax Scaler - normalizuje dáta do rozsahu [min_range, max_range]
-pub struct MinMaxScaler {
+pub struct MinMaxScaler
+{
     min_vals: Option<Vec<f64>>,
     max_vals: Option<Vec<f64>>,
     min_range: f64,
     max_range: f64,
 }
 
-impl MinMaxScaler {
-    pub fn new() -> Self {
+impl MinMaxScaler
+{
+    pub fn new() -> Self
+    {
         Self {
             min_vals: None,
             max_vals: None,
@@ -21,7 +24,8 @@ impl MinMaxScaler {
     }
 
     #[allow(dead_code)]
-    pub fn with_range(min_range: f64, max_range: f64) -> Self {
+    pub fn with_range(min_range: f64, max_range: f64) -> Self
+    {
         Self {
             min_vals: None,
             max_vals: None,
@@ -31,23 +35,30 @@ impl MinMaxScaler {
     }
 }
 
-impl DataProcessor for MinMaxScaler {
-    fn get_name(&self) -> &str {
+impl DataProcessor for MinMaxScaler
+{
+    fn get_name(&self) -> &str
+    {
         "MinMax Scaler"
     }
 
-    fn fit(&mut self, data: &DenseMatrix<f64>) {
+    fn fit(&mut self, data: &DenseMatrix<f64>)
+    {
         let (rows, cols) = data.shape();
         let mut min_vals = vec![f64::INFINITY; cols];
         let mut max_vals = vec![f64::NEG_INFINITY; cols];
 
-        for j in 0..cols {
-            for i in 0..rows {
+        for j in 0..cols
+        {
+            for i in 0..rows
+            {
                 let val = *data.get((i, j));
-                if val < min_vals[j] {
+                if val < min_vals[j]
+                {
                     min_vals[j] = val;
                 }
-                if val > max_vals[j] {
+                if val > max_vals[j]
+                {
                     max_vals[j] = val;
                 }
             }
@@ -57,20 +68,33 @@ impl DataProcessor for MinMaxScaler {
         self.max_vals = Some(max_vals);
     }
 
-    fn transform(&self, data: &DenseMatrix<f64>) -> DenseMatrix<f64> {
+    fn transform(&self, data: &DenseMatrix<f64>) -> DenseMatrix<f64>
+    {
         let (rows, cols) = data.shape();
         let mut result = data.clone();
 
-        if let (Some(ref min_vals), Some(ref max_vals)) = (&self.min_vals, &self.max_vals) {
-            for j in 0..cols.min(min_vals.len()) {
+        if self.min_vals.is_none() || self.max_vals.is_none()
+        {
+            web_sys::console::warn_1(&"MinMaxScaler: transform called before fit, returning data unchanged".into());
+            return result;
+        }
+
+        if let (Some(ref min_vals), Some(ref max_vals)) = (&self.min_vals, &self.max_vals)
+        {
+            for j in 0..cols.min(min_vals.len())
+            {
                 let range = max_vals[j] - min_vals[j];
                 let scale = self.max_range - self.min_range;
-                
-                for i in 0..rows {
+
+                for i in 0..rows
+                {
                     let val = *data.get((i, j));
-                    let normalized = if range > 1e-8 {
+                    let normalized = if range > 1e-8
+                    {
                         (val - min_vals[j]) / range * scale + self.min_range
-                    } else {
+                    }
+                    else
+                    {
                         self.min_range
                     };
                     result.set((i, j), normalized);
@@ -81,17 +105,22 @@ impl DataProcessor for MinMaxScaler {
         result
     }
 
-    fn process(&self, data: &DenseMatrix<f64>) -> DenseMatrix<f64> {
+    fn process(&self, data: &DenseMatrix<f64>) -> DenseMatrix<f64>
+    {
         self.transform(data)
     }
 
-    fn set_param(&mut self, key: &str, value: &str) -> Result<(), String> {
-        match key {
-            "min" => {
+    fn set_param(&mut self, key: &str, value: &str) -> Result<(), String>
+    {
+        match key
+        {
+            "min" =>
+            {
                 self.min_range = value.parse().map_err(|_| "Invalid min value".to_string())?;
                 Ok(())
             }
-            "max" => {
+            "max" =>
+            {
                 self.max_range = value.parse().map_err(|_| "Invalid max value".to_string())?;
                 Ok(())
             }
@@ -99,11 +128,13 @@ impl DataProcessor for MinMaxScaler {
         }
     }
 
-    fn get_supported_params(&self) -> Vec<&str> {
+    fn get_supported_params(&self) -> Vec<&str>
+    {
         vec!["min", "max"]
     }
 
-    fn get_param_definitions(&self) -> Vec<ProcessorParam> {
+    fn get_param_definitions(&self) -> Vec<ProcessorParam>
+    {
         vec![
             ProcessorParam {
                 name: "min".to_string(),
@@ -126,7 +157,8 @@ impl DataProcessor for MinMaxScaler {
         ]
     }
 
-    fn get_applicable_column_types(&self) -> Option<Vec<ColumnType>> {
+    fn get_applicable_column_types(&self) -> Option<Vec<ColumnType>>
+    {
         Some(vec![ColumnType::Numeric])
     }
 }

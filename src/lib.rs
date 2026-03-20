@@ -3,38 +3,34 @@
 mod data_loading;
 mod evaluation;
 mod pipeline;
-mod wasm_api;
+mod wasm_facade;
 mod models;
 mod processing;
 mod feature_selection_strategies;
 mod target_analysis;
 mod embedded;
-pub mod mi_estimator;
+pub mod entropy;
 
-pub use data_loading::csv_loader::CsvLoader;
 pub use data_loading::{DataLoader, DataLoaderFactory, LoadedData, CsvDataLoader, JsonDataLoader};
-pub use models::{IModel, LinRegWrapper, KnnWrapper, LogRegWrapper, TreeWrapper, factory::ModelFactory};
-pub use processing::{DataProcessor, StandardScaler, Binner, OneHotEncoder, factory::ProcessorFactory, TimeConverter,
+pub use models::{IModel, LinRegWrapper, KnnWrapper, LogRegWrapper, TreeWrapper, model_factory::ModelFactory};
+pub use processing::{DataProcessor, StandardScaler, Binner, OneHotEncoder, processor_factory::ProcessorFactory, TimeConverter,
     CommaToDotProcessor, ThousandsSeparatorRemover, OrdinalEncoder, FrequencyEncoder, TargetEncoder};
 pub use feature_selection_strategies::{
-    FeatureSelector, 
-    VarianceSelector, 
-    CorrelationSelector,
+    FeatureSelector,
+    VarianceSelector,
     ChiSquareSelector,
-    InformationGainSelector,
     MutualInformationSelector,
-    factory::FeatureSelectorFactory
+    feature_selector_factory::FeatureSelectorFactory
 };
 pub use target_analysis::{
     TargetAnalyzer,
     TargetCandidate,
     CorrelationAnalyzer as TargetCorrelationAnalyzer,
     MutualInformationAnalyzer as TargetMIAnalyzer,
-    EntropyAnalyzer,
     TargetAnalyzerFactory,
 };
 pub use evaluation::{ModelEvaluator, EvaluationReport};
 pub use pipeline::{MLPipeline, MLPipelineBuilder, MLPipelineDirector, CompatibilityRegistry};
 
 // WASM API exports
-pub use wasm_api::{WasmMLPipeline, WasmDataLoader, WasmFactory};
+pub use wasm_facade::{WasmMLPipeline, WasmDataLoader, WasmFactory};

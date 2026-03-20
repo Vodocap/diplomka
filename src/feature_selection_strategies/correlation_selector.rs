@@ -3,7 +3,7 @@ use smartcore::linalg::basic::arrays::Array;
 use super::FeatureSelector;
 use std::collections::HashSet;
 use std::cell::RefCell;
-use crate::mi_estimator;
+use crate::entropy::mi_estimator;
 
 /// Info o jednej feature: Pearson, Spearman, normalita, vybrany metric
 #[derive(Clone, Debug)]
@@ -274,8 +274,8 @@ impl FeatureSelector for CorrelationSelector
         html.push_str("<span style='background:rgba(52,152,219,0.2);padding:2px 8px;'>|r| nižšia</span>");
         html.push_str("<span style='background:rgba(52,152,219,0.6);padding:2px 8px;color:white;'>|r| vyššia</span>");
         html.push_str("<span style='padding:2px 8px;text-decoration:underline;font-weight:bold;'>Podčiarknutý = použitý metric</span>");
-        html.push_str("<span style='color:#28a745;font-weight:bold;padding:2px 8px;'>✓ Vybraná</span>");
-        html.push_str("<span style='color:#6c757d;font-weight:bold;padding:2px 8px;'>✗ Nevyradená</span>");
+        html.push_str("<span style='color:#28a745;font-weight:bold;padding:2px 8px;'> Vybraná</span>");
+        html.push_str("<span style='color:#6c757d;font-weight:bold;padding:2px 8px;'> Nevyradená</span>");
         html.push_str("<p style='font-size:10px;color:#999;margin-top:4px;'>Intenzita farieb = |r|. Korelacia je ohranicena [-1,1], priame mapovanie je korektne.</p>");
         html.push_str("</div>");
 
@@ -356,20 +356,4 @@ impl FeatureSelector for CorrelationSelector
     }
 }
 
-impl CorrelationSelector {
-    fn extract_columns(&self, x: &DenseMatrix<f64>, indices: &[usize]) -> DenseMatrix<f64> {
-        let shape = x.shape();
-        let rows = shape.0;
-        let cols = indices.len();
-        let mut data = vec![vec![0.0; cols]; rows];
-        
-        for (new_col, &old_col) in indices.iter().enumerate() {
-            for row in 0..rows {
-                data[row][new_col] = *x.get((row, old_col));
-            }
-        }
-        
-        DenseMatrix::from_2d_vec(&data).unwrap()
-    }
-}
 

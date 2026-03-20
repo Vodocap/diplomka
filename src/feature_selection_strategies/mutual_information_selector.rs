@@ -1,18 +1,21 @@
 use smartcore::linalg::basic::matrix::DenseMatrix;
 use smartcore::linalg::basic::arrays::Array;
 use super::FeatureSelector;
-use crate::mi_estimator;
+use crate::entropy::mi_estimator;
 use std::cell::RefCell;
 use std::collections::HashSet;
 
-pub struct MutualInformationSelector {
+pub struct MutualInformationSelector
+{
     top_k: usize,
     k_neighbors: usize,
     details_cache: RefCell<String>,
 }
 
-impl MutualInformationSelector {
-    pub fn new() -> Self {
+impl MutualInformationSelector
+{
+    pub fn new() -> Self
+    {
         Self {
             top_k: 10,
             k_neighbors: 3,
@@ -21,29 +24,36 @@ impl MutualInformationSelector {
     }
 
     /// Relatívna farba pre MI relevanciu: intenzita proporcná k value/max
-    fn rel_mi_color(mi: f64, max_mi: f64) -> String {
+    fn rel_mi_color(mi: f64, max_mi: f64) -> String
+    {
         let t = if max_mi > 1e-12 { (mi / max_mi).min(1.0) } else { 0.0 };
         format!("rgba(52,152,219,{})", 0.05 + t * 0.55)
     }
 
     /// Relatívna farba pre inter-feature MI (redundanciu): červená intenzita
-    fn rel_redundancy_color(mi: f64, max_mi: f64) -> String {
+    fn rel_redundancy_color(mi: f64, max_mi: f64) -> String
+    {
         let t = if max_mi > 1e-12 { (mi / max_mi).min(1.0) } else { 0.0 };
         format!("rgba(231,76,60,{})", 0.05 + t * 0.55)
     }
 }
 
-impl FeatureSelector for MutualInformationSelector {
-    fn get_name(&self) -> &str {
+impl FeatureSelector for MutualInformationSelector
+{
+    fn get_name(&self) -> &str
+    {
         "Mutual Information (mRMR)"
     }
 
-    fn get_supported_params(&self) -> Vec<&str> {
+    fn get_supported_params(&self) -> Vec<&str>
+    {
         vec!["num_features", "k_neighbors"]
     }
 
-    fn set_param(&mut self, key: &str, value: &str) -> Result<(), String> {
-        match key {
+    fn set_param(&mut self, key: &str, value: &str) -> Result<(), String>
+    {
+        match key
+        {
             "num_features" | "top_k" => self.top_k = value.parse().map_err(|_| "Invalid num_features".to_string())?,
             "k_neighbors" => self.k_neighbors = value.parse().map_err(|_| "Invalid k_neighbors".to_string())?,
             _ => return Err(format!("Param not found: {}. Supported: num_features, k_neighbors", key)),
@@ -51,15 +61,14 @@ impl FeatureSelector for MutualInformationSelector {
         Ok(())
     }
 
-    fn get_selected_indices(&self, x: &DenseMatrix<f64>, y: &[f64]) -> Vec<usize> {
-        let (rows, cols) = x.shape();
+    fn get_selected_indices(&self, x: &DenseMatrix<f64>, y: &[f64]) -> Vec<usize>
+    {
+        let (_rows, cols) = x.shape();
         let effective_k = self.top_k.min(cols);
         let k_nn = self.k_neighbors;
 
-        // Extrakcia stĺpcov
-        let columns: Vec<Vec<f64>> = (0..cols)
-            .map(|j| (0..rows).map(|i| *x.get((i, j))).collect())
-            .collect();
+        // Extrakcia stĺpcov cez ndarray helper.
+        let columns = mi_estimator::dense_matrix_to_columns_ndarray(x);
 
         // 1. Relevancia: MI(feature_i, target) pre každý feature
         let relevance: Vec<f64> = (0..cols)
@@ -67,7 +76,7 @@ impl FeatureSelector for MutualInformationSelector {
             .collect();
 
         // 2. Inter-feature MI matica (symetrická, všetky páry)
-        let mi_matrix = mi_estimator::compute_mi_matrix(&columns, k_nn);
+        let mi_matrix = mi_estimator::compute_mi_matrix_cached(&columns, k_nn);
 
         // ─── 3. mRMR greedy selection ───
         // mRMR score = relevance(f) - (1/|S|) * sum_{s in S} MI(f, s)
@@ -83,13 +92,15 @@ impl FeatureSelector for MutualInformationSelector {
         mrmr_scores.push((first, relevance[first], relevance[first], 0.0));
 
         // Greedy: select remaining features one at a time
-        while selected.len() < effective_k && !remaining.is_empty() {
+        while selected.len() < effective_k && !remaining.is_empty()
+        {
             let mut best_idx = 0;
             let mut best_mrmr = f64::NEG_INFINITY;
             let mut best_rel = 0.0;
             let mut best_red = 0.0;
 
-            for &candidate in &remaining {
+            for &candidate in &remaining
+            {
                 let rel = relevance[candidate];
                 // Average MI with already selected features (redundancy)
                 let redundancy: f64 = selected.iter()
@@ -97,7 +108,8 @@ impl FeatureSelector for MutualInformationSelector {
                     .sum::<f64>() / selected.len() as f64;
                 let mrmr = rel - redundancy;
 
-                if mrmr > best_mrmr {
+                if mrmr > best_mrmr
+                {
                     best_mrmr = mrmr;
                     best_idx = candidate;
                     best_rel = rel;
@@ -109,11 +121,11 @@ impl FeatureSelector for MutualInformationSelector {
             remaining.remove(&best_idx);
             mrmr_scores.push((best_idx, best_mrmr, best_rel, best_red));
         }
-        
+
         // ─── Build detailed HTML ───
         let mut html = String::from("<div style='margin:10px 0;'>");
         html.push_str("<h4>Mutual Information - mRMR (minimum Redundancy Maximum Relevance)</h4>");
-        html.push_str(&format!("<p>K neighbors (KSG): <b>{}</b> | Vybranych: <b>{}</b> z <b>{}</b></p>", 
+        html.push_str(&format!("<p>K neighbors (KSG): <b>{}</b> | Vybranych: <b>{}</b> z <b>{}</b></p>",
             k_nn, effective_k, cols));
 
         // Explanation
@@ -130,7 +142,8 @@ impl FeatureSelector for MutualInformationSelector {
         html.push_str("<div style='overflow-x:auto;'>");
         html.push_str("<table style='border-collapse:collapse;font-size:12px;width:100%;'>");
         html.push_str("<thead><tr>");
-        for h in &["Poradie", "Feature", "Relevancia MI(F,Y)", "Redundancia avg MI(F,S)", "mRMR Score"] {
+        for h in &["Poradie", "Feature", "Relevancia MI(F,Y)", "Redundancia avg MI(F,S)", "mRMR Score"]
+        {
             html.push_str(&format!(
                 "<th style='padding:8px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;\
                 text-align:center;'>{}</th>", h));
@@ -144,7 +157,8 @@ impl FeatureSelector for MutualInformationSelector {
             .cloned().fold(0.0f64, f64::max).max(1e-12);
         let max_mrmr = mrmr_scores.iter().map(|&(_, m, _, _)| m).fold(f64::NEG_INFINITY, f64::max).max(1e-12);
 
-        for (rank, &(idx, mrmr, rel, red)) in mrmr_scores.iter().enumerate() {
+        for (rank, &(idx, mrmr, rel, red)) in mrmr_scores.iter().enumerate()
+        {
             let row_bg = "rgba(52,152,219,0.08)";
             let rel_bg = Self::rel_mi_color(rel, max_relevance);
             let red_bg = Self::rel_redundancy_color(red, max_redundancy);
@@ -176,7 +190,8 @@ impl FeatureSelector for MutualInformationSelector {
         html.push_str("<div style='overflow-x:auto;'>");
         html.push_str("<table style='border-collapse:collapse;font-size:12px;width:100%;'>");
         html.push_str("<thead><tr>");
-        for h in &["Poradie", "Premenná", "MI(F, Target)", "Stav"] {
+        for h in &["Poradie", "Premenná", "MI(F, Target)", "Stav"]
+        {
             let bg = if *h == "Stav" { "#8b0000" } else { "#cc0000" };
             html.push_str(&format!(
                 "<th style='padding:8px 6px;border:1px solid #dee2e6;background:{};color:white;\
@@ -184,7 +199,8 @@ impl FeatureSelector for MutualInformationSelector {
         }
         html.push_str("</tr></thead><tbody>");
 
-        for (rank, &(idx, score)) in all_scores.iter().enumerate() {
+        for (rank, &(idx, score)) in all_scores.iter().enumerate()
+        {
             let is_selected = selected.contains(&idx);
             let row_bg = if is_selected { "rgba(52,152,219,0.08)" } else { "rgba(189,195,199,0.08)" };
             let status = if is_selected { "<span style='color:#28a745;font-weight:bold;'>✓</span>" } else { "<span style='color:#6c757d;'>✗</span>" };
@@ -205,7 +221,8 @@ impl FeatureSelector for MutualInformationSelector {
         html.push_str("</tbody></table></div>");
 
         // Inter-feature MI matrix
-        if cols <= 15 {
+        if cols <= 15
+        {
             html.push_str("<h5 style='color:#495057;margin:20px 0 8px;border-bottom:1px solid #dee2e6;\
                 padding-bottom:5px;'>Matica MI medzi features (redundancia)</h5>");
             html.push_str("<p style='font-size:11px;color:#6c757d;margin-bottom:6px;'>\
@@ -213,24 +230,30 @@ impl FeatureSelector for MutualInformationSelector {
                 mRMR penalizuje výber redundantných features.</p>");
             html.push_str("<div style='overflow-x:auto;'>");
             html.push_str("<table style='border-collapse:collapse;font-size:11px;'>");
-            
+
             // Header row
             html.push_str("<tr><th style='padding:4px;border:1px solid #ddd;'></th>");
-            for j in 0..cols {
+            for j in 0..cols
+            {
                 html.push_str(&format!(
                     "<th style='padding:4px;border:1px solid #ddd;background:#cc0000;color:white;'>F{}{}</th>", j, if selected.contains(&j) { " <span style='color:#28a745;font-weight:bold;'>✓</span>" } else { "" }));
             }
             html.push_str("</tr>");
-            
+
             // Matrix rows
-            for i in 0..cols {
+            for i in 0..cols
+            {
                 html.push_str(&format!(
                     "<tr><th style='padding:4px;border:1px solid #ddd;background:#cc0000;color:white;'>F{}{}</th>", i, if selected.contains(&i) { " <span style='color:#28a745;font-weight:bold;'>✓</span>" } else { "" }));
-                for j in 0..cols {
-                    if i == j {
+                for j in 0..cols
+                {
+                    if i == j
+                    {
                         html.push_str("<td style='padding:4px;border:1px solid #ddd;text-align:center;\
                             background:#e0e0e0;'>-</td>");
-                    } else {
+                    }
+                    else
+                    {
                         let mi_val = mi_matrix[i][j];
                         let color = Self::rel_redundancy_color(mi_val, max_redundancy);
                         html.push_str(&format!(
@@ -260,50 +283,36 @@ impl FeatureSelector for MutualInformationSelector {
 
         html.push_str("</div>");
         *self.details_cache.borrow_mut() = html;
-        
+
         let mut result = selected;
         result.sort();
         result
     }
 
-    fn select_features(&self, x: &DenseMatrix<f64>, y: &[f64]) -> DenseMatrix<f64> {
+    fn select_features(&self, x: &DenseMatrix<f64>, y: &[f64]) -> DenseMatrix<f64>
+    {
         let indices = self.get_selected_indices(x, y);
         self.extract_columns(x, &indices)
     }
-    
-    fn get_feature_scores(&self, x: &DenseMatrix<f64>, y: &[f64]) -> Option<Vec<(usize, f64)>> {
-        let (rows, cols) = x.shape();
-        let columns: Vec<Vec<f64>> = (0..cols)
-            .map(|j| (0..rows).map(|i| *x.get((i, j))).collect())
-            .collect();
+
+    fn get_feature_scores(&self, x: &DenseMatrix<f64>, y: &[f64]) -> Option<Vec<(usize, f64)>>
+    {
+        let (_rows, cols) = x.shape();
+        let columns = mi_estimator::dense_matrix_to_columns_ndarray(x);
         let scores: Vec<(usize, f64)> = (0..cols)
             .map(|j| (j, mi_estimator::estimate_mi_ksg(&columns[j], y, self.k_neighbors)))
             .collect();
         Some(scores)
     }
-    
-    fn get_metric_name(&self) -> &str {
+
+    fn get_metric_name(&self) -> &str
+    {
         "MI (mRMR)"
     }
-    
-    fn get_selection_details(&self) -> String {
+
+    fn get_selection_details(&self) -> String
+    {
         self.details_cache.borrow().clone()
     }
 }
 
-impl MutualInformationSelector {
-    fn extract_columns(&self, x: &DenseMatrix<f64>, indices: &[usize]) -> DenseMatrix<f64> {
-        let shape = x.shape();
-        let rows = shape.0;
-        let cols = indices.len();
-        let mut data = vec![vec![0.0; cols]; rows];
-        
-        for (new_col, &old_col) in indices.iter().enumerate() {
-            for row in 0..rows {
-                data[row][new_col] = *x.get((row, old_col));
-            }
-        }
-        
-        DenseMatrix::from_2d_vec(&data).unwrap()
-    }
-}

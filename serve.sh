@@ -27,6 +27,7 @@ class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header('Cross-Origin-Embedder-Policy', 'require-corp')
         super().end_headers()
 
+socketserver.TCPServer.allow_reuse_address = True
 with socketserver.TCPServer(('', 3333), NoCacheHandler) as httpd:
     httpd.serve_forever()
 " || {

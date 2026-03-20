@@ -48,6 +48,7 @@ def test_build_pipeline_knn(app_page):
     page.wait_for_selector("#knnKGroup", state="visible", timeout=5000)
 
     page.fill("#knnK", "7")
+    page.select_option("#evalModeSelect", "regression")
     page.click("#buildPipelineBtn")
 
     page.wait_for_selector("#pipelineStatus", timeout=10000)
@@ -66,6 +67,7 @@ def test_build_pipeline_tree(app_page):
     page.wait_for_selector("#treeMaxDepthGroup", state="visible", timeout=5000)
 
     page.fill("#treeMaxDepth", "5")
+    page.select_option("#evalModeSelect", "regression")
     page.click("#buildPipelineBtn")
 
     page.wait_for_selector("#pipelineStatus", timeout=10000)

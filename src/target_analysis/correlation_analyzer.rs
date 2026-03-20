@@ -1,90 +1,47 @@
 use super::{TargetAnalyzer, TargetCandidate};
-use std::collections::HashSet;
-use std::cell::RefCell;
+use crate::entropy::mi_estimator;
 
 /// Analyzátor cieľovej premennej na základe Pearsonovej korelácie.
 /// Pre každú premennú vypočíta sumu štvorcov korelácií so všetkými
 /// ostatnými premennými: Score_j = Σ r²_jk.
 /// Vyššie skóre = premenná má silnejšie lineárne väzby s ostatnými.
-pub struct CorrelationAnalyzer {
-    /// Cache pre korelačnú maticu
-    corr_cache: RefCell<Option<Vec<Vec<f64>>>>,
+pub struct CorrelationAnalyzer
+{
 }
 
-impl CorrelationAnalyzer {
-    pub fn new() -> Self {
-        Self {
-            corr_cache: RefCell::new(None),
-        }
-    }
-
-    fn pearson_corr(x: &[f64], y: &[f64]) -> f64 {
-        let n = x.len() as f64;
-        if n == 0.0 { return 0.0; }
-        let mean_x = x.iter().sum::<f64>() / n;
-        let mean_y = y.iter().sum::<f64>() / n;
-        let mut num = 0.0;
-        let mut den_x = 0.0;
-        let mut den_y = 0.0;
-        for (xi, yi) in x.iter().zip(y.iter()) {
-            let dx = xi - mean_x;
-            let dy = yi - mean_y;
-            num += dx * dy;
-            den_x += dx * dx;
-            den_y += dy * dy;
-        }
-        let den = (den_x * den_y).sqrt();
-        if den == 0.0 { 0.0 } else { num / den }
-    }
-
-    fn classify_column(values: &[f64], n: usize) -> (usize, String) {
-        let mut uniq = HashSet::new();
-        for &v in values { uniq.insert(v.to_bits()); }
-        let unique_count = uniq.len();
-        let is_cat = unique_count <= 10 || (unique_count as f64 / n as f64) < 0.05;
-        let stype = if is_cat { "classification" } else { "regression" };
-        (unique_count, stype.to_string())
+impl CorrelationAnalyzer
+{
+    pub fn new() -> Self
+    {
+        Self {}
     }
 
     /// Vypočíta korelačnú maticu s cachovaním
-    fn compute_corr_matrix(&self, columns: &[Vec<f64>]) -> Vec<Vec<f64>> {
-        // Skontroluj cache
-        if let Some(cached) = self.corr_cache.borrow().as_ref() {
-            return cached.clone();
-        }
-
-        let num_cols = columns.len();
-        let mut corr_matrix = vec![vec![0.0f64; num_cols]; num_cols];
-        
-        for i in 0..num_cols {
-            corr_matrix[i][i] = 1.0;
-            for j in (i+1)..num_cols {
-                let c = Self::pearson_corr(&columns[i], &columns[j]);
-                corr_matrix[i][j] = c;
-                corr_matrix[j][i] = c;
-            }
-        }
-
-        // Cache the result
-        *self.corr_cache.borrow_mut() = Some(corr_matrix.clone());
-        corr_matrix
+    fn compute_corr_matrix(&self, columns: &[Vec<f64>]) -> Vec<Vec<f64>>
+    {
+        mi_estimator::compute_corr_matrix_cached(columns)
     }
 }
 
-impl TargetAnalyzer for CorrelationAnalyzer {
-    fn get_name(&self) -> &str {
+impl TargetAnalyzer for CorrelationAnalyzer
+{
+    fn get_name(&self) -> &str
+    {
         "correlation"
     }
 
-    fn get_description(&self) -> &str {
+    fn get_description(&self) -> &str
+    {
         "Pearsonova korelácia - meria lineárne vzťahy medzi stĺpcami"
     }
 
-    fn get_metric_name(&self) -> &str {
+    fn get_metric_name(&self) -> &str
+    {
         "Σr²"
     }
 
-    fn get_metric_explanation(&self) -> &str {
+    fn get_metric_explanation(&self) -> &str
+    {
         "Suma štvorcov Pearsonových korelácií s ostatnými premennými: Score_j = Σ r²_jk. \
         Vyššia hodnota znamená silnejšie celkové lineárne väzby. \
         Na rozdiel od priemeru |r| táto metrika penalizuje veľa slabých korelácií \
@@ -95,7 +52,8 @@ impl TargetAnalyzer for CorrelationAnalyzer {
         Obmedzenie: zachytáva len lineárne vzťahy."
     }
 
-    fn analyze(&self, columns: &[Vec<f64>], headers: &[String]) -> Vec<TargetCandidate> {
+    fn analyze(&self, columns: &[Vec<f64>], headers: &[String]) -> Vec<TargetCandidate>
+    {
         let num_cols = columns.len();
         let n = if num_cols > 0 { columns[0].len() } else { return vec![]; };
 
@@ -103,8 +61,9 @@ impl TargetAnalyzer for CorrelationAnalyzer {
         let corr_matrix = self.compute_corr_matrix(columns);
 
         let mut candidates = Vec::new();
-        for col_idx in 0..num_cols {
-            let (unique_count, stype) = Self::classify_column(&columns[col_idx], n);
+        for col_idx in 0..num_cols
+        {
+            let (unique_count, stype) = super::classify_column(&columns[col_idx], n);
 
             let mean = columns[col_idx].iter().sum::<f64>() / n as f64;
             let variance = columns[col_idx].iter().map(|v| (v - mean).powi(2)).sum::<f64>() / n as f64;
@@ -112,11 +71,18 @@ impl TargetAnalyzer for CorrelationAnalyzer {
             // Score_j = Σ r²_jk  (suma štvorcov korelácií)
             let mut sum_r2 = 0.0f64;
             let mut max_c = 0.0f64;
-            for j in 0..num_cols {
-                if j == col_idx { continue; }
+            for j in 0..num_cols
+            {
+                if j == col_idx
+                {
+                    continue;
+                }
                 let c = corr_matrix[col_idx][j];
                 sum_r2 += c * c;
-                if c.abs() > max_c { max_c = c.abs(); }
+                if c.abs() > max_c
+                {
+                    max_c = c.abs();
+                }
             }
 
             candidates.push(TargetCandidate {
@@ -136,9 +102,13 @@ impl TargetAnalyzer for CorrelationAnalyzer {
         candidates
     }
 
-    fn get_details_html(&self, columns: &[Vec<f64>], headers: &[String], _candidates: &[TargetCandidate]) -> String {
+    fn get_details_html(&self, columns: &[Vec<f64>], headers: &[String], _candidates: &[TargetCandidate]) -> String
+    {
         let num_cols = columns.len();
-        if num_cols > 50 { return String::new(); }
+        if num_cols > 50
+        {
+            return String::new();
+        }
 
         // Use cached correlation matrix
         let corr_matrix = self.compute_corr_matrix(columns);
@@ -155,22 +125,32 @@ impl TargetAnalyzer for CorrelationAnalyzer {
         html.push_str("<h4 style='color:#495057;margin:20px 0 10px;border-bottom:2px solid #dee2e6;padding-bottom:8px;'>Korelačná matica všetkých stĺpcov</h4>");
         html.push_str("<div style='overflow-x:auto;'><table style='border-collapse:collapse;font-size:11px;'>");
         html.push_str("<tr><th style='padding:6px;border:1px solid #ddd;background:#f0f0f0;'></th>");
-        for h in headers {
+        for h in headers
+        {
             html.push_str(&format!("<th style='padding:6px;border:1px solid #ddd;background:#f0f0f0;font-size:10px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'>{}</th>", h));
         }
         html.push_str("</tr>");
-        for i in 0..num_cols {
+        for i in 0..num_cols
+        {
             html.push_str(&format!("<tr><th style='padding:6px;border:1px solid #ddd;background:#f0f0f0;font-size:10px;white-space:nowrap;'>{}</th>", &headers[i]));
-            for j in 0..num_cols {
+            for j in 0..num_cols
+            {
                 let c = corr_matrix[i][j];
                 let ac = c.abs();
-                let bg_color = if i == j {
+                let bg_color = if i == j
+                {
                     "#e0e0e0".to_string()
-                } else if ac > 0.7 {
+                }
+                else if ac > 0.7
+                {
                     format!("rgba(52,152,219,{})", 0.3 + ac * 0.5)
-                } else if ac > 0.4 {
+                }
+                else if ac > 0.4
+                {
                     format!("rgba(46,204,113,{})", 0.2 + ac * 0.3)
-                } else {
+                }
+                else
+                {
                     format!("rgba(200,200,200,{})", 0.1 + ac * 0.2)
                 };
                 html.push_str(&format!("<td style='padding:6px;border:1px solid #ddd;text-align:center;background:{};font-size:10px;'>{:.3}</td>", bg_color, c));

@@ -283,7 +283,7 @@ class TestLinRegRegression:
         _load_data_and_select_target(page, TEST_CSV, target)
 
         # 3) Compare fast selectors
-        _compare_selectors(page, ["variance", "correlation"])
+        _compare_selectors(page, ["variance", "smc"])
 
         # 4) Train
         _train_from_comparison(page)
@@ -315,13 +315,6 @@ class TestLinRegRegression:
         total = page.locator("#selectorCompareGrid .selector-compare-card").count()
         logger.info(f"All selectors toggled: {active}/{total}")
         assert active == total, f"Not all selectors active: {active}/{total}"
-
-        # Deselect slow synergy selectors for speed
-        for slow in ["synergy_vns", "synergy_sa"]:
-            card = page.locator(f"#compare_card_{slow}")
-            if card.count() > 0 and card.locator("input[type='checkbox']").is_checked():
-                card.locator("input[type='checkbox']").uncheck()
-                page.evaluate(f"document.getElementById('compare_card_{slow}').classList.remove('active')")
 
         page.click("#compareSelectorBtn")
         page.wait_for_selector("#dataModal.show", timeout=120000)
@@ -368,7 +361,7 @@ class TestLogRegClassification:
         logger.info(f"Target confirm (logreg): {status}")
 
         # 5) Compare selectors
-        _compare_selectors(page, ["variance", "correlation", "information_gain"])
+        _compare_selectors(page, ["variance", "smc"])
 
         # 6) Train
         _train_from_comparison(page)
@@ -399,7 +392,7 @@ class TestKNN:
         _build_pipeline(page, "knn", eval_mode="Regression", knn_k=3)
         _load_data_and_select_target(page, TEST_CSV, "Kalórie")
 
-        _compare_selectors(page, ["variance", "correlation"])
+        _compare_selectors(page, ["variance", "smc"])
         _train_from_comparison(page)
         text, html = _get_training_metrics(page)
 
@@ -451,7 +444,7 @@ class TestKNN:
             timeout=15000,
         )
 
-        _compare_selectors(page, ["variance", "correlation"])
+        _compare_selectors(page, ["variance", "smc"])
         _train_from_comparison(page)
         text, html = _get_training_metrics(page)
 
@@ -475,7 +468,7 @@ class TestDecisionTree:
         _build_pipeline(page, "tree", eval_mode="Regression", tree_depth=5)
         _load_data_and_select_target(page, TEST_CSV, "Kalórie")
 
-        _compare_selectors(page, ["variance", "correlation"])
+        _compare_selectors(page, ["variance", "smc"])
         _train_from_comparison(page)
         text, html = _get_training_metrics(page)
 
@@ -492,7 +485,7 @@ class TestDecisionTree:
         _build_pipeline(page, "tree", eval_mode="Regression", tree_depth=15)
         _load_data_and_select_target(page, TEST_CSV, "Priemerná rýchlosť")
 
-        _compare_selectors(page, ["variance", "information_gain"])
+        _compare_selectors(page, ["variance", "smc"])
         _train_from_comparison(page)
         text, html = _get_training_metrics(page)
 
@@ -520,7 +513,7 @@ class TestDecisionTree:
             timeout=15000,
         )
 
-        _compare_selectors(page, ["variance", "correlation"])
+        _compare_selectors(page, ["variance", "smc"])
         _train_from_comparison(page)
         text, html = _get_training_metrics(page)
 
@@ -933,19 +926,12 @@ class TestFeatureSelectors:
         _compare_selectors(page, ["variance"])
         logger.info("TEST PASSED: Variance selector")
 
-    def test_correlation_selector(self, clean_page):
+    def test_smc_selector_individual(self, clean_page):
         page = clean_page
-        logger.info("TEST: Correlation selector")
+        logger.info("TEST: SMC selector (individual)")
         self._setup_for_selectors(page)
-        _compare_selectors(page, ["correlation"])
-        logger.info("TEST PASSED: Correlation selector")
-
-    def test_information_gain_selector(self, clean_page):
-        page = clean_page
-        logger.info("TEST: Information gain selector")
-        self._setup_for_selectors(page)
-        _compare_selectors(page, ["information_gain"])
-        logger.info("TEST PASSED: Information gain selector")
+        _compare_selectors(page, ["smc"], timeout=120000)
+        logger.info("TEST PASSED: SMC selector (individual)")
 
     def test_mutual_information_selector(self, clean_page):
         page = clean_page
@@ -994,34 +980,7 @@ class TestDataInspection:
         page.wait_for_timeout(500)
         logger.info("TEST PASSED: Inspect raw data modal")
 
-    def test_inspect_processed_data(self, clean_page):
-        page = clean_page
-        logger.info("TEST: Inspect processed data")
-        _build_pipeline(page, "linreg")
-        _load_data_and_select_target(page, TEST_CSV, "Kalórie")
-
-        # Train first so processed data exists
-        _compare_selectors(page, ["variance", "correlation"])
-        _train_from_comparison(page)
-
-        # Close comparison modal if open
-        if page.locator("#dataModal.show").count() > 0:
-            page.click(".modal-close")
-            page.wait_for_timeout(500)
-
-        # Now procesed data button should be enabled
-        btn = page.locator("#inspectProcessedBtn")
-        if btn.count() > 0 and not btn.is_disabled():
-            btn.click()
-            page.wait_for_function(
-                "document.getElementById('dataModal').classList.contains('show')",
-                timeout=15000,
-            )
-            modal_text = page.inner_text("#modalBody")
-            logger.info(f"Processed data modal content length: {len(modal_text)}")
-            page.click(".modal-close")
-            page.wait_for_timeout(500)
-        logger.info("TEST PASSED: Inspect processed data")
+    # test_inspect_processed_data removed: #inspectProcessedBtn not in main index.html
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -1036,7 +995,6 @@ class TestUIState:
 
         # Buttons should be disabled
         assert page.get_attribute("#inspectDataBtn", "disabled") is not None
-        assert page.get_attribute("#inspectProcessedBtn", "disabled") is not None
         assert page.get_attribute("#editDataBtn", "disabled") is not None
 
         # Sections hidden
@@ -1118,7 +1076,7 @@ class TestUIState:
         page = clean_page
         logger.info("TEST: Pipeline info after build")
 
-        _build_pipeline(page, "knn", knn_k=5)
+        _build_pipeline(page, "knn", knn_k=5, eval_mode="Regression")
         assert page.is_visible("#currentPipelineInfo")
 
         model_text = page.inner_text("#currentModel")
@@ -1216,78 +1174,8 @@ class TestFileUpload:
         logger.info("TEST PASSED: File upload loads data")
 
 
-# ══════════════════════════════════════════════════════════════════
-# TEST: Embedded Methods Comparison (regression)
-# ══════════════════════════════════════════════════════════════════
-class TestEmbeddedComparison:
-    """Test embedded methods comparison button (ridge/random forest)."""
-
-    def test_embedded_comparison_regression(self, clean_page):
-        page = clean_page
-        logger.info("=" * 60)
-        logger.info("TEST: Embedded methods comparison (regression)")
-        logger.info("=" * 60)
-
-        _build_pipeline(page, "linreg", eval_mode="Regression")
-        _load_data_and_select_target(page, TEST_CSV, "Kalórie")
-
-        _compare_selectors(page, ["variance", "correlation"])
-        _train_from_comparison(page)
-
-        # Look for embedded comparison button
-        embedded_btn = page.locator("#compareEmbeddedBtn")
-        if embedded_btn.count() > 0 and embedded_btn.is_visible():
-            embedded_btn.click()
-            logger.info("Clicked embedded comparison button.")
-
-            # Wait for results
-            page.wait_for_function(
-                """(() => {
-                    const el = document.getElementById('embeddedComparisonResults');
-                    return el && el.innerHTML.length > 50;
-                })()""",
-                timeout=120000,
-            )
-            embedded_text = page.inner_text("#embeddedComparisonResults")
-            logger.info(f"Embedded results length: {len(embedded_text)}")
-            assert len(embedded_text) > 20, "Embedded comparison too short"
-        else:
-            logger.info("Embedded comparison button not found/visible (might be in modal)")
-
-        logger.info("TEST PASSED: Embedded methods comparison")
-
-    def test_matrix_r2_comparison(self, clean_page):
-        page = clean_page
-        logger.info("=" * 60)
-        logger.info("TEST: Matrix R² comparison (regression)")
-        logger.info("=" * 60)
-
-        _build_pipeline(page, "linreg", eval_mode="Regression")
-        _load_data_and_select_target(page, TEST_CSV, "Kalórie")
-
-        _compare_selectors(page, ["variance", "correlation"])
-        _train_from_comparison(page)
-
-        # Matrix R² button (only for regression)
-        r2_btn = page.locator("#compareMatrixR2Btn")
-        if r2_btn.count() > 0 and r2_btn.is_visible():
-            r2_btn.click()
-            logger.info("Clicked Matrix R² comparison button.")
-
-            page.wait_for_function(
-                """(() => {
-                    const el = document.getElementById('matrixR2Results');
-                    return el && el.innerHTML.length > 50;
-                })()""",
-                timeout=120000,
-            )
-            r2_text = page.inner_text("#matrixR2Results")
-            logger.info(f"Matrix R² results length: {len(r2_text)}")
-            assert len(r2_text) > 20, "Matrix R² comparison too short"
-        else:
-            logger.info("Matrix R² button not found (might be inside modal)")
-
-        logger.info("TEST PASSED: Matrix R² comparison")
+# TestEmbeddedComparison removed: #compareEmbeddedBtn, #compareMatrixR2Btn,
+# #embeddedComparisonResults, #matrixR2Results not in main index.html
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -1311,7 +1199,7 @@ class TestMetricSanity:
 
         _build_pipeline(page, "linreg", eval_mode="Regression")
         _load_data_and_select_target(page, TEST_CSV, "Kalórie")
-        _compare_selectors(page, ["variance", "correlation"])
+        _compare_selectors(page, ["variance", "smc"])
         _train_from_comparison(page)
 
         text, html = _get_training_metrics(page)
@@ -1351,7 +1239,7 @@ class TestMetricSanity:
             timeout=15000,
         )
 
-        _compare_selectors(page, ["variance", "correlation"])
+        _compare_selectors(page, ["variance", "smc"])
         _train_from_comparison(page)
 
         text, html = _get_training_metrics(page)
@@ -1401,7 +1289,7 @@ class TestFullPipelineE2E:
         logger.info("Heatmap opened and closed.")
 
         # Compare selectors
-        _compare_selectors(page, ["variance", "correlation", "information_gain"])
+        _compare_selectors(page, ["variance", "smc"])
 
         # Train
         _train_from_comparison(page)
@@ -1437,7 +1325,7 @@ class TestFullPipelineE2E:
         )
 
         # Compare
-        _compare_selectors(page, ["variance", "correlation"])
+        _compare_selectors(page, ["variance", "smc"])
 
         # Train
         _train_from_comparison(page)
@@ -1457,7 +1345,7 @@ class TestFullPipelineE2E:
 
         _build_pipeline(page, "knn", eval_mode="Regression", knn_k=5)
         _load_data_and_select_target(page, TEST_CSV, "Priemerná rýchlosť")
-        _compare_selectors(page, ["variance", "correlation"])
+        _compare_selectors(page, ["variance", "smc"])
         _train_from_comparison(page)
         text, html = _get_training_metrics(page)
         assert "R²" in html or "RMSE" in html
@@ -1475,7 +1363,7 @@ class TestFullPipelineE2E:
 
         _build_pipeline(page, "tree", eval_mode="Regression", tree_depth=10)
         _load_data_and_select_target(page, TEST_CSV, "Kalórie", split_pct=80)
-        _compare_selectors(page, ["variance", "correlation"])
+        _compare_selectors(page, ["variance", "smc"])
         _train_from_comparison(page)
         text, html = _get_training_metrics(page)
         assert "R²" in html or "RMSE" in html
@@ -1506,7 +1394,7 @@ class TestFullPipelineE2E:
             timeout=15000,
         )
 
-        _compare_selectors(page, ["variance", "correlation"])
+        _compare_selectors(page, ["variance", "smc"])
         _train_from_comparison(page)
         text, html = _get_training_metrics(page)
         assert "ACC" in html or "Accuracy" in html or "F1" in html
@@ -1537,7 +1425,7 @@ class TestFullPipelineE2E:
             timeout=15000,
         )
 
-        _compare_selectors(page, ["variance", "correlation"])
+        _compare_selectors(page, ["variance", "smc"])
         _train_from_comparison(page)
         text, html = _get_training_metrics(page)
         assert "ACC" in html or "Accuracy" in html or "F1" in html

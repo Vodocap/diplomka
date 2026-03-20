@@ -118,7 +118,7 @@ jobs:
 
       - name: Install Python test dependencies
         run: |
-          pip install pytest pytest-playwright pytest-html
+          pip install -r requirements-test.txt
           playwright install chromium --with-deps
 
       - name: Start server and run Playwright tests
@@ -126,7 +126,7 @@ jobs:
           # Start server in background
           bash serve.sh &
           SERVER_PID=$!
-          
+
           # Wait for server to be ready
           for i in $(seq 1 30); do
             if curl -s http://localhost:3333 > /dev/null 2>&1; then
@@ -138,8 +138,9 @@ jobs:
 
           # Run tests
           mkdir -p tests/reports tests/output
-          python3 -m pytest tests/test_08_all_models_comprehensive.py \
+          python3 -m pytest tests/ \
             --browser chromium \
+            --headless \
             -v \
             --timeout 180 \
             --html=tests/reports/test_report.html --self-contained-html \
@@ -148,6 +149,7 @@ jobs:
 
           TEST_EXIT=$?
           kill $SERVER_PID 2>/dev/null || true
+          exit $TEST_EXIT
           exit $TEST_EXIT
 
       - name: Upload test report

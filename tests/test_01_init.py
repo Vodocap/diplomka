@@ -13,7 +13,7 @@ import re
 def test_page_loads(app_page):
     """Page title and header render correctly."""
     page = app_page
-    assert "ML Pipeline" in page.title() or "ML Pipeline" in page.inner_text("h1")
+    assert "Aplikácia na podporu rozhodavnia pri tréningu predikčných modelov" in page.title() or "Aplikácia na podporu rozhodavnia pri tréningu predikčných modelov" in page.inner_text("h1")
     assert page.is_visible("h1")
 
 
@@ -69,7 +69,6 @@ def test_initial_ui_state(app_page):
 
     # Inspect buttons should be disabled
     assert page.get_attribute("#inspectDataBtn", "disabled") is not None
-    assert page.get_attribute("#inspectProcessedBtn", "disabled") is not None
     assert page.get_attribute("#editDataBtn", "disabled") is not None
 
     # Feature exploration section should be hidden

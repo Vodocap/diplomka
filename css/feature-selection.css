@@ -1,0 +1,200 @@
+
+/* Target Recommendation Styles */
+.target-recommendation {
+    margin-top: 15px;
+    padding: 15px;
+    background: white;
+    border: 2px solid #cc0000;
+    border-radius: 0px;
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+.target-recommendation h3 {
+    color: #cc0000;
+    margin-bottom: 10px;
+}
+
+/* Selection Details Styles */
+.selection-details-container {
+    margin-top: 20px;
+    padding: 15px;
+    background: white;
+    border: 2px solid #cc0000;
+    border-radius: 0px;
+    max-height: 600px;
+    overflow: auto;
+}
+
+.selection-details-container h4 {
+    color: #cc0000;
+    margin-bottom: 15px;
+    border-bottom: 2px solid #cc0000;
+    padding-bottom: 8px;
+}
+
+.btn-analyze {
+    background: #cc0000;
+    width: 100%;
+    margin-top: 10px;
+    font-size: 1em;
+}
+
+.btn-analyze:hover {
+    box-shadow: 0 5px 15px rgba(204, 0, 0, 0.4);
+}
+
+/* Column stats table */
+.column-stats {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85em;
+    margin-bottom: 15px;
+}
+.column-stats th,
+.column-stats td {
+    padding: 6px 10px;
+    border: 1px solid #dee2e6;
+    text-align: center;
+}
+.column-stats th {
+    background: #cc0000;
+    color: white;
+    font-size: 0.9em;
+}
+.column-stats tbody tr:nth-child(even) {
+    background: #f8f9fa;
+}
+.column-stats tbody tr:hover {
+    background: #e9ecef;
+    cursor: pointer;
+}
+.column-stats tbody tr.selected-row {
+    background: #ffe4e1;
+    font-weight: bold;
+}
+
+/* Selector comparison grid */
+.selector-compare-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+.selector-compare-card {
+    background: white;
+    border: 2px solid #dee2e6;
+    padding: 15px;
+    transition: border-color 0.2s;
+}
+.selector-compare-card:hover {
+    border-color: #cc0000;
+}
+.selector-compare-card.active {
+    border-color: #cc0000;
+    background: #f0f8ff;
+}
+.selector-compare-card .card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+.selector-compare-card .card-header input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+.selector-compare-card .card-header label {
+    margin: 0;
+    font-weight: bold;
+    color: #cc0000;
+    cursor: pointer;
+    font-size: 1em;
+}
+.selector-compare-card .card-desc {
+    font-size: 0.85em;
+    color: #6c757d;
+    margin-bottom: 10px;
+}
+.selector-compare-card .card-tags {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+.selector-compare-card .card-tag {
+    font-size: 0.75em;
+    padding: 2px 8px;
+    background: #e9ecef;
+    color: #495057;
+}
+.selector-compare-card .card-tag.warn {
+    background: #fff3cd;
+    color: #856404;
+}
+.selector-compare-card .card-params {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #dee2e6;
+    display: none;
+}
+.selector-compare-card.active .card-params {
+    display: block;
+}
+.selector-compare-card .card-params label {
+    font-size: 0.85em;
+    margin-bottom: 4px;
+}
+.selector-compare-card .card-params input {
+    width: 100%;
+    padding: 6px 10px;
+    font-size: 0.9em;
+}
+.selector-compare-card .card-params .param-desc {
+    font-size: 0.78em;
+    color: #6c757d;
+    margin-top: 2px;
+    margin-bottom: 6px;
+    line-height: 1.3;
+}
+.selector-compare-card .card-params select {
+    width: 100%;
+    padding: 6px 10px;
+    font-size: 0.9em;
+}
+
+/* Target method tabs */
+.target-method-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 15px;
+    border-bottom: 2px solid #dee2e6;
+}
+.target-method-tab {
+    padding: 10px 20px;
+    background: #f8f9fa;
+    border: 2px solid #dee2e6;
+    border-bottom: none;
+    cursor: pointer;
+    font-weight: 600;
+    color: #6c757d;
+    font-size: 0.9em;
+    transition: all 0.2s;
+    margin-bottom: -2px;
+}
+.target-method-tab:hover {
+    color: #cc0000;
+}
+.target-method-tab.active {
+    background: white;
+    color: #cc0000;
+    border-color: #cc0000;
+    border-bottom-color: white;
+}
+.target-method-content {
+    display: none;
+}
+.target-method-content.active {
+    display: block;
+}
+

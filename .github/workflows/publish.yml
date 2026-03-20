@@ -140,7 +140,6 @@ jobs:
           mkdir -p tests/reports tests/output
           python3 -m pytest tests/ \
             --browser chromium \
-            --headless \
             -v \
             --timeout 180 \
             --html=tests/reports/test_report.html --self-contained-html \
@@ -149,7 +148,6 @@ jobs:
 
           TEST_EXIT=$?
           kill $SERVER_PID 2>/dev/null || true
-          exit $TEST_EXIT
           exit $TEST_EXIT
 
       - name: Upload test report

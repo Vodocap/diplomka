@@ -55,6 +55,17 @@ function populateOptions() {
         modelSelect.appendChild(opt);
     });
 
+    // Populate evaluation mode select dynamically
+    const evalSelect = document.getElementById('evalModeSelect');
+    if (availableOptions.evaluation_modes) {
+        availableOptions.evaluation_modes.forEach(em => {
+            const opt = document.createElement('option');
+            opt.value = em.name;
+            opt.textContent = em.description;
+            evalSelect.appendChild(opt);
+        });
+    }
+
     displayInfo();
 }
 
@@ -139,62 +150,56 @@ function setupEventListeners() {
     };
 }
 
-function hideAllParamFields() {
-    document.getElementById('modelParamsContainer').style.display = 'none';
-    document.getElementById('knnKGroup').style.display = 'none';
-    document.getElementById('treeMaxDepthGroup').style.display = 'none';
-    document.getElementById('rfNEstimatorsGroup').style.display = 'none';
-    document.getElementById('rfMaxDepthGroup').style.display = 'none';
-    document.getElementById('rfMinSamplesLeafGroup').style.display = 'none';
-    document.getElementById('svmCGroup').style.display = 'none';
-    document.getElementById('svmEpsGroup').style.display = 'none';
-    document.getElementById('svmKernelGroup').style.display = 'none';
-    document.getElementById('svmGammaGroup').style.display = 'none';
-    document.getElementById('gbtNEstimatorsGroup').style.display = 'none';
-    document.getElementById('gbtMaxDepthGroup').style.display = 'none';
-    document.getElementById('gbtLearningRateGroup').style.display = 'none';
-    document.getElementById('polynomDegreeGroup').style.display = 'none';
-}
-
 function updateModelParams(modelName) {
-    hideAllParamFields();
-    
-    if (!modelName) return;
+    const container = document.getElementById('modelParamsContainer');
+    const fields = document.getElementById('modelParamsFields');
+    fields.innerHTML = '';
 
-    const params = factory.getModelParams(modelName);
-    
-    if (params.length > 0) {
-        document.getElementById('modelParamsContainer').style.display = 'block';
-        
-        params.forEach(param => {
-            if (param === 'k') {
-                document.getElementById('knnKGroup').style.display = 'block';
-            } else if (param === 'max_depth' && modelName === 'tree') {
-                document.getElementById('treeMaxDepthGroup').style.display = 'block';
-            } else if (param === 'n_estimators' && modelName === 'rf') {
-                document.getElementById('rfNEstimatorsGroup').style.display = 'block';
-            } else if (param === 'max_depth' && modelName === 'rf') {
-                document.getElementById('rfMaxDepthGroup').style.display = 'block';
-            } else if (param === 'min_samples_leaf') {
-                document.getElementById('rfMinSamplesLeafGroup').style.display = 'block';
-            } else if (param === 'c') {
-                document.getElementById('svmCGroup').style.display = 'block';
-            } else if (param === 'eps') {
-                document.getElementById('svmEpsGroup').style.display = 'block';
-            } else if (param === 'kernel') {
-                document.getElementById('svmKernelGroup').style.display = 'block';
-            } else if (param === 'gamma') {
-                document.getElementById('svmGammaGroup').style.display = 'block';
-            } else if (param === 'n_estimators' && modelName === 'gbt') {
-                document.getElementById('gbtNEstimatorsGroup').style.display = 'block';
-            } else if (param === 'max_depth' && modelName === 'gbt') {
-                document.getElementById('gbtMaxDepthGroup').style.display = 'block';
-            } else if (param === 'learning_rate') {
-                document.getElementById('gbtLearningRateGroup').style.display = 'block';
-            } else if (param === 'degree') {
-                document.getElementById('polynomDegreeGroup').style.display = 'block';
+    if (!modelName) {
+        container.style.display = 'none';
+        return;
+    }
+
+    const paramDefs = factory.getModelParamDefinitions(modelName);
+
+    if (paramDefs && paramDefs.length > 0) {
+        container.style.display = 'block';
+
+        paramDefs.forEach(p => {
+            const group = document.createElement('div');
+            group.className = 'form-group';
+
+            const label = document.createElement('label');
+            label.textContent = p.description + ':';
+            group.appendChild(label);
+
+            if (p.param_type === 'select' && p.options) {
+                const select = document.createElement('select');
+                select.id = 'model_param_' + p.name;
+                p.options.forEach(opt => {
+                    const option = document.createElement('option');
+                    option.value = opt;
+                    option.textContent = opt;
+                    if (opt === p.default_value) option.selected = true;
+                    select.appendChild(option);
+                });
+                group.appendChild(select);
+            } else {
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.id = 'model_param_' + p.name;
+                input.value = p.default_value;
+                input.placeholder = p.default_value;
+                if (p.min != null) input.min = p.min;
+                if (p.max != null) input.max = p.max;
+                if (p.default_value.includes('.')) input.step = 'any';
+                group.appendChild(input);
             }
+
+            fields.appendChild(group);
         });
+    } else {
+        container.style.display = 'none';
     }
 }
 
@@ -207,71 +212,27 @@ async function buildPipeline() {
 
         if (!model) throw new Error('Vyberte model');
 
-        // Validácia evaluation_mode vs model
+        // Validácia evaluation_mode vs model (dynamicky podľa model_type z factory)
         if (evalMode) {
-            if (model === 'linreg' && evalMode === 'classification') {
-                showStatus('error', 'Upozornenie: Lineárna regresia (linreg) vyžaduje evaluation_mode = "regression", nie "classification".', 'pipelineStatus');
-                if (!confirm('Vybrali ste nekompatibilný evaluation_mode.\n\nModel: Lineárna Regresia (linreg)\nEvaluation Mode: classification\n\nMal by byť: regression\n\nChcete pokračovať?')) {
-                    return;
-                }
-            }
-            if (model === 'logreg' && evalMode === 'regression') {
-                showStatus('error', 'Upozornenie: Logistická regresia (logreg) vyžaduje evaluation_mode = "classification", nie "regression".', 'pipelineStatus');
-                if (!confirm('Vybrali ste nekompatibilný evaluation_mode.\n\nModel: Logistická Regresia (logreg)\nEvaluation Mode: regression\n\nMal by byť: classification\n\nChcete pokračovať?')) {
+            const modelInfo = availableOptions.models.find(m => m.name === model);
+            if (modelInfo && modelInfo.model_type !== 'both' && modelInfo.model_type !== evalMode) {
+                showStatus('error', `Upozornenie: Model ${model} vyžaduje evaluation_mode = "${modelInfo.model_type}", nie "${evalMode}".`, 'pipelineStatus');
+                if (!confirm(`Vybrali ste nekompatibilný evaluation_mode.\n\nModel: ${modelInfo.description}\nEvaluation Mode: ${evalMode}\n\nMal by byť: ${modelInfo.model_type}\n\nChcete pokračovať?`)) {
                     return;
                 }
             }
         }
 
-        // Zozbierať parametre
+        // Zozbierať parametre dynamicky z vygenerovaných polí
         const modelParams = [];
-
-        const knnK = document.getElementById('knnK').value;
-        if (knnK && model === 'knn') {
-            modelParams.push(['k', knnK]);
-        }
-
-        const treeMaxDepth = document.getElementById('treeMaxDepth').value;
-        if (treeMaxDepth && model === 'tree') {
-            modelParams.push(['max_depth', treeMaxDepth]);
-        }
-
-        // Random Forest params
-        if (model === 'rf') {
-            const v = document.getElementById('rfNEstimators').value;
-            if (v) modelParams.push(['n_estimators', v]);
-            const d = document.getElementById('rfMaxDepth').value;
-            if (d) modelParams.push(['max_depth', d]);
-            const l = document.getElementById('rfMinSamplesLeaf').value;
-            if (l) modelParams.push(['min_samples_leaf', l]);
-        }
-
-        // SVM params
-        if (model === 'svm') {
-            const c = document.getElementById('svmC').value;
-            if (c) modelParams.push(['c', c]);
-            const eps = document.getElementById('svmEps').value;
-            if (eps) modelParams.push(['eps', eps]);
-            const kernel = document.getElementById('svmKernel').value;
-            if (kernel) modelParams.push(['kernel', kernel]);
-            const gamma = document.getElementById('svmGamma').value;
-            if (gamma) modelParams.push(['gamma', gamma]);
-        }
-
-        // Gradient Boosting params
-        if (model === 'gbt') {
-            const n = document.getElementById('gbtNEstimators').value;
-            if (n) modelParams.push(['n_estimators', n]);
-            const d = document.getElementById('gbtMaxDepth').value;
-            if (d) modelParams.push(['max_depth', d]);
-            const lr = document.getElementById('gbtLearningRate').value;
-            if (lr) modelParams.push(['learning_rate', lr]);
-        }
-
-        // Polynomálna regresia params
-        if (model === 'polynom') {
-            const deg = document.getElementById('polynomDegree').value;
-            if (deg) modelParams.push(['degree', deg]);
+        const paramFields = document.getElementById('modelParamsFields');
+        if (paramFields) {
+            paramFields.querySelectorAll('input, select').forEach(el => {
+                const paramName = el.id.replace('model_param_', '');
+                if (el.value) {
+                    modelParams.push([paramName, el.value]);
+                }
+            });
         }
 
         const config = {

@@ -97,7 +97,7 @@ export class WasmDataLoader {
 if (Symbol.dispose) WasmDataLoader.prototype[Symbol.dispose] = WasmDataLoader.prototype.free;
 
 /**
- * WASM fasada pre enumeraciu dostupnych moznosti (modely, procesory, selektory, presets).
+ * WASM fasada pre enumeraciu dostupnych moznosti (modely, procesory, selektory).
  * Frontend vola getAvailableOptions() pre dynamicke naplnenie UI komponentov.
  */
 export class WasmFactory {
@@ -142,6 +142,28 @@ export class WasmFactory {
         return ret;
     }
     /**
+     * Získa definície metrík pre daný evaluation mode
+     * @param {string} eval_mode
+     * @returns {any}
+     */
+    getEvaluationMetrics(eval_mode) {
+        const ptr0 = passStringToWasm0(eval_mode, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.wasmfactory_getEvaluationMetrics(this.__wbg_ptr, ptr0, len0);
+        return ret;
+    }
+    /**
+     * Získa detailné definície parametrov pre model
+     * @param {string} model_name
+     * @returns {any}
+     */
+    getModelParamDefinitions(model_name) {
+        const ptr0 = passStringToWasm0(model_name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.wasmfactory_getModelParamDefinitions(this.__wbg_ptr, ptr0, len0);
+        return ret;
+    }
+    /**
      * Získa podporované parametre pre model
      * @param {string} model_name
      * @returns {any}
@@ -153,17 +175,6 @@ export class WasmFactory {
         return ret;
     }
     /**
-     * Získa detaily o presete (model, processor, selector)
-     * @param {string} preset_name
-     * @returns {any}
-     */
-    getPresetDetails(preset_name) {
-        const ptr0 = passStringToWasm0(preset_name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.wasmfactory_getPresetDetails(this.__wbg_ptr, ptr0, len0);
-        return ret;
-    }
-    /**
      * Získa detailné definície parametrov pre procesor
      * @param {string} processor_name
      * @returns {any}
@@ -172,6 +183,17 @@ export class WasmFactory {
         const ptr0 = passStringToWasm0(processor_name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.wasmfactory_getProcessorParamDefinitions(this.__wbg_ptr, ptr0, len0);
+        return ret;
+    }
+    /**
+     * Získa detailné definície parametrov pre selector
+     * @param {string} selector_name
+     * @returns {any}
+     */
+    getSelectorParamDefinitions(selector_name) {
+        const ptr0 = passStringToWasm0(selector_name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.wasmfactory_getSelectorParamDefinitions(this.__wbg_ptr, ptr0, len0);
         return ret;
     }
     /**
@@ -275,25 +297,6 @@ export class WasmMLPipeline {
      */
     buildFromConfig(config_json) {
         const ret = wasm.wasmmlpipeline_buildFromConfig(this.__wbg_ptr, config_json);
-        if (ret[2]) {
-            throw takeFromExternrefTable0(ret[1]);
-        }
-        return takeFromExternrefTable0(ret[0]);
-    }
-    /**
-     * Vytvorí pipeline z presetu
-     * @param {string} preset_name
-     * @param {string} model
-     * @param {any} model_params
-     * @param {any} selector_params
-     * @returns {any}
-     */
-    buildFromPreset(preset_name, model, model_params, selector_params) {
-        const ptr0 = passStringToWasm0(preset_name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(model, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len1 = WASM_VECTOR_LEN;
-        const ret = wasm.wasmmlpipeline_buildFromPreset(this.__wbg_ptr, ptr0, len0, ptr1, len1, model_params, selector_params);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
         }

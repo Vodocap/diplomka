@@ -28,7 +28,7 @@ export class WasmDataLoader {
 }
 
 /**
- * WASM fasada pre enumeraciu dostupnych moznosti (modely, procesory, selektory, presets).
+ * WASM fasada pre enumeraciu dostupnych moznosti (modely, procesory, selektory).
  * Frontend vola getAvailableOptions() pre dynamicke naplnenie UI komponentov.
  */
 export class WasmFactory {
@@ -47,17 +47,25 @@ export class WasmFactory {
      */
     getCompatibleSelectors(model_name: string): any;
     /**
+     * Získa definície metrík pre daný evaluation mode
+     */
+    getEvaluationMetrics(eval_mode: string): any;
+    /**
+     * Získa detailné definície parametrov pre model
+     */
+    getModelParamDefinitions(model_name: string): any;
+    /**
      * Získa podporované parametre pre model
      */
     getModelParams(model_name: string): any;
     /**
-     * Získa detaily o presete (model, processor, selector)
-     */
-    getPresetDetails(preset_name: string): any;
-    /**
      * Získa detailné definície parametrov pre procesor
      */
     getProcessorParamDefinitions(processor_name: string): any;
+    /**
+     * Získa detailné definície parametrov pre selector
+     */
+    getSelectorParamDefinitions(selector_name: string): any;
     /**
      * Získa podporované parametre pre selector
      */
@@ -89,10 +97,6 @@ export class WasmMLPipeline {
      * Vytvorí pipeline z JSON konfigurácie
      */
     buildFromConfig(config_json: any): any;
-    /**
-     * Vytvorí pipeline z presetu
-     */
-    buildFromPreset(preset_name: string, model: string, model_params: any, selector_params: any): any;
     /**
      * Skontroluje redundanciu vybraných features na základe korelácie a MI (vylučuje target column)
      * Ak je focus_feature zadaný (>= 0), kontroluje len páry s touto feature
@@ -211,7 +215,6 @@ export interface InitOutput {
     readonly wasmmlpipeline_analyzeTargetWith: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number, number];
     readonly wasmmlpipeline_applyProcessorToColumn: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: any) => [number, number, number];
     readonly wasmmlpipeline_buildFromConfig: (a: number, b: any) => [number, number, number];
-    readonly wasmmlpipeline_buildFromPreset: (a: number, b: number, c: number, d: number, e: number, f: any, g: any) => [number, number, number];
     readonly wasmmlpipeline_checkFeatureRedundancy: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number) => [number, number, number];
     readonly wasmmlpipeline_compareSelectors: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: any) => [number, number, number];
     readonly wasmmlpipeline_compareTargetAnalyzers: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number, number];
@@ -242,9 +245,11 @@ export interface InitOutput {
     readonly wasmfactory_getAvailableOptions: (a: number) => any;
     readonly wasmfactory_getCompatibleProcessors: (a: number, b: number, c: number) => any;
     readonly wasmfactory_getCompatibleSelectors: (a: number, b: number, c: number) => any;
+    readonly wasmfactory_getEvaluationMetrics: (a: number, b: number, c: number) => any;
+    readonly wasmfactory_getModelParamDefinitions: (a: number, b: number, c: number) => any;
     readonly wasmfactory_getModelParams: (a: number, b: number, c: number) => any;
-    readonly wasmfactory_getPresetDetails: (a: number, b: number, c: number) => any;
     readonly wasmfactory_getProcessorParamDefinitions: (a: number, b: number, c: number) => any;
+    readonly wasmfactory_getSelectorParamDefinitions: (a: number, b: number, c: number) => any;
     readonly wasmfactory_getSelectorParams: (a: number, b: number, c: number) => any;
     readonly wasmfactory_new: () => number;
     readonly __wbg_wasmdataloader_free: (a: number, b: number) => void;

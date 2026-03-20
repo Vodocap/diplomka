@@ -83,4 +83,19 @@ impl IModel for TreeWrapper
             vec![]
         }
     }
+
+    fn get_param_definitions(&self) -> Vec<crate::processing::processor_param::ProcessorParam>
+    {
+        vec![
+            crate::processing::processor_param::ProcessorParam {
+                name: "max_depth".to_string(),
+                param_type: "number".to_string(),
+                default_value: "10".to_string(),
+                description: "Maximalna hlbka stromu".to_string(),
+                min: Some(1.0),
+                max: Some(50.0),
+                options: None,
+            },
+        ]
+    }
 }

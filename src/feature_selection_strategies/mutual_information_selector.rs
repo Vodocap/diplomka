@@ -317,5 +317,28 @@ impl FeatureSelector for MutualInformationSelector
     {
         self.details_cache.borrow().clone()
     }
-}
 
+    fn get_param_definitions(&self) -> Vec<crate::processing::processor_param::ProcessorParam>
+    {
+        vec![
+            crate::processing::processor_param::ProcessorParam {
+                name: "num_features".to_string(),
+                param_type: "number".to_string(),
+                default_value: "10".to_string(),
+                description: "Pocet features vybranych cez mRMR".to_string(),
+                min: Some(1.0),
+                max: Some(100.0),
+                options: None,
+            },
+            crate::processing::processor_param::ProcessorParam {
+                name: "k_neighbors".to_string(),
+                param_type: "number".to_string(),
+                default_value: "3".to_string(),
+                description: "k pre KSG k-NN MI estimator".to_string(),
+                min: Some(1.0),
+                max: Some(20.0),
+                options: None,
+            },
+        ]
+    }
+}

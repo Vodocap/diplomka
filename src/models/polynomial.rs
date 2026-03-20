@@ -169,4 +169,19 @@ impl IModel for PolyRegWrapper
             }
         }
     }
+
+    fn get_param_definitions(&self) -> Vec<crate::processing::processor_param::ProcessorParam>
+    {
+        vec![
+            crate::processing::processor_param::ProcessorParam {
+                name: "degree".to_string(),
+                param_type: "number".to_string(),
+                default_value: "2".to_string(),
+                description: "Stupen polynomu".to_string(),
+                min: Some(1.0),
+                max: Some(8.0),
+                options: None,
+            },
+        ]
+    }
 }

@@ -31,6 +31,12 @@ pub trait FeatureSelector
         String::new()
     }
 
+    /// Vracia detailne definicie parametrov pre dynamicke generovanie UI.
+    fn get_param_definitions(&self) -> Vec<crate::processing::processor_param::ProcessorParam>
+    {
+        vec![]
+    }
+
     /// Helper method to extract columns by indices
     fn extract_columns(&self, x: &DenseMatrix<f64>, indices: &[usize]) -> DenseMatrix<f64>
     {

@@ -392,5 +392,20 @@ impl FeatureSelector for SmcSelector
     {
         self.details_cache.borrow().clone()
     }
+
+    fn get_param_definitions(&self) -> Vec<crate::processing::processor_param::ProcessorParam>
+    {
+        vec![
+            crate::processing::processor_param::ProcessorParam {
+                name: "num_features".to_string(),
+                param_type: "number".to_string(),
+                default_value: "10".to_string(),
+                description: "Pocet features vybranych podla SMC importance drop".to_string(),
+                min: Some(1.0),
+                max: Some(100.0),
+                options: None,
+            },
+        ]
+    }
 }
 

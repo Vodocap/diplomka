@@ -71,4 +71,19 @@ impl IModel for LogRegWrapper
             })
             .unwrap_or_default()
     }
+
+    fn get_param_definitions(&self) -> Vec<crate::processing::processor_param::ProcessorParam>
+    {
+        vec![
+            crate::processing::processor_param::ProcessorParam {
+                name: "alpha".to_string(),
+                param_type: "number".to_string(),
+                default_value: "0.0".to_string(),
+                description: "L2 regularizacia (0 = ziadna)".to_string(),
+                min: Some(0.0),
+                max: Some(100.0),
+                options: None,
+            },
+        ]
+    }
 }

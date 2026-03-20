@@ -129,4 +129,46 @@ impl IModel for SvmWrapper
             }
         }
     }
+
+    fn get_param_definitions(&self) -> Vec<crate::processing::processor_param::ProcessorParam>
+    {
+        vec![
+            crate::processing::processor_param::ProcessorParam {
+                name: "c".to_string(),
+                param_type: "number".to_string(),
+                default_value: "1.0".to_string(),
+                description: "Regularizacny parameter C".to_string(),
+                min: Some(0.001),
+                max: Some(1000.0),
+                options: None,
+            },
+            crate::processing::processor_param::ProcessorParam {
+                name: "eps".to_string(),
+                param_type: "number".to_string(),
+                default_value: "0.1".to_string(),
+                description: "Epsilon-tube sirka (tolerancia SVR)".to_string(),
+                min: Some(0.001),
+                max: Some(10.0),
+                options: None,
+            },
+            crate::processing::processor_param::ProcessorParam {
+                name: "kernel".to_string(),
+                param_type: "select".to_string(),
+                default_value: "rbf".to_string(),
+                description: "Typ kernelu".to_string(),
+                min: None,
+                max: None,
+                options: Some(vec!["rbf".to_string(), "linear".to_string()]),
+            },
+            crate::processing::processor_param::ProcessorParam {
+                name: "gamma".to_string(),
+                param_type: "number".to_string(),
+                default_value: "0.1".to_string(),
+                description: "RBF kernel gamma koeficient".to_string(),
+                min: Some(0.0001),
+                max: Some(100.0),
+                options: None,
+            },
+        ]
+    }
 }

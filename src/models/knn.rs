@@ -65,4 +65,19 @@ impl IModel for KnnWrapper
         }
     }
 
+    fn get_param_definitions(&self) -> Vec<crate::processing::processor_param::ProcessorParam>
+    {
+        vec![
+            crate::processing::processor_param::ProcessorParam {
+                name: "k".to_string(),
+                param_type: "number".to_string(),
+                default_value: "5".to_string(),
+                description: "Pocet najblizsich susedov".to_string(),
+                min: Some(1.0),
+                max: Some(100.0),
+                options: None,
+            },
+        ]
+    }
+
 }

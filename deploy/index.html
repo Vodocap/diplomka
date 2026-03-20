@@ -1097,77 +1097,12 @@
                     <label>Evaluation Mode:</label>
                     <select id="evalModeSelect">
                         <option value="">-- Auto --</option>
-                        <option value="classification">Classification</option>
-                        <option value="regression">Regression</option>
                     </select>
                 </div>
 
                 <div id="modelParamsContainer" style="display: none;">
                     <h3 style="margin-top: 20px; font-size: 1.1em;">Parametre modelu</h3>
-                    <div class="form-group" id="knnKGroup" style="display: none;">
-                        <label>K (počet susedov):</label>
-                        <input type="number" id="knnK" placeholder="5" min="1" max="100" value="5">
-                    </div>
-
-                    <div class="form-group" id="treeMaxDepthGroup" style="display: none;">
-                        <label>Max Depth (maximálna hĺbka stromu):</label>
-                        <input type="number" id="treeMaxDepth" placeholder="10" min="1" max="50" value="10">
-                    </div>
-
-                    <!-- Random Forest params -->
-                    <div class="form-group" id="rfNEstimatorsGroup" style="display: none;">
-                        <label>N Estimators (počet stromov):</label>
-                        <input type="number" id="rfNEstimators" placeholder="100" min="1" max="500" value="100">
-                    </div>
-                    <div class="form-group" id="rfMaxDepthGroup" style="display: none;">
-                        <label>Max Depth (max hĺbka každého stromu):</label>
-                        <input type="number" id="rfMaxDepth" placeholder="10" min="1" max="50" value="10">
-                    </div>
-                    <div class="form-group" id="rfMinSamplesLeafGroup" style="display: none;">
-                        <label>Min Samples Leaf:</label>
-                        <input type="number" id="rfMinSamplesLeaf" placeholder="1" min="1" max="50" value="1">
-                    </div>
-
-                    <!-- SVM params -->
-                    <div class="form-group" id="svmCGroup" style="display: none;">
-                        <label>C (regularizačný parameter):</label>
-                        <input type="number" id="svmC" placeholder="1.0" min="0.001" max="1000" step="0.1" value="1.0">
-                    </div>
-                    <div class="form-group" id="svmEpsGroup" style="display: none;">
-                        <label>Epsilon (tolerancie chyby):</label>
-                        <input type="number" id="svmEps" placeholder="0.1" min="0.001" max="10" step="0.01" value="0.1">
-                    </div>
-                    <div class="form-group" id="svmKernelGroup" style="display: none;">
-                        <label>Kernel:</label>
-                        <select id="svmKernel">
-                            <option value="rbf">RBF (Gaussov)</option>
-                            <option value="linear">Linear</option>
-                        </select>
-                    </div>
-                    <div class="form-group" id="svmGammaGroup" style="display: none;">
-                        <label>Gamma (pre RBF kernel):</label>
-                        <input type="number" id="svmGamma" placeholder="0.1" min="0.001" max="100" step="0.01" value="0.1">
-                    </div>
-
-                    <!-- Gradient Boosting params -->
-                    <div class="form-group" id="gbtNEstimatorsGroup" style="display: none;">
-                        <label>N Estimators (počet boostovacích kôl):</label>
-                        <input type="number" id="gbtNEstimators" placeholder="50" min="1" max="500" value="50">
-                    </div>
-                    <div class="form-group" id="gbtMaxDepthGroup" style="display: none;">
-                        <label>Max Depth (max hĺbka každého stromu):</label>
-                        <input type="number" id="gbtMaxDepth" placeholder="3" min="1" max="20" value="3">
-                    </div>
-                    <div class="form-group" id="gbtLearningRateGroup" style="display: none;">
-                        <label>Learning Rate (rýchlosť učenia):</label>
-                        <input type="number" id="gbtLearningRate" placeholder="0.1" min="0.001" max="1" step="0.01" value="0.1">
-                    </div>
-
-                    <!-- Polynomálna Regresia -->
-                    <div class="form-group" id="polynomDegreeGroup" style="display: none;">
-                        <label>Stupeň polynoŕmu (degree 1–8):</label>
-                        <input type="number" id="polynomDegree" placeholder="2" min="1" max="8" value="2">
-                    </div>
+                    <div id="modelParamsFields"></div>
                 </div>
 
                 <button id="buildPipelineBtn">Vytvoriť Pipeline</button>
@@ -1461,6 +1396,17 @@
                 modelSelect.appendChild(opt);
             });
 
+            // Populate evaluation mode select dynamically
+            const evalSelect = document.getElementById('evalModeSelect');
+            if (availableOptions.evaluation_modes) {
+                availableOptions.evaluation_modes.forEach(em => {
+                    const opt = document.createElement('option');
+                    opt.value = em.name;
+                    opt.textContent = em.description;
+                    evalSelect.appendChild(opt);
+                });
+            }
+
             displayInfo();
         }
 
@@ -1545,63 +1491,55 @@
             };
         }
         
-        function hideAllParamFields() {
-            document.getElementById('modelParamsContainer').style.display = 'none';
-            document.getElementById('knnKGroup').style.display = 'none';
-            document.getElementById('treeMaxDepthGroup').style.display = 'none';
-            document.getElementById('rfNEstimatorsGroup').style.display = 'none';
-            document.getElementById('rfMaxDepthGroup').style.display = 'none';
-            document.getElementById('rfMinSamplesLeafGroup').style.display = 'none';
-            document.getElementById('svmCGroup').style.display = 'none';
-            document.getElementById('svmEpsGroup').style.display = 'none';
-            document.getElementById('svmKernelGroup').style.display = 'none';
-            document.getElementById('svmGammaGroup').style.display = 'none';
-            document.getElementById('gbtNEstimatorsGroup').style.display = 'none';
-            document.getElementById('gbtMaxDepthGroup').style.display = 'none';
-            document.getElementById('gbtLearningRateGroup').style.display = 'none';
-            document.getElementById('polynomDegreeGroup').style.display = 'none';
-        }
-
         function updateModelParams(modelName) {
-            hideAllParamFields();
-            
-            if (!modelName) return;
+            const container = document.getElementById('modelParamsContainer');
+            const fieldsDiv = document.getElementById('modelParamsFields');
+            fieldsDiv.innerHTML = '';
 
-            const params = factory.getModelParams(modelName);
-            
-            if (params.length > 0) {
-                document.getElementById('modelParamsContainer').style.display = 'block';
-                
-                params.forEach(param => {
-                    if (param === 'k') {
-                        document.getElementById('knnKGroup').style.display = 'block';
-                    } else if (param === 'max_depth' && modelName === 'tree') {
-                        document.getElementById('treeMaxDepthGroup').style.display = 'block';
-                    } else if (param === 'n_estimators' && modelName === 'rf') {
-                        document.getElementById('rfNEstimatorsGroup').style.display = 'block';
-                    } else if (param === 'max_depth' && modelName === 'rf') {
-                        document.getElementById('rfMaxDepthGroup').style.display = 'block';
-                    } else if (param === 'min_samples_leaf') {
-                        document.getElementById('rfMinSamplesLeafGroup').style.display = 'block';
-                    } else if (param === 'c') {
-                        document.getElementById('svmCGroup').style.display = 'block';
-                    } else if (param === 'eps') {
-                        document.getElementById('svmEpsGroup').style.display = 'block';
-                    } else if (param === 'kernel') {
-                        document.getElementById('svmKernelGroup').style.display = 'block';
-                    } else if (param === 'gamma') {
-                        document.getElementById('svmGammaGroup').style.display = 'block';
-                    } else if (param === 'n_estimators' && modelName === 'gbt') {
-                        document.getElementById('gbtNEstimatorsGroup').style.display = 'block';
-                    } else if (param === 'max_depth' && modelName === 'gbt') {
-                        document.getElementById('gbtMaxDepthGroup').style.display = 'block';
-                    } else if (param === 'learning_rate') {
-                        document.getElementById('gbtLearningRateGroup').style.display = 'block';
-                    } else if (param === 'degree') {
-                        document.getElementById('polynomDegreeGroup').style.display = 'block';
-                    }
-                });
+            if (!modelName) {
+                container.style.display = 'none';
+                return;
             }
+
+            const paramDefs = factory.getModelParamDefinitions(modelName);
+            if (!paramDefs || paramDefs.length === 0) {
+                container.style.display = 'none';
+                return;
+            }
+
+            container.style.display = 'block';
+            paramDefs.forEach(p => {
+                const group = document.createElement('div');
+                group.className = 'form-group';
+
+                const label = document.createElement('label');
+                label.textContent = `${p.description} (${p.name}):`;
+                group.appendChild(label);
+
+                if (p.param_type === 'select' && p.options) {
+                    const select = document.createElement('select');
+                    select.id = `model_param_${p.name}`;
+                    p.options.forEach(opt => {
+                        const option = document.createElement('option');
+                        option.value = opt;
+                        option.textContent = opt;
+                        if (opt === p.default_value) option.selected = true;
+                        select.appendChild(option);
+                    });
+                    group.appendChild(select);
+                } else {
+                    const input = document.createElement('input');
+                    input.type = 'number';
+                    input.step = 'any';
+                    input.id = `model_param_${p.name}`;
+                    input.value = p.default_value;
+                    if (p.min != null) input.min = p.min;
+                    if (p.max != null) input.max = p.max;
+                    group.appendChild(input);
+                }
+
+                fieldsDiv.appendChild(group);
+            });
         }
 
         async function buildPipeline() {
@@ -1613,72 +1551,23 @@
 
                 if (!model) throw new Error('Vyberte model');
 
-                // Validácia evaluation_mode vs model
+                // Validácia evaluation_mode vs model (dynamicky podľa model_type z factory)
                 if (evalMode) {
-                    if (model === 'linreg' && evalMode === 'classification') {
-                        showStatus('error', 'Upozornenie: Lineárna regresia (linreg) vyžaduje evaluation_mode = "regression", nie "classification".', 'pipelineStatus');
-                        if (!confirm('Vybrali ste nekompatibilný evaluation_mode.\n\nModel: Lineárna Regresia (linreg)\nEvaluation Mode: classification\n\nMal by byť: regression\n\nChcete pokračovať?')) {
-                            return;
-                        }
-                    }
-                    if (model === 'logreg' && evalMode === 'regression') {
-                        showStatus('error', 'Upozornenie: Logistická regresia (logreg) vyžaduje evaluation_mode = "classification", nie "regression".', 'pipelineStatus');
-                        if (!confirm('Vybrali ste nekompatibilný evaluation_mode.\n\nModel: Logistická Regresia (logreg)\nEvaluation Mode: regression\n\nMal by byť: classification\n\nChcete pokračovať?')) {
+                    const modelInfo = availableOptions.models.find(m => m.name === model);
+                    if (modelInfo && modelInfo.model_type !== 'both' && modelInfo.model_type !== evalMode) {
+                        showStatus('error', `Upozornenie: Model ${model} vyžaduje evaluation_mode = "${modelInfo.model_type}", nie "${evalMode}".`, 'pipelineStatus');
+                        if (!confirm(`Vybrali ste nekompatibilný evaluation_mode.\n\nModel: ${modelInfo.description}\nEvaluation Mode: ${evalMode}\n\nMal by byť: ${modelInfo.model_type}\n\nChcete pokračovať?`)) {
                             return;
                         }
                     }
                 }
 
-                // Zozbierať parametre
+                // Zozbierať parametre dynamicky
                 const modelParams = [];
-
-                const knnK = document.getElementById('knnK').value;
-                if (knnK && model === 'knn') {
-                    modelParams.push(['k', knnK]);
-                }
-
-                const treeMaxDepth = document.getElementById('treeMaxDepth').value;
-                if (treeMaxDepth && model === 'tree') {
-                    modelParams.push(['max_depth', treeMaxDepth]);
-                }
-
-                // Random Forest params
-                if (model === 'rf') {
-                    const v = document.getElementById('rfNEstimators').value;
-                    if (v) modelParams.push(['n_estimators', v]);
-                    const d = document.getElementById('rfMaxDepth').value;
-                    if (d) modelParams.push(['max_depth', d]);
-                    const l = document.getElementById('rfMinSamplesLeaf').value;
-                    if (l) modelParams.push(['min_samples_leaf', l]);
-                }
-
-                // SVM params
-                if (model === 'svm') {
-                    const c = document.getElementById('svmC').value;
-                    if (c) modelParams.push(['c', c]);
-                    const eps = document.getElementById('svmEps').value;
-                    if (eps) modelParams.push(['eps', eps]);
-                    const kernel = document.getElementById('svmKernel').value;
-                    if (kernel) modelParams.push(['kernel', kernel]);
-                    const gamma = document.getElementById('svmGamma').value;
-                    if (gamma) modelParams.push(['gamma', gamma]);
-                }
-
-                // Gradient Boosting params
-                if (model === 'gbt') {
-                    const n = document.getElementById('gbtNEstimators').value;
-                    if (n) modelParams.push(['n_estimators', n]);
-                    const d = document.getElementById('gbtMaxDepth').value;
-                    if (d) modelParams.push(['max_depth', d]);
-                    const lr = document.getElementById('gbtLearningRate').value;
-                    if (lr) modelParams.push(['learning_rate', lr]);
-                }
-
-                // Polynomálna regresia params
-                if (model === 'polynom') {
-                    const deg = document.getElementById('polynomDegree').value;
-                    if (deg) modelParams.push(['degree', deg]);
-                }
+                document.querySelectorAll('#modelParamsFields input, #modelParamsFields select').forEach(el => {
+                    const paramName = el.id.replace('model_param_', '');
+                    if (el.value) modelParams.push([paramName, el.value]);
+                });
 
                 const config = {
                     model: model,
@@ -2700,45 +2589,44 @@
             const isClassification = firstSuccess.result.evaluation_mode === 'classification';
             globalComparisonResults.isClassification = isClassification;
 
+            // Get metric definitions dynamically from Rust
+            const evalMode = isClassification ? 'classification' : 'regression';
+            const metricDefs = factory.getEvaluationMetrics(evalMode);
+
             let html = '<h3 style="margin-top:20px;margin-bottom:10px;color:#cc0000;">Porovnanie výsledkov tréningu</h3>';
             html += '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">';
             html += '<thead><tr>';
             html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:left;font-size:11px;">Metóda</th>';
             html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;">Features</th>';
             
-            if (isClassification) {
-                html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="Accuracy">ACC</th>';
-                html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="F1 Score">F1</th>';
-                html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="Precision">PREC</th>';
-                html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="Recall/Sensitivity">REC</th>';
-                html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="Specificity">SPEC</th>';
-                html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="False Positives">FP</th>';
-                html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="False Negatives">FN</th>';
-                html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="Matthews Correlation Coeff">MCC</th>';
-            } else {
-                html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="R-squared">R²</th>';
-                html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="Root Mean Squared Error">RMSE</th>';
-                html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="Mean Absolute Error">MAE</th>';
-                html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="Mean Absolute Percentage Error">MAPE</th>';
-                html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="Median Absolute Error">MedAE</th>';
-                html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="Pearsonova korelácia predikcie">CORR</th>';
-            }
+            metricDefs.forEach(m => {
+                html += `<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="${m.full_name}">${m.short_name}</th>`;
+            });
             html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;">Čas (ms)</th>';
             html += '</tr></thead><tbody>';
 
-            // Find best values for highlighting
+            // Find best values for highlighting (use first metric as primary)
+            const primaryKey = metricDefs[0].key;
             let bestMetric = -Infinity;
             allResults.forEach(r => {
                 if (!r.result) return;
-                const val = isClassification ? r.result.accuracy : r.result.r2_score;
+                const val = r.result[primaryKey];
                 if (val > bestMetric) bestMetric = val;
             });
+
+            const formatMetricValue = (val, formatType) => {
+                if (val == null || val === undefined) return 'N/A';
+                if (formatType === 'percent') return (val * 100).toFixed(1) + '%';
+                if (formatType === 'decimal4') return val.toFixed(4);
+                if (formatType === 'integer') return Math.round(val).toString();
+                return val.toFixed(3);
+            };
 
             allResults.forEach((r, idx) => {
                 const isBaseline = r.indices === null;
                 const isUser = r.isUser === true;
                 const isEmbedded = r.isEmbedded === true;
-                const isBest = r.result && ((isClassification ? r.result.accuracy : r.result.r2_score) === bestMetric);
+                const isBest = r.result && (r.result[primaryKey] === bestMetric);
                 const bg = isBest ? 'background:#ffe4e1;' : isEmbedded ? 'background:#fff9e6;' : isUser ? 'background:#fff0f0;' : (idx % 2 === 0 ? 'background:#f8f9fa;' : '');
                 
                 html += `<tr style="${bg}">`;
@@ -2746,26 +2634,14 @@
                 html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-size:12px;">${r.count}/${totalFeatures}</td>`;
 
                 if (r.error) {
-                    const colSpan = isClassification ? 8 : 6;
-                    html += `<td colspan="${colSpan}" style="padding:6px;border:1px solid #dee2e6;color:#e74c3c;text-align:center;font-size:11px;">${r.error}</td>`;
+                    html += `<td colspan="${metricDefs.length}" style="padding:6px;border:1px solid #dee2e6;color:#e74c3c;text-align:center;font-size:11px;">${r.error}</td>`;
                 } else if (r.result) {
-                    if (isClassification) {
-                        html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-weight:bold;color:#cc0000;font-size:12px;">${(r.result.accuracy * 100).toFixed(1)}%</td>`;
-                        html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-size:12px;">${r.result.f1_score.toFixed(3)}</td>`;
-                        html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-size:12px;">${r.result.precision.toFixed(3)}</td>`;
-                        html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-size:12px;">${r.result.recall.toFixed(3)}</td>`;
-                        html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-size:12px;">${r.result.specificity.toFixed(3)}</td>`;
-                        html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-size:12px;">${Math.round(r.result.false_positives)}</td>`;
-                        html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-size:12px;">${Math.round(r.result.false_negatives)}</td>`;
-                        html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-size:12px;">${r.result.mcc.toFixed(3)}</td>`;
-                    } else {
-                        html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-weight:bold;color:#cc0000;font-size:12px;">${r.result.r2_score.toFixed(4)}</td>`;
-                        html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-size:12px;">${r.result.rmse.toFixed(3)}</td>`;
-                        html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-size:12px;">${r.result.mae.toFixed(3)}</td>`;
-                        html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-size:12px;">${r.result.mape ? r.result.mape.toFixed(2) + '%' : 'N/A'}</td>`;
-                        html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-size:12px;">${r.result.median_absolute_error.toFixed(3)}</td>`;
-                        html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-size:12px;">${r.result.pearson_correlation.toFixed(3)}</td>`;
-                    }
+                    metricDefs.forEach((m, mi) => {
+                        const val = r.result[m.key];
+                        const isPrimary = mi === 0;
+                        const boldStyle = isPrimary ? 'font-weight:bold;color:#cc0000;' : '';
+                        html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;${boldStyle}font-size:12px;">${formatMetricValue(val, m.format_type)}</td>`;
+                    });
                     const timeStr = r.timeMs ? `${r.timeMs.toFixed(0)}` : '-';
                     html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;color:#6c757d;font-size:12px;">${timeStr}</td>`;
                 }
@@ -2774,19 +2650,10 @@
 
             html += '</tbody></table></div>';
             
-            // Add legend for abbreviations
+            // Add legend for abbreviations dynamically
             html += '<div style="margin-top:12px;padding:12px;background:#f8f9fa;border:1px solid #dee2e6;border-radius:4px;font-size:11px;color:#495057;">';
-            if (isClassification) {
-                html += '<strong>Metriky klasifikácie:</strong><br>';
-                html += '• ACC = Accuracy | F1 = F1 Score | PREC = Precision | REC = Recall/Sensitivity | SPEC = Specificity<br>';
-                html += '• FP = počet falošne pozitívnych prípadov | FN = počet falošne negatívnych prípadov<br>';
-                html += '• MCC = Matthews Correlation Coefficient (vhodnejší ako accuracy pre imbalancované dáta)<br>';
-            } else {
-                html += '<strong>Metriky regresie:</strong><br>';
-                html += '• R² = Koeficient determinácie (max 1.0, môže byť záporné pre zlé modely, vyššia = lepšia) | RMSE = Root Mean Squared Error<br>';
-                html += '• MAE = Mean Absolute Error | MAPE = Mean Absolute Percentage Error<br>';
-                html += '• MedAE = Median Absolute Error | CORR = Pearsonova korelácia (sklon linearity)<br>';
-            }
+            html += `<strong>Metriky ${isClassification ? 'klasifikácie' : 'regresie'}:</strong><br>`;
+            html += '• ' + metricDefs.map(m => `${m.short_name} = ${m.full_name}`).join(' | ') + '<br>';
             html += '</div>';
 
             // Show which features each selector picked

@@ -79,4 +79,17 @@ impl FeatureSelectorFactory
             _ => vec![],
         }
     }
+
+    /// Vracia detailne definicie parametrov pre selektor (pre dynamicke UI)
+    pub fn get_param_definitions(selector_type: &str) -> Vec<crate::processing::processor_param::ProcessorParam>
+    {
+        if let Ok(selector) = Self::create(selector_type)
+        {
+            selector.get_param_definitions()
+        }
+        else
+        {
+            vec![]
+        }
+    }
 }

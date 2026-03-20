@@ -359,6 +359,21 @@ impl FeatureSelector for CorrelationSelector
     fn get_selection_details(&self) -> String {
         self.details_cache.borrow().clone()
     }
+
+    fn get_param_definitions(&self) -> Vec<crate::processing::processor_param::ProcessorParam>
+    {
+        vec![
+            crate::processing::processor_param::ProcessorParam {
+                name: "threshold".to_string(),
+                param_type: "number".to_string(),
+                default_value: "0.95".to_string(),
+                description: "Prah korelacie medzi features - vysoko korelovane su odstranene".to_string(),
+                min: Some(0.0),
+                max: Some(1.0),
+                options: None,
+            },
+        ]
+    }
 }
 
 

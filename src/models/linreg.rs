@@ -73,4 +73,19 @@ impl IModel for LinRegWrapper
             .and_then(|m| m.predict(&x).ok())
             .unwrap_or_default()
     }
+
+    fn get_param_definitions(&self) -> Vec<crate::processing::processor_param::ProcessorParam>
+    {
+        vec![
+            crate::processing::processor_param::ProcessorParam {
+                name: "solver".to_string(),
+                param_type: "select".to_string(),
+                default_value: "qr".to_string(),
+                description: "OLS solver".to_string(),
+                min: None,
+                max: None,
+                options: Some(vec!["qr".to_string(), "svd".to_string()]),
+            },
+        ]
+    }
 }

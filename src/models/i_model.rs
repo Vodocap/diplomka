@@ -1,4 +1,5 @@
 use smartcore::linalg::basic::matrix::DenseMatrix;
+use crate::processing::processor_param::ProcessorParam;
 
 /// Spolocne rozhranie pre vsetky ML modely (Strategy pattern).
 /// Kazdy model implementuje trato, co umoznuje pipeline pracovat s lubovolnym modelom
@@ -21,4 +22,10 @@ pub trait IModel
     /// Nastavi hyperparameter podla nazvu a hodnoty zadanej ako retazec.
     /// Vracia chybu, ak parameter neexistuje alebo sa neda parsovat.
     fn set_param(&mut self, key: &str, value: &str) -> Result<(), String>;
+
+    /// Vracia detailne definicie parametrov pre dynamicke generovanie UI.
+    fn get_param_definitions(&self) -> Vec<ProcessorParam>
+    {
+        vec![]
+    }
 }

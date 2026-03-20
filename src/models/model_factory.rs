@@ -87,4 +87,17 @@ impl ModelFactory
             _ => vec![],
         }
     }
+
+    /// Vracia detailne definicie parametrov pre model (pre dynamicke UI)
+    pub fn get_param_definitions(model_type: &str) -> Vec<crate::processing::processor_param::ProcessorParam>
+    {
+        if let Ok(model) = Self::create(model_type)
+        {
+            model.get_param_definitions()
+        }
+        else
+        {
+            vec![]
+        }
+    }
 }

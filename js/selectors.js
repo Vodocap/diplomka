@@ -18,32 +18,28 @@ function populateComparisonSelectors() {
             ? '<span class="card-tag warn">Vyžaduje Binner</span>'
             : '';
 
-        // Build param inputs based on selector type
+        // Build param inputs from Rust definitions
         let paramsHtml = '';
-        const params = factory.getSelectorParams(sel.name);
-        if (params && params.length > 0) {
-            params.forEach(p => {
-                let defaultVal = '';
-                let label = p;
-                let description = '';
-                let inputType = 'number';
-
-                // Common params
-                if (p === 'num_features') {
-                    defaultVal = '5';
-                    label = 'Počet features';
-                    description = 'Koľko features chcete vybrať z celkového počtu.';
-                } else if (p === 'threshold') {
-                    defaultVal = '0.01';
-                    label = 'Prahová hodnota';
-                    description = 'Minimálna variancia – features pod touto hodnotou budú vylúčené.';
+        const paramDefs = factory.getSelectorParamDefinitions(sel.name);
+        if (paramDefs && paramDefs.length > 0) {
+            paramDefs.forEach(p => {
+                if (p.param_type === 'select' && p.options) {
+                    const optionsHtml = p.options.map(opt =>
+                        `<option value="${opt}" ${opt === p.default_value ? 'selected' : ''}>${opt}</option>`
+                    ).join('');
+                    paramsHtml += `<div class="form-group" style="margin-bottom:8px;">
+                        <label>${p.description} (${p.name}):</label>
+                        <select id="compare_param_${sel.name}_${p.name}">${optionsHtml}</select>
+                    </div>`;
+                } else {
+                    paramsHtml += `<div class="form-group" style="margin-bottom:8px;">
+                        <label>${p.description} (${p.name}):</label>
+                        <input type="number" step="any" value="${p.default_value}"
+                            ${p.min != null ? `min="${p.min}"` : ''}
+                            ${p.max != null ? `max="${p.max}"` : ''}
+                            id="compare_param_${sel.name}_${p.name}">
+                    </div>`;
                 }
-
-                paramsHtml += `<div class="form-group" style="margin-bottom:8px;">
-                    <label>${label} (${p}):</label>
-                    <input type="${inputType}" step="any" value="${defaultVal}" id="compare_param_${sel.name}_${p}">
-                    ${description ? `<div class="param-desc">${description}</div>` : ''}
-                </div>`;
             });
         }
 
@@ -412,37 +408,28 @@ function renderTrainingComparison(allResults, totalFeatures, featureNames, targe
     const isClassification = firstSuccess.result.evaluation_mode === 'classification';
     globalComparisonResults.isClassification = isClassification;
 
+    // Get metric definitions dynamically from Rust
+    const evalMode = isClassification ? 'classification' : 'regression';
+    const metricDefs = factory.getEvaluationMetrics(evalMode);
+
     let html = '<h3 style="margin-top:20px;margin-bottom:10px;color:#cc0000;">Porovnanie výsledkov tréningu</h3>';
     html += '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">';
     html += '<thead><tr>';
     html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:left;font-size:11px;">Metóda</th>';
     html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;">Features</th>';
     
-    if (isClassification) {
-        html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="Accuracy">ACC</th>';
-        html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="F1 Score">F1</th>';
-        html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="Precision">PREC</th>';
-        html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="Recall/Sensitivity">REC</th>';
-        html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="Specificity">SPEC</th>';
-        html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="False Positives">FP</th>';
-        html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="False Negatives">FN</th>';
-        html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="Matthews Correlation Coeff">MCC</th>';
-    } else {
-        html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="R-squared">R²</th>';
-        html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="Root Mean Squared Error">RMSE</th>';
-        html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="Mean Absolute Error">MAE</th>';
-        html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="Mean Absolute Percentage Error">MAPE</th>';
-        html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="Median Absolute Error">MedAE</th>';
-        html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="Pearsonova korelácia predikcie">CORR</th>';
-    }
+    metricDefs.forEach(m => {
+        html += `<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;" title="${m.full_name}">${m.short_name}</th>`;
+    });
     html += '<th style="padding:10px 6px;border:1px solid #dee2e6;background:#cc0000;color:white;text-align:center;font-size:11px;">Čas (ms)</th>';
     html += '</tr></thead><tbody>';
 
-    // Find best values for highlighting
+    // Find best values for highlighting (use first metric as primary)
+    const primaryKey = metricDefs[0].key;
     let bestMetric = -Infinity;
     allResults.forEach(r => {
         if (!r.result) return;
-        const val = isClassification ? r.result.accuracy : r.result.r2_score;
+        const val = r.result[primaryKey];
         if (val > bestMetric) bestMetric = val;
     });
 
@@ -450,7 +437,7 @@ function renderTrainingComparison(allResults, totalFeatures, featureNames, targe
         const isBaseline = r.indices === null;
         const isUser = r.isUser === true;
         const isEmbedded = r.isEmbedded === true;
-        const isBest = r.result && ((isClassification ? r.result.accuracy : r.result.r2_score) === bestMetric);
+        const isBest = r.result && (r.result[primaryKey] === bestMetric);
         const bg = isBest ? 'background:#ffe4e1;' : isEmbedded ? 'background:#fff9e6;' : isUser ? 'background:#fff0f0;' : (idx % 2 === 0 ? 'background:#f8f9fa;' : '');
         
         html += `<tr style="${bg}">`;
@@ -458,26 +445,26 @@ function renderTrainingComparison(allResults, totalFeatures, featureNames, targe
         html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-size:12px;">${r.count}/${totalFeatures}</td>`;
 
         if (r.error) {
-            const colSpan = isClassification ? 8 : 6;
-            html += `<td colspan="${colSpan}" style="padding:6px;border:1px solid #dee2e6;color:#e74c3c;text-align:center;font-size:11px;">${r.error}</td>`;
+            html += `<td colspan="${metricDefs.length}" style="padding:6px;border:1px solid #dee2e6;color:#e74c3c;text-align:center;font-size:11px;">${r.error}</td>`;
         } else if (r.result) {
-            if (isClassification) {
-                html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-weight:bold;color:#cc0000;font-size:12px;">${(r.result.accuracy * 100).toFixed(1)}%</td>`;
-                html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-size:12px;">${r.result.f1_score.toFixed(3)}</td>`;
-                html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-size:12px;">${r.result.precision.toFixed(3)}</td>`;
-                html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-size:12px;">${r.result.recall.toFixed(3)}</td>`;
-                html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-size:12px;">${r.result.specificity.toFixed(3)}</td>`;
-                html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-size:12px;">${Math.round(r.result.false_positives)}</td>`;
-                html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-size:12px;">${Math.round(r.result.false_negatives)}</td>`;
-                html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-size:12px;">${r.result.mcc.toFixed(3)}</td>`;
-            } else {
-                html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-weight:bold;color:#cc0000;font-size:12px;">${r.result.r2_score.toFixed(4)}</td>`;
-                html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-size:12px;">${r.result.rmse.toFixed(3)}</td>`;
-                html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-size:12px;">${r.result.mae.toFixed(3)}</td>`;
-                html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-size:12px;">${r.result.mape ? r.result.mape.toFixed(2) + '%' : 'N/A'}</td>`;
-                html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-size:12px;">${r.result.median_absolute_error.toFixed(3)}</td>`;
-                html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;font-size:12px;">${r.result.pearson_correlation.toFixed(3)}</td>`;
-            }
+            metricDefs.forEach((m, mi) => {
+                const val = r.result[m.key];
+                const isPrimary = mi === 0;
+                const boldStyle = isPrimary ? 'font-weight:bold;color:#cc0000;' : '';
+                let formatted;
+                if (val == null || val === undefined) {
+                    formatted = 'N/A';
+                } else if (m.format_type === 'percent') {
+                    formatted = (val * 100).toFixed(1) + '%';
+                } else if (m.format_type === 'decimal4') {
+                    formatted = val.toFixed(4);
+                } else if (m.format_type === 'integer') {
+                    formatted = Math.round(val).toString();
+                } else {
+                    formatted = val.toFixed(3);
+                }
+                html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;${boldStyle}font-size:12px;">${formatted}</td>`;
+            });
             const timeStr = r.timeMs ? `${r.timeMs.toFixed(0)}` : '-';
             html += `<td style="padding:6px;border:1px solid #dee2e6;text-align:center;color:#6c757d;font-size:12px;">${timeStr}</td>`;
         }
@@ -486,19 +473,10 @@ function renderTrainingComparison(allResults, totalFeatures, featureNames, targe
 
     html += '</tbody></table></div>';
     
-    // Add legend for abbreviations
+    // Add legend for abbreviations dynamically
     html += '<div style="margin-top:12px;padding:12px;background:#f8f9fa;border:1px solid #dee2e6;border-radius:4px;font-size:11px;color:#495057;">';
-    if (isClassification) {
-        html += '<strong>Metriky klasifikácie:</strong><br>';
-        html += '• ACC = Accuracy | F1 = F1 Score | PREC = Precision | REC = Recall/Sensitivity | SPEC = Specificity<br>';
-        html += '• FP = počet falošne pozitívnych prípadov | FN = počet falošne negatívnych prípadov<br>';
-        html += '• MCC = Matthews Correlation Coefficient (vhodnejší ako accuracy pre imbalancované dáta)<br>';
-    } else {
-        html += '<strong>Metriky regresie:</strong><br>';
-        html += '• R² = Koeficient determinácie (max 1.0, môže byť záporné pre zlé modely, vyššia = lepšia) | RMSE = Root Mean Squared Error<br>';
-        html += '• MAE = Mean Absolute Error | MAPE = Mean Absolute Percentage Error<br>';
-        html += '• MedAE = Median Absolute Error | CORR = Pearsonova korelácia (sklon linearity)<br>';
-    }
+    html += `<strong>Metriky ${isClassification ? 'klasifikácie' : 'regresie'}:</strong><br>`;
+    html += '• ' + metricDefs.map(m => `${m.short_name} = ${m.full_name}`).join(' | ') + '<br>';
     html += '</div>';
 
     // Show which features each selector picked
@@ -633,54 +611,41 @@ async function generatePdfReport(allResults, totalFeatures, featureNames, isClas
         pdf.text(`Cieľová premenná: ${targetCol}`, margin, 47);
         pdf.text(`Typ úlohy: ${isClassification ? 'Klasifikácia' : 'Regresia'}`, margin, 53);
 
-        // Build table data
-        const successResults = allResults.filter(r => r.result);
-        const failedResults = allResults.filter(r => r.error);
+        // Build table data dynamically from metric definitions
+        const pdfEvalMode = isClassification ? 'classification' : 'regression';
+        const pdfMetricDefs = factory.getEvaluationMetrics(pdfEvalMode);
+        
+        let tableHeaders = ['Metóda', 'Features'];
+        pdfMetricDefs.forEach(m => tableHeaders.push(m.short_name));
+        tableHeaders.push('Čas(ms)');
 
-        let tableHeaders, tableBody;
-        if (isClassification) {
-            tableHeaders = ['Metóda', 'Features', 'ACC', 'F1', 'PREC', 'REC', 'SPEC', 'FP', 'FN', 'MCC', 'Čas(ms)'];
-            tableBody = allResults.map(r => {
-                const row = [r.name, `${r.count}/${totalFeatures}`];
-                if (r.error) {
-                    row.push({ content: r.error, colSpan: 9, styles: { textColor: [231, 76, 60], fontSize: 7 } });
-                } else if (r.result) {
-                    row.push((r.result.accuracy * 100).toFixed(1) + '%');
-                    row.push(r.result.f1_score.toFixed(3));
-                    row.push(r.result.precision.toFixed(3));
-                    row.push(r.result.recall.toFixed(3));
-                    row.push(r.result.specificity.toFixed(3));
-                    row.push(Math.round(r.result.false_positives).toString());
-                    row.push(Math.round(r.result.false_negatives).toString());
-                    row.push(r.result.mcc.toFixed(3));
-                    row.push(r.timeMs ? r.timeMs.toFixed(0) : '-');
-                }
-                return row;
-            });
-        } else {
-            tableHeaders = ['Metóda', 'Features', 'R²', 'RMSE', 'MAE', 'MAPE', 'MedAE', 'CORR', 'Čas(ms)'];
-            tableBody = allResults.map(r => {
-                const row = [r.name, `${r.count}/${totalFeatures}`];
-                if (r.error) {
-                    row.push({ content: r.error, colSpan: 7, styles: { textColor: [231, 76, 60], fontSize: 7 } });
-                } else if (r.result) {
-                    row.push(r.result.r2_score.toFixed(4));
-                    row.push(r.result.rmse.toFixed(3));
-                    row.push(r.result.mae.toFixed(3));
-                    row.push(r.result.mape ? r.result.mape.toFixed(2) + '%' : 'N/A');
-                    row.push(r.result.median_absolute_error.toFixed(3));
-                    row.push(r.result.pearson_correlation.toFixed(3));
-                    row.push(r.timeMs ? r.timeMs.toFixed(0) : '-');
-                }
-                return row;
-            });
-        }
+        const formatMetricValue = (val, formatType) => {
+            if (val == null || val === undefined) return 'N/A';
+            if (formatType === 'percent') return (val * 100).toFixed(1) + '%';
+            if (formatType === 'decimal4') return val.toFixed(4);
+            if (formatType === 'integer') return Math.round(val).toString();
+            return val.toFixed(3);
+        };
 
-        // Find best result
+        let tableBody = allResults.map(r => {
+            const row = [r.name, `${r.count}/${totalFeatures}`];
+            if (r.error) {
+                row.push({ content: r.error, colSpan: pdfMetricDefs.length + 1, styles: { textColor: [231, 76, 60], fontSize: 7 } });
+            } else if (r.result) {
+                pdfMetricDefs.forEach(m => {
+                    row.push(formatMetricValue(r.result[m.key], m.format_type));
+                });
+                row.push(r.timeMs ? r.timeMs.toFixed(0) : '-');
+            }
+            return row;
+        });
+
+        // Find best result (use first metric as primary)
+        const pdfPrimaryKey = pdfMetricDefs[0].key;
         let bestIdx = -1, bestVal = -Infinity;
         allResults.forEach((r, i) => {
             if (!r.result) return;
-            const val = isClassification ? r.result.accuracy : r.result.r2_score;
+            const val = r.result[pdfPrimaryKey];
             if (val > bestVal) { bestVal = val; bestIdx = i; }
         });
 

@@ -83,4 +83,37 @@ impl IModel for RandomForestWrapper
             .and_then(|m| m.predict(&x).ok())
             .unwrap_or_default()
     }
+
+    fn get_param_definitions(&self) -> Vec<crate::processing::processor_param::ProcessorParam>
+    {
+        vec![
+            crate::processing::processor_param::ProcessorParam {
+                name: "n_estimators".to_string(),
+                param_type: "number".to_string(),
+                default_value: "100".to_string(),
+                description: "Pocet stromov v ansambli".to_string(),
+                min: Some(1.0),
+                max: Some(500.0),
+                options: None,
+            },
+            crate::processing::processor_param::ProcessorParam {
+                name: "max_depth".to_string(),
+                param_type: "number".to_string(),
+                default_value: "10".to_string(),
+                description: "Maximalna hlbka kazdeho stromu".to_string(),
+                min: Some(1.0),
+                max: Some(50.0),
+                options: None,
+            },
+            crate::processing::processor_param::ProcessorParam {
+                name: "min_samples_leaf".to_string(),
+                param_type: "number".to_string(),
+                default_value: "1".to_string(),
+                description: "Minimalny pocet vzoriek v liste".to_string(),
+                min: Some(1.0),
+                max: Some(50.0),
+                options: None,
+            },
+        ]
+    }
 }

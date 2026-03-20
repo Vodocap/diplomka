@@ -4,9 +4,8 @@ use crate::models::model_factory::ModelFactory;
 use crate::processing::processor_factory::ProcessorFactory;
 use crate::feature_selection_strategies::feature_selector_factory::FeatureSelectorFactory;
 use crate::data_loading::data_loader_factory::DataLoaderFactory;
-use crate::pipeline::director::MLPipelineDirector;
 
-/// Suhrnna konfiguracia vsetkych dostupnych moznosti (modely, procesory, selektory, formaty, presety).
+/// Suhrnna konfiguracia vsetkych dostupnych moznosti (modely, procesory, selektory, formaty).
 /// Serializuje sa do JS pre dynamicke generovanie UI.
 #[derive(Serialize, Deserialize)]
 pub struct AvailableOptions
@@ -15,7 +14,7 @@ pub struct AvailableOptions
     pub processors: Vec<ProcessorInfo>,
     pub selectors: Vec<SelectorInfo>,
     pub data_formats: Vec<FormatInfo>,
-    pub presets: Vec<PresetInfo>,
+    pub evaluation_modes: Vec<EvalModeInfo>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -50,14 +49,22 @@ pub struct FormatInfo
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct PresetInfo
+pub struct EvalModeInfo
 {
     pub name: String,
     pub description: String,
-    pub model_type: String,
 }
 
-/// WASM fasada pre enumeraciu dostupnych moznosti (modely, procesory, selektory, presets).
+#[derive(Serialize, Deserialize)]
+pub struct MetricDefinition
+{
+    pub key: String,
+    pub short_name: String,
+    pub full_name: String,
+    pub format_type: String, // "percent", "decimal3", "decimal4", "integer"
+}
+
+/// WASM fasada pre enumeraciu dostupnych moznosti (modely, procesory, selektory).
 /// Frontend vola getAvailableOptions() pre dynamicke naplnenie UI komponentov.
 #[wasm_bindgen]
 pub struct WasmFactory;
@@ -119,21 +126,23 @@ impl WasmFactory
             })
             .collect();
 
-        let presets: Vec<PresetInfo> = MLPipelineDirector::available_presets()
-            .iter()
-            .map(|preset| PresetInfo {
-                name: preset.name.to_string(),
-                description: preset.description.to_string(),
-                model_type: preset.model_type.to_string(),
-            })
-            .collect();
+        let evaluation_modes = vec![
+            EvalModeInfo {
+                name: "classification".to_string(),
+                description: "Classification - predikcia diskrétnych tried".to_string(),
+            },
+            EvalModeInfo {
+                name: "regression".to_string(),
+                description: "Regression - predikcia spojitých hodnôt".to_string(),
+            },
+        ];
 
         let options = AvailableOptions {
             models,
             processors,
             selectors,
             data_formats,
-            presets,
+            evaluation_modes,
         };
 
         serde_wasm_bindgen::to_value(&options).unwrap()
@@ -168,12 +177,30 @@ impl WasmFactory
         serde_wasm_bindgen::to_value(&params).unwrap()
     }
 
+    /// Získa detailné definície parametrov pre model
+    #[wasm_bindgen(js_name = getModelParamDefinitions)]
+    pub fn get_model_param_definitions(&self, model_name: &str) -> JsValue
+    {
+        use crate::models::model_factory::ModelFactory;
+        let params = ModelFactory::get_param_definitions(model_name);
+        serde_wasm_bindgen::to_value(&params).unwrap()
+    }
+
     /// Získa podporované parametre pre selector
     #[wasm_bindgen(js_name = getSelectorParams)]
     pub fn get_selector_params(&self, selector_name: &str) -> JsValue
     {
         use crate::feature_selection_strategies::feature_selector_factory::FeatureSelectorFactory;
         let params = FeatureSelectorFactory::get_supported_params(selector_name);
+        serde_wasm_bindgen::to_value(&params).unwrap()
+    }
+
+    /// Získa detailné definície parametrov pre selector
+    #[wasm_bindgen(js_name = getSelectorParamDefinitions)]
+    pub fn get_selector_param_definitions(&self, selector_name: &str) -> JsValue
+    {
+        use crate::feature_selection_strategies::feature_selector_factory::FeatureSelectorFactory;
+        let params = FeatureSelectorFactory::get_param_definitions(selector_name);
         serde_wasm_bindgen::to_value(&params).unwrap()
     }
 
@@ -185,21 +212,31 @@ impl WasmFactory
         serde_wasm_bindgen::to_value(&params).unwrap()
     }
 
-    /// Získa detaily o presete (model, processor, selector)
-    #[wasm_bindgen(js_name = getPresetDetails)]
-    pub fn get_preset_details(&self, preset_name: &str) -> JsValue
+    /// Získa definície metrík pre daný evaluation mode
+    #[wasm_bindgen(js_name = getEvaluationMetrics)]
+    pub fn get_evaluation_metrics(&self, eval_mode: &str) -> JsValue
     {
-        use crate::pipeline::director::MLPipelineDirector;
-        let presets = MLPipelineDirector::available_presets();
-
-        for preset in presets
+        let metrics = match eval_mode
         {
-            if preset.name == preset_name
-            {
-                return serde_wasm_bindgen::to_value(&preset).unwrap();
-            }
-        }
-
-        JsValue::NULL
+            "classification" => vec![
+                MetricDefinition { key: "accuracy".into(), short_name: "ACC".into(), full_name: "Accuracy".into(), format_type: "percent".into() },
+                MetricDefinition { key: "f1_score".into(), short_name: "F1".into(), full_name: "F1 Score".into(), format_type: "decimal3".into() },
+                MetricDefinition { key: "precision".into(), short_name: "PREC".into(), full_name: "Precision".into(), format_type: "decimal3".into() },
+                MetricDefinition { key: "recall".into(), short_name: "REC".into(), full_name: "Recall/Sensitivity".into(), format_type: "decimal3".into() },
+                MetricDefinition { key: "specificity".into(), short_name: "SPEC".into(), full_name: "Specificity".into(), format_type: "decimal3".into() },
+                MetricDefinition { key: "false_positives".into(), short_name: "FP".into(), full_name: "False Positives".into(), format_type: "integer".into() },
+                MetricDefinition { key: "false_negatives".into(), short_name: "FN".into(), full_name: "False Negatives".into(), format_type: "integer".into() },
+                MetricDefinition { key: "mcc".into(), short_name: "MCC".into(), full_name: "Matthews Correlation Coefficient".into(), format_type: "decimal3".into() },
+            ],
+            _ => vec![
+                MetricDefinition { key: "r2_score".into(), short_name: "R²".into(), full_name: "Coefficient of determination".into(), format_type: "decimal4".into() },
+                MetricDefinition { key: "rmse".into(), short_name: "RMSE".into(), full_name: "Root Mean Squared Error".into(), format_type: "decimal3".into() },
+                MetricDefinition { key: "mae".into(), short_name: "MAE".into(), full_name: "Mean Absolute Error".into(), format_type: "decimal3".into() },
+                MetricDefinition { key: "mape".into(), short_name: "MAPE".into(), full_name: "Mean Absolute Percentage Error".into(), format_type: "percent".into() },
+                MetricDefinition { key: "median_absolute_error".into(), short_name: "MedAE".into(), full_name: "Median Absolute Error".into(), format_type: "decimal3".into() },
+                MetricDefinition { key: "pearson_correlation".into(), short_name: "CORR".into(), full_name: "Pearsonova korelácia predikcie".into(), format_type: "decimal3".into() },
+            ],
+        };
+        serde_wasm_bindgen::to_value(&metrics).unwrap()
     }
 }

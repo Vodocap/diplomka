@@ -39,77 +39,12 @@
                     <label>Evaluation Mode:</label>
                     <select id="evalModeSelect">
                         <option value="">-- Auto --</option>
-                        <option value="classification">Classification</option>
-                        <option value="regression">Regression</option>
                     </select>
                 </div>
 
                 <div id="modelParamsContainer" style="display: none;">
                     <h3 style="margin-top: 20px; font-size: 1.1em;">Parametre modelu</h3>
-                    <div class="form-group" id="knnKGroup" style="display: none;">
-                        <label>K (počet susedov):</label>
-                        <input type="number" id="knnK" placeholder="5" min="1" max="100" value="5">
-                    </div>
-
-                    <div class="form-group" id="treeMaxDepthGroup" style="display: none;">
-                        <label>Max Depth (maximálna hĺbka stromu):</label>
-                        <input type="number" id="treeMaxDepth" placeholder="10" min="1" max="50" value="10">
-                    </div>
-
-                    <!-- Random Forest params -->
-                    <div class="form-group" id="rfNEstimatorsGroup" style="display: none;">
-                        <label>N Estimators (počet stromov):</label>
-                        <input type="number" id="rfNEstimators" placeholder="100" min="1" max="500" value="100">
-                    </div>
-                    <div class="form-group" id="rfMaxDepthGroup" style="display: none;">
-                        <label>Max Depth (max hĺbka každého stromu):</label>
-                        <input type="number" id="rfMaxDepth" placeholder="10" min="1" max="50" value="10">
-                    </div>
-                    <div class="form-group" id="rfMinSamplesLeafGroup" style="display: none;">
-                        <label>Min Samples Leaf:</label>
-                        <input type="number" id="rfMinSamplesLeaf" placeholder="1" min="1" max="50" value="1">
-                    </div>
-
-                    <!-- SVM params -->
-                    <div class="form-group" id="svmCGroup" style="display: none;">
-                        <label>C (regularizačný parameter):</label>
-                        <input type="number" id="svmC" placeholder="1.0" min="0.001" max="1000" step="0.1" value="1.0">
-                    </div>
-                    <div class="form-group" id="svmEpsGroup" style="display: none;">
-                        <label>Epsilon (tolerancie chyby):</label>
-                        <input type="number" id="svmEps" placeholder="0.1" min="0.001" max="10" step="0.01" value="0.1">
-                    </div>
-                    <div class="form-group" id="svmKernelGroup" style="display: none;">
-                        <label>Kernel:</label>
-                        <select id="svmKernel">
-                            <option value="rbf">RBF (Gaussov)</option>
-                            <option value="linear">Linear</option>
-                        </select>
-                    </div>
-                    <div class="form-group" id="svmGammaGroup" style="display: none;">
-                        <label>Gamma (pre RBF kernel):</label>
-                        <input type="number" id="svmGamma" placeholder="0.1" min="0.001" max="100" step="0.01" value="0.1">
-                    </div>
-
-                    <!-- Gradient Boosting params -->
-                    <div class="form-group" id="gbtNEstimatorsGroup" style="display: none;">
-                        <label>N Estimators (počet boostovacích kôl):</label>
-                        <input type="number" id="gbtNEstimators" placeholder="50" min="1" max="500" value="50">
-                    </div>
-                    <div class="form-group" id="gbtMaxDepthGroup" style="display: none;">
-                        <label>Max Depth (max hĺbka každého stromu):</label>
-                        <input type="number" id="gbtMaxDepth" placeholder="3" min="1" max="20" value="3">
-                    </div>
-                    <div class="form-group" id="gbtLearningRateGroup" style="display: none;">
-                        <label>Learning Rate (rýchlosť učenia):</label>
-                        <input type="number" id="gbtLearningRate" placeholder="0.1" min="0.001" max="1" step="0.01" value="0.1">
-                    </div>
-
-                    <!-- Polynomálna Regresia -->
-                    <div class="form-group" id="polynomDegreeGroup" style="display: none;">
-                        <label>Stupeň polynoŕmu (degree 1–8):</label>
-                        <input type="number" id="polynomDegree" placeholder="2" min="1" max="8" value="2">
-                    </div>
+                    <div id="modelParamsFields"></div>
                 </div>
 
                 <button id="buildPipelineBtn">Vytvoriť Pipeline</button>

@@ -44,11 +44,11 @@ def test_build_pipeline_knn(app_page):
 
     page.select_option("#modelSelect", "knn")
 
-    # KNN params should be visible
-    page.wait_for_selector("#knnKGroup", state="visible", timeout=5000)
+    # KNN params should be visible (dynamically generated)
+    page.wait_for_selector("#model_param_k", state="visible", timeout=5000)
 
-    page.fill("#knnK", "7")
-    page.select_option("#evalModeSelect", "regression")
+    page.fill("#model_param_k", "7")
+    page.select_option("#evalModeSelect", value="regression")
     page.click("#buildPipelineBtn")
 
     page.wait_for_selector("#pipelineStatus", timeout=10000)
@@ -63,11 +63,11 @@ def test_build_pipeline_tree(app_page):
 
     page.select_option("#modelSelect", "tree")
 
-    # Tree params should be visible
-    page.wait_for_selector("#treeMaxDepthGroup", state="visible", timeout=5000)
+    # Tree params should be visible (dynamically generated)
+    page.wait_for_selector("#model_param_max_depth", state="visible", timeout=5000)
 
-    page.fill("#treeMaxDepth", "5")
-    page.select_option("#evalModeSelect", "regression")
+    page.fill("#model_param_max_depth", "5")
+    page.select_option("#evalModeSelect", value="regression")
     page.click("#buildPipelineBtn")
 
     page.wait_for_selector("#pipelineStatus", timeout=10000)
@@ -79,20 +79,21 @@ def test_model_params_toggle(app_page):
     """Switching models shows/hides their parameter groups."""
     page = app_page
 
-    # Select KNN - should show knnKGroup
+    # Select KNN - should show model_param_k
     page.select_option("#modelSelect", "knn")
-    assert page.is_visible("#knnKGroup")
-    assert not page.is_visible("#treeMaxDepthGroup")
+    page.wait_for_selector("#model_param_k", state="visible", timeout=3000)
+    assert page.is_visible("#model_param_k")
 
-    # Switch to tree - should show treeMaxDepthGroup
+    # Switch to tree - should show model_param_max_depth
     page.select_option("#modelSelect", "tree")
-    assert not page.is_visible("#knnKGroup")
-    assert page.is_visible("#treeMaxDepthGroup")
+    page.wait_for_selector("#model_param_max_depth", state="visible", timeout=3000)
+    assert page.is_visible("#model_param_max_depth")
+    assert not page.is_visible("#model_param_k")
 
     # Switch to linreg - should hide both
     page.select_option("#modelSelect", "linreg")
-    assert not page.is_visible("#knnKGroup")
-    assert not page.is_visible("#treeMaxDepthGroup")
+    assert not page.is_visible("#model_param_k")
+    assert not page.is_visible("#model_param_max_depth")
 
 
 def test_eval_mode_selection(app_page):
@@ -100,7 +101,7 @@ def test_eval_mode_selection(app_page):
     page = app_page
 
     page.select_option("#modelSelect", "logreg")
-    page.select_option("#evalModeSelect", "classification")
+    page.select_option("#evalModeSelect", value="classification")
     page.click("#buildPipelineBtn")
 
     page.wait_for_selector("#currentPipelineInfo", state="visible", timeout=10000)

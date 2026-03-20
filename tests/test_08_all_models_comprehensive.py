@@ -86,19 +86,19 @@ def _build_pipeline(page, model: str, eval_mode: str = "", knn_k: int = 5, tree_
     page.select_option("#modelSelect", model)
     logger.info(f"Selected model: {model}")
 
-    # Set eval mode if provided
+    # Set eval mode if provided (match by value, lowercase)
     if eval_mode:
-        page.select_option("#evalModeSelect", eval_mode)
+        page.select_option("#evalModeSelect", value=eval_mode.lower())
         logger.info(f"Eval mode set to: {eval_mode}")
 
-    # Model-specific params
+    # Model-specific params (dynamically generated with id="model_param_<name>")
     if model == "knn":
-        page.wait_for_selector("#knnKGroup", state="visible", timeout=3000)
-        page.fill("#knnK", str(knn_k))
+        page.wait_for_selector("#model_param_k", state="visible", timeout=3000)
+        page.fill("#model_param_k", str(knn_k))
         logger.info(f"KNN K = {knn_k}")
     elif model == "tree":
-        page.wait_for_selector("#treeMaxDepthGroup", state="visible", timeout=3000)
-        page.fill("#treeMaxDepth", str(tree_depth))
+        page.wait_for_selector("#model_param_max_depth", state="visible", timeout=3000)
+        page.fill("#model_param_max_depth", str(tree_depth))
         logger.info(f"Tree max_depth = {tree_depth}")
 
     page.click("#buildPipelineBtn")
@@ -1008,20 +1008,21 @@ class TestUIState:
         logger.info("TEST: Model params visibility")
 
         page.select_option("#modelSelect", "knn")
-        assert page.is_visible("#knnKGroup")
-        assert not page.is_visible("#treeMaxDepthGroup")
+        page.wait_for_selector("#model_param_k", state="visible", timeout=3000)
+        assert page.is_visible("#model_param_k")
 
         page.select_option("#modelSelect", "tree")
-        assert not page.is_visible("#knnKGroup")
-        assert page.is_visible("#treeMaxDepthGroup")
+        page.wait_for_selector("#model_param_max_depth", state="visible", timeout=3000)
+        assert page.is_visible("#model_param_max_depth")
+        assert not page.is_visible("#model_param_k")
 
         page.select_option("#modelSelect", "linreg")
-        assert not page.is_visible("#knnKGroup")
-        assert not page.is_visible("#treeMaxDepthGroup")
+        assert not page.is_visible("#model_param_k")
+        assert not page.is_visible("#model_param_max_depth")
 
         page.select_option("#modelSelect", "logreg")
-        assert not page.is_visible("#knnKGroup")
-        assert not page.is_visible("#treeMaxDepthGroup")
+        assert not page.is_visible("#model_param_k")
+        assert not page.is_visible("#model_param_max_depth")
         logger.info("TEST PASSED: Model params visibility")
 
     def test_eval_mode_has_options(self, clean_page):

@@ -59,9 +59,12 @@ jobs:
         run: |
           rm -rf deploy
           mkdir -p deploy
-          # copy index and pkg into deploy dir
-          cp -r index.html deploy/ || true
-          cp -r test_data_with_nulls.csv deploy/ || true
+          # copy all frontend assets
+          cp index.html deploy/
+          cp -r css deploy/
+          cp -r js deploy/
+          [ -d components ] && cp -r components deploy/ || true
+          [ -f test_data_with_nulls.csv ] && cp test_data_with_nulls.csv deploy/ || true
           if [ -d pkg ]; then 
             cp -r pkg deploy/
             rm -f deploy/pkg/.gitignore

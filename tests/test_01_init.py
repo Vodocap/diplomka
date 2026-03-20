@@ -69,7 +69,6 @@ def test_initial_ui_state(app_page):
 
     # Inspect buttons should be disabled
     assert page.get_attribute("#inspectDataBtn", "disabled") is not None
-    assert page.get_attribute("#inspectProcessedBtn", "disabled") is not None
     assert page.get_attribute("#editDataBtn", "disabled") is not None
 
     # Feature exploration section should be hidden

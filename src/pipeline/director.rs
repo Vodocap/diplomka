@@ -95,12 +95,12 @@ impl MLPipelineDirector
             .build()
     }
 
-    /// Vytvorí Decision Tree s information gain selection
+    /// Vytvorí Decision Tree so SMC selection
     pub fn build_decision_tree_classifier() -> Result<MLPipeline, String>
     {
         MLPipelineBuilder::new()
             .model("tree")
-            .feature_selector("information_gain")
+            .feature_selector("smc")
             .evaluation_mode("classification")
             .build()
     }

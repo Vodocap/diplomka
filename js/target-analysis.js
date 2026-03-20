@@ -325,8 +325,10 @@ function closeAnalyzerDetailsModal() {
 }
 
 function buildColumnStatsTable(data, columns, format) {
+    const container = document.getElementById('columnStatsContainer');
+    if (!container) return;
     if (format !== 'csv') {
-        document.getElementById('columnStatsContainer').innerHTML = '<p style="color:#6c757d;">Štatistický prehľad je dostupný len pre CSV formát.</p>';
+        container.innerHTML = '<p style="color:#6c757d;">Štatistický prehľad je dostupný len pre CSV formát.</p>';
         return;
     }
     const lines = data.split('\n').filter(l => l.trim());
@@ -379,7 +381,7 @@ function buildColumnStatsTable(data, columns, format) {
         html += '</tr>';
     });
     html += '</tbody></table>';
-    document.getElementById('columnStatsContainer').innerHTML = html;
+    container.innerHTML = html;
 }
 
 function selectTargetFromStats(colName) {

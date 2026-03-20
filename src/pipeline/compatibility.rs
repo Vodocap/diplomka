@@ -82,7 +82,7 @@ impl CompatibilityRegistry
         // Kompatibilné selektory pre regression
         self.compatible_selectors.insert(
             "regression".to_string(),
-            vec!["variance".to_string(), "correlation".to_string(), "mutual_information".to_string(), "smc".to_string()]
+            vec!["variance".to_string(), "mutual_information".to_string(), "smc".to_string()]
         );
 
         // Kompatibilné selektory pre classification
@@ -90,9 +90,7 @@ impl CompatibilityRegistry
             "classification".to_string(),
             vec![
                 "variance".to_string(),
-                "correlation".to_string(),
                 "chi_square".to_string(),
-                "information_gain".to_string(),
                 "mutual_information".to_string(),
                 "smc".to_string(),
             ]

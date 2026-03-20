@@ -117,6 +117,7 @@ async function parseData() {
         document.getElementById('featureExplorationSection').style.display = 'block';
         populateComparisonSelectors();
         populateTargetAnalyzerMethods();
+        buildColumnStatsTable(data, columns, format);
 
         showStatus('success', `Dáta načítané: ${columns.length} stĺpcov nájdených. Porovnajte metódy analýzy a vyberte cieľovú premennú.`, 'parseStatus');
     } catch (error) {
@@ -164,16 +165,6 @@ async function inspectData() {
         showDataModal('Nahraté dáta', data);
     } catch (error) {
         console.error('inspectData error:', error);
-        alert('Error: ' + error);
-    }
-}
-
-async function inspectProcessedData() {
-    try {
-        const result = await pipeline.inspectProcessedData(10);
-        const data = convertWasmResult(result);
-        showDataModal('Spracované dáta (po výbere a preprocessingu)', data);
-    } catch (error) {
         alert('Error: ' + error);
     }
 }

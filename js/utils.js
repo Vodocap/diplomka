@@ -1,16 +1,5 @@
 // Utilities: helpers, status, loaders, color functions
 
-function calculateFeatureReduction(before, after) {
-    return ((1 - after / before) * 100).toFixed(1);
-}
-
-function formatFeatureBadge(name, index, score, metricName, badgeClass) {
-    const scoreText = score !== null && score !== undefined 
-        ? ` = ${score.toFixed(4)} (${metricName})` 
-        : '';
-    return `<span class="feature-badge ${badgeClass}">${name} <span class="feature-idx">[${index}]${scoreText}</span></span>`;
-}
-
 function convertWasmResult(result) {
     if (result instanceof Map) {
         const obj = {};

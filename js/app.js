@@ -96,6 +96,7 @@ function setupEventListeners() {
     document.getElementById('showMatrixBtn').onclick = openHeatmapModal;
     document.getElementById('showMatrixBtnTarget').onclick = openHeatmapModal;
     document.getElementById('selectAllSelectorsBtn').onclick = toggleAllSelectors;
+    document.getElementById('selectAllAnalyzersBtn').onclick = toggleAllAnalyzers;
     document.getElementById('trainAllSelectorsBtn').onclick = trainAllSelectors;
     
     // Data input method radio buttons

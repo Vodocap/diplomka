@@ -15,7 +15,7 @@ def test_selector_cards_populated(loaded_page):
     page = loaded_page
 
     cards = page.locator("#selectorCompareGrid .selector-compare-card").count()
-    assert cards >= 5, f"Expected at least 5 selector cards, got {cards}"
+    assert cards >= 4, f"Expected at least 4 selector cards, got {cards}"
 
 
 def test_select_all_selectors(loaded_page):
@@ -39,7 +39,7 @@ def test_compare_selectors(loaded_page):
     page = loaded_page
 
     # Select 2 fast selectors
-    fast_selectors = ["variance", "correlation"]
+    fast_selectors = ["variance", "smc"]
     for sel in fast_selectors:
         card = page.locator(f"#compare_card_{sel}")
         if card.count() > 0:
@@ -81,23 +81,29 @@ def test_train_all_selectors(loaded_page):
     page = loaded_page
 
     # First compare with a couple selectors
-    for sel in ["variance", "correlation"]:
+    for sel in ["variance", "smc"]:
         card = page.locator(f"#compare_card_{sel}")
         if card.count() > 0:
             card.locator("input[type='checkbox']").check()
 
     page.click("#compareSelectorBtn")
     page.wait_for_selector("#dataModal.show", timeout=60000)
-    page.click(".modal-close")
-    page.wait_for_timeout(500)
 
-    # Now training results area should be visible
-    page.wait_for_selector("#comparisonResultsArea", state="visible", timeout=5000)
+    # Click Train from comparison inside the modal
+    train_btn = page.locator("#trainFromComparisonBtn")
+    if train_btn.count() > 0:
+        train_btn.click()
 
-    page.click("#trainAllSelectorsBtn")
-    
     # Wait for training results
-    page.wait_for_selector("#selectorTrainingResults table, #selectorTrainingResults:has-text('Accuracy')", timeout=120000)
+    page.wait_for_function(
+        """(() => {
+            const el = document.getElementById('comparisonTrainingResults') || document.getElementById('selectorTrainingResults');
+            return el && el.innerText.length > 50;
+        })()""",
+        timeout=120000,
+    )
 
-    results_text = page.inner_text("#selectorTrainingResults")
+    results_text = (page.locator("#comparisonTrainingResults").inner_text()
+                    if page.locator("#comparisonTrainingResults").count() > 0
+                    else page.inner_text("#selectorTrainingResults"))
     assert len(results_text.strip()) > 50, "Training results too short"

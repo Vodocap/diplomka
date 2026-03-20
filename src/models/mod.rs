@@ -18,4 +18,4 @@ pub use polynomial::PolyRegWrapper;
 pub use gradient_boosting::GradientBoostingWrapper;
 pub use i_model::IModel;
 
-pub mod factory;
+pub mod model_factory;

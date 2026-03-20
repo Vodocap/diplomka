@@ -1,9 +1,9 @@
 use wasm_bindgen::prelude::*;
 use serde::{Serialize, Deserialize};
-use crate::models::factory::ModelFactory;
-use crate::processing::factory::ProcessorFactory;
-use crate::feature_selection_strategies::factory::FeatureSelectorFactory;
-use crate::data_loading::factory::DataLoaderFactory;
+use crate::models::model_factory::ModelFactory;
+use crate::processing::processor_factory::ProcessorFactory;
+use crate::feature_selection_strategies::feature_selector_factory::FeatureSelectorFactory;
+use crate::data_loading::data_loader_factory::DataLoaderFactory;
 use crate::pipeline::director::MLPipelineDirector;
 
 #[derive(Serialize, Deserialize)]
@@ -159,7 +159,7 @@ impl WasmFactory
     #[wasm_bindgen(js_name = getModelParams)]
     pub fn get_model_params(&self, model_name: &str) -> JsValue
     {
-        use crate::models::factory::ModelFactory;
+        use crate::models::model_factory::ModelFactory;
         let params = ModelFactory::get_supported_params(model_name);
         serde_wasm_bindgen::to_value(&params).unwrap()
     }
@@ -168,7 +168,7 @@ impl WasmFactory
     #[wasm_bindgen(js_name = getSelectorParams)]
     pub fn get_selector_params(&self, selector_name: &str) -> JsValue
     {
-        use crate::feature_selection_strategies::factory::FeatureSelectorFactory;
+        use crate::feature_selection_strategies::feature_selector_factory::FeatureSelectorFactory;
         let params = FeatureSelectorFactory::get_supported_params(selector_name);
         serde_wasm_bindgen::to_value(&params).unwrap()
     }

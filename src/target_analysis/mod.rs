@@ -6,17 +6,15 @@ pub mod target_candidate;          // TargetCandidate struct
 pub mod target_analyzer;           // TargetAnalyzer trait
 pub mod correlation_analyzer;
 pub mod mutual_information_analyzer;
-pub mod entropy_analyzer;
 pub mod smc_analyzer;
-pub mod factory;
+pub mod target_analyzer_factory;
 
 pub use target_candidate::TargetCandidate;
 pub use target_analyzer::TargetAnalyzer;
 pub use correlation_analyzer::CorrelationAnalyzer;
 pub use mutual_information_analyzer::MutualInformationAnalyzer;
-pub use entropy_analyzer::EntropyAnalyzer;
 pub use smc_analyzer::SmcAnalyzer;
-pub use factory::TargetAnalyzerFactory;
+pub use target_analyzer_factory::TargetAnalyzerFactory;
 
 use std::collections::HashSet;
 

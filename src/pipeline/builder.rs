@@ -1,6 +1,6 @@
-use crate::models::factory::ModelFactory;
-use crate::processing::factory::ProcessorFactory;
-use crate::feature_selection_strategies::factory::FeatureSelectorFactory;
+use crate::models::model_factory::ModelFactory;
+use crate::processing::processor_factory::ProcessorFactory;
+use crate::feature_selection_strategies::feature_selector_factory::FeatureSelectorFactory;
 // Removed unused evaluation imports
 use super::{compatibility::CompatibilityRegistry, pipeline::MLPipeline};
 

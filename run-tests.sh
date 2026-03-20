@@ -27,8 +27,8 @@ done
 
 # Check if server is running
 if ! curl -s http://localhost:3333 > /dev/null 2>&1; then
-    echo "⚠️  Server nie je spustený na porte 3333"
-    echo "   Spúšťam server na pozadí..."
+    echo " Server nie je spustený na porte 3333"
+    echo " Spúšťam server na pozadí..."
     bash serve.sh &
     SERVER_PID=$!
     sleep 2
@@ -36,7 +36,7 @@ if ! curl -s http://localhost:3333 > /dev/null 2>&1; then
     trap "kill $SERVER_PID 2>/dev/null; echo '   Server zastavený'" EXIT
 fi
 
-echo "🧪 Spúšťam Playwright testy..."
+echo " Spúšťam Playwright testy..."
 echo ""
 
 if [ -n "$HEADED" ] || [[ ! " $@ " =~ " --headless " ]]; then

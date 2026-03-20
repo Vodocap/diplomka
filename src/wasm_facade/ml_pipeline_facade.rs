@@ -2,7 +2,7 @@ use wasm_bindgen::prelude::*;
 use serde::{Serialize, Deserialize};
 use crate::pipeline::{MLPipeline, MLPipelineBuilder};
 use crate::data_loading::DataLoaderFactory;
-use crate::feature_selection_strategies::factory::FeatureSelectorFactory;
+use crate::feature_selection_strategies::feature_selector_factory::FeatureSelectorFactory;
 use crate::target_analysis::TargetAnalyzerFactory;
 use crate::entropy::mi_estimator;
 use smartcore::linalg::basic::matrix::DenseMatrix;
@@ -294,12 +294,12 @@ impl WasmMLPipeline
                     .selector_param("num_features", "10")
                     .evaluation_mode("classification");
             },
-            "tree_binner_infogain" =>
+            "tree_binner_smc" =>
             {
                 builder = builder
                     .model("tree")
                     .add_processor("binner")  // použije default 10 bins
-                    .feature_selector("information_gain")
+                    .feature_selector("smc")
                     .selector_param("num_features", "10")
                     .evaluation_mode("classification");
             },
@@ -450,7 +450,7 @@ impl WasmMLPipeline
             {
                 builder = builder
                     .model("tree")
-                    .feature_selector("information_gain")
+                    .feature_selector("smc")
                     .selector_param("num_features", "10")
                     .evaluation_mode("classification");
             },

@@ -5,7 +5,7 @@ pub mod binner;                     // Binner
 pub mod one_hot_encoder;            // OneHotEncoder
 pub mod null_handler;               // NullValueHandler
 pub mod processor_chain;            // ProcessorChain (decorator)
-pub mod factory;                    // ProcessorFactory
+pub mod processor_factory;              // ProcessorFactory
 pub mod minmax_scaler;              // MinMaxScaler
 pub mod robust_scaler;              // RobustScaler
 pub mod label_encoder;              // LabelEncoder
@@ -27,7 +27,7 @@ pub use binner::Binner;
 pub use one_hot_encoder::OneHotEncoder;
 pub use null_handler::NullValueHandler;
 pub use processor_chain::ProcessorChain;
-pub use factory::ProcessorFactory;
+pub use processor_factory::ProcessorFactory;
 pub use minmax_scaler::MinMaxScaler;
 pub use robust_scaler::RobustScaler;
 pub use label_encoder::LabelEncoder;

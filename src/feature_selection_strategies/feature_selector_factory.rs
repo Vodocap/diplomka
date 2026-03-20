@@ -1,9 +1,7 @@
 use super::{
     FeatureSelector,
     VarianceSelector,
-    CorrelationSelector,
     ChiSquareSelector,
-    InformationGainSelector,
     MutualInformationSelector,
     SmcSelector,
 };
@@ -19,9 +17,7 @@ impl FeatureSelectorFactory
         match selector_type
         {
             "variance" => Ok(Box::new(VarianceSelector::new())),
-            "correlation" => Ok(Box::new(CorrelationSelector::new())),
             "chi_square" | "chi2" => Ok(Box::new(ChiSquareSelector::new())),
-            "information_gain" | "infogain" => Ok(Box::new(InformationGainSelector::new())),
             "mutual_information" | "mi" => Ok(Box::new(MutualInformationSelector::new())),
             "smc" => Ok(Box::new(SmcSelector::new())),
             _ => Err(format!("Neznámy feature selektor: {}", selector_type)),
@@ -33,9 +29,7 @@ impl FeatureSelectorFactory
     {
         vec![
             "variance",
-            "correlation",
             "chi_square",
-            "information_gain",
             "mutual_information",
             "smc",
         ]
@@ -47,9 +41,7 @@ impl FeatureSelectorFactory
         match selector_type
         {
             "variance" => Some("Variance Threshold - odstraňuje features s nízkou varianciou (konštantné hodnoty)"),
-            "correlation" => Some("Correlation - vyberie features s najvyššou koreláciou k targetu (pre regression)"),
             "chi_square" => Some("Chi-Square Test - testuje nezávislosť medzi features a targetom (len klasifikácia)"),
-            "information_gain" => Some("Information Gain - meria redukciu entropie (Pozor: vyžaduje Binner processor!)"),
             "mutual_information" => Some("Mutual Information (KSG) - meria vzájomnú závislosť (funguje na spojitých dátach)"),
             "smc" => Some("SMC (Squared Multiple Correlation) - meria príspevok features k predikcii targetu cez drop v R²"),
             _ => None,
@@ -57,9 +49,9 @@ impl FeatureSelectorFactory
     }
 
     /// Vráti či selector vyžaduje preprocessing (napr. binning)
-    pub fn requires_binning(selector_type: &str) -> bool
+    pub fn requires_binning(_selector_type: &str) -> bool
     {
-        matches!(selector_type, "information_gain")
+        false
     }
 
     /// Vráti podporované typy problémov pre selector
@@ -68,9 +60,7 @@ impl FeatureSelectorFactory
         match selector_type
         {
             "variance" => vec!["regression", "classification"],
-            "correlation" => vec!["regression", "classification"],
             "chi_square" => vec!["classification"],
-            "information_gain" => vec!["classification"],
             "mutual_information" => vec!["regression", "classification"],
             "smc" => vec!["regression", "classification"],
             _ => vec![],
@@ -83,8 +73,7 @@ impl FeatureSelectorFactory
         match selector_type
         {
             "variance" => vec!["threshold"],
-            "correlation" => vec!["threshold"],
-            "chi_square" | "information_gain" | "mutual_information" | "smc" => vec!["num_features"],
+            "chi_square" | "mutual_information" | "smc" => vec!["num_features"],
             _ => vec![],
         }
     }

@@ -12,24 +12,21 @@ mod embedded;
 pub mod entropy;
 
 pub use data_loading::{DataLoader, DataLoaderFactory, LoadedData, CsvDataLoader, JsonDataLoader};
-pub use models::{IModel, LinRegWrapper, KnnWrapper, LogRegWrapper, TreeWrapper, factory::ModelFactory};
-pub use processing::{DataProcessor, StandardScaler, Binner, OneHotEncoder, factory::ProcessorFactory, TimeConverter,
+pub use models::{IModel, LinRegWrapper, KnnWrapper, LogRegWrapper, TreeWrapper, model_factory::ModelFactory};
+pub use processing::{DataProcessor, StandardScaler, Binner, OneHotEncoder, processor_factory::ProcessorFactory, TimeConverter,
     CommaToDotProcessor, ThousandsSeparatorRemover, OrdinalEncoder, FrequencyEncoder, TargetEncoder};
 pub use feature_selection_strategies::{
     FeatureSelector,
     VarianceSelector,
-    CorrelationSelector,
     ChiSquareSelector,
-    InformationGainSelector,
     MutualInformationSelector,
-    factory::FeatureSelectorFactory
+    feature_selector_factory::FeatureSelectorFactory
 };
 pub use target_analysis::{
     TargetAnalyzer,
     TargetCandidate,
     CorrelationAnalyzer as TargetCorrelationAnalyzer,
     MutualInformationAnalyzer as TargetMIAnalyzer,
-    EntropyAnalyzer,
     TargetAnalyzerFactory,
 };
 pub use evaluation::{ModelEvaluator, EvaluationReport};

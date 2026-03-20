@@ -27,7 +27,6 @@ function populateComparisonSelectors() {
                 let label = p;
                 let description = '';
                 let inputType = 'number';
-                let selectOptions = null;
 
                 // Common params
                 if (p === 'num_features') {
@@ -35,27 +34,16 @@ function populateComparisonSelectors() {
                     label = 'Počet features';
                     description = 'Koľko features chcete vybrať z celkového počtu.';
                 } else if (p === 'threshold') {
-                    defaultVal = sel.name === 'correlation' ? '0.95' : '0.01';
+                    defaultVal = '0.01';
                     label = 'Prahová hodnota';
-                    description = sel.name === 'correlation'
-                        ? 'Features s koreláciou nad touto hodnotou budú odstránené.'
-                        : 'Minimálna variancia – features pod touto hodnotou budú vylúčené.';
+                    description = 'Minimálna variancia – features pod touto hodnotou budú vylúčené.';
                 }
 
-                if (selectOptions) {
-                    const opts = selectOptions.map(o => `<option value="${o}" ${o === defaultVal ? 'selected' : ''}>${o}</option>`).join('');
-                    paramsHtml += `<div class="form-group" style="margin-bottom:8px;">
-                        <label>${label} (${p}):</label>
-                        <select id="compare_param_${sel.name}_${p}">${opts}</select>
-                        ${description ? `<div class="param-desc">${description}</div>` : ''}
-                    </div>`;
-                } else {
-                    paramsHtml += `<div class="form-group" style="margin-bottom:8px;">
-                        <label>${label} (${p}):</label>
-                        <input type="${inputType}" step="any" value="${defaultVal}" id="compare_param_${sel.name}_${p}">
-                        ${description ? `<div class="param-desc">${description}</div>` : ''}
-                    </div>`;
-                }
+                paramsHtml += `<div class="form-group" style="margin-bottom:8px;">
+                    <label>${label} (${p}):</label>
+                    <input type="${inputType}" step="any" value="${defaultVal}" id="compare_param_${sel.name}_${p}">
+                    ${description ? `<div class="param-desc">${description}</div>` : ''}
+                </div>`;
             });
         }
 

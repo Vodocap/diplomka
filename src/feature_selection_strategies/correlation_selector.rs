@@ -7,8 +7,7 @@ use crate::entropy::mi_estimator;
 
 /// Info o jednej feature: Pearson, Spearman, normalita, vybrany metric
 #[derive(Clone, Debug)]
-struct FeatureCorrelation
-{
+struct FeatureCorrelation {
     index: usize,
     pearson: f64,
     spearman: f64,
@@ -16,7 +15,7 @@ struct FeatureCorrelation
     chosen_label: &'static str, // "Pearson" alebo "Spearman"
 }
 
-pub struct CorrelationSelector
+pub struct CorrelationSelector 
 {
     threshold: f64,
     correlation_matrix: RefCell<Option<Vec<Vec<f64>>>>,
@@ -25,12 +24,12 @@ pub struct CorrelationSelector
     details_cache: RefCell<String>,
 }
 
-impl CorrelationSelector
+impl CorrelationSelector 
 {
-    pub fn new() -> Self
+    pub fn new() -> Self 
     {
-        Self
-        {
+        Self 
+        { 
             threshold: 0.95,
             correlation_matrix: RefCell::new(None),
             target_correlations: RefCell::new(None),
@@ -40,38 +39,32 @@ impl CorrelationSelector
     }
 
     /// Pearson correlation (signed) - deleguje na zdieľanú implementáciu
-    fn pearson_correlation(x: &[f64], y: &[f64]) -> f64
-    {
+    fn pearson_correlation(x: &[f64], y: &[f64]) -> f64 {
         mi_estimator::pearson_correlation(x, y)
     }
 
     /// Spearman rank correlation = Pearson on ranks
-    fn spearman_correlation(x: &[f64], y: &[f64]) -> f64
-    {
+    fn spearman_correlation(x: &[f64], y: &[f64]) -> f64 {
         let ranks_x = Self::compute_ranks(x);
         let ranks_y = Self::compute_ranks(y);
         Self::pearson_correlation(&ranks_x, &ranks_y)
     }
 
     /// Compute ranks (average ranks for ties)
-    fn compute_ranks(values: &[f64]) -> Vec<f64>
-    {
+    fn compute_ranks(values: &[f64]) -> Vec<f64> {
         let n = values.len();
         let mut indexed: Vec<(usize, f64)> = values.iter().enumerate().map(|(i, &v)| (i, v)).collect();
         indexed.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
-
+        
         let mut ranks = vec![0.0; n];
         let mut i = 0;
-        while i < n
-        {
+        while i < n {
             let mut j = i;
-            while j < n && (indexed[j].1 - indexed[i].1).abs() < 1e-12
-            {
+            while j < n && (indexed[j].1 - indexed[i].1).abs() < 1e-12 {
                 j += 1;
             }
             let avg_rank = (i + j) as f64 / 2.0 + 0.5;
-            for k in i..j
-            {
+            for k in i..j {
                 ranks[indexed[k].0] = avg_rank;
             }
             i = j;
@@ -82,19 +75,14 @@ impl CorrelationSelector
     /// Test normality: skewness + kurtosis heuristic.
     /// Normal distribution has skewness ~0, excess kurtosis ~0.
     /// Returns true if approximately normal.
-    fn is_approximately_normal(values: &[f64]) -> bool
-    {
+    fn is_approximately_normal(values: &[f64]) -> bool {
         let n = values.len() as f64;
-        if n < 8.0
-        {
-            return false;
-        }
+        if n < 8.0 { return false; }
         let mean = values.iter().sum::<f64>() / n;
         let mut m2 = 0.0;
         let mut m3 = 0.0;
         let mut m4 = 0.0;
-        for &v in values
-        {
+        for &v in values {
             let d = v - mean;
             let d2 = d * d;
             m2 += d2;
@@ -105,10 +93,7 @@ impl CorrelationSelector
         m3 /= n;
         m4 /= n;
 
-        if m2 < 1e-15
-        {
-            return true;
-        } // constant -> treat as normal
+        if m2 < 1e-15 { return true; } // constant -> treat as normal
 
         let std_dev = m2.sqrt();
         let skewness = m3 / (std_dev * std_dev * std_dev);
@@ -120,27 +105,26 @@ impl CorrelationSelector
 
     /// Color for correlation values: linear opacity based on |r| (bounded [0,1])
     /// Correlation is naturally bounded, so direct mapping is valid.
-    fn metric_color(abs_val: f64) -> String
-    {
+    fn metric_color(abs_val: f64) -> String {
         format!("rgba(52,152,219,{})", 0.05 + abs_val * 0.55)
     }
 }
 
-impl FeatureSelector for CorrelationSelector
+impl FeatureSelector for CorrelationSelector 
 {
-    fn get_name(&self) -> &str
+    fn get_name(&self) -> &str 
     {
         "Correlation Filter"
     }
 
-    fn get_supported_params(&self) -> Vec<&str>
+    fn get_supported_params(&self) -> Vec<&str> 
     {
         vec!["threshold"]
     }
 
-    fn set_param(&mut self, key: &str, value: &str) -> Result<(), String>
+    fn set_param(&mut self, key: &str, value: &str) -> Result<(), String> 
     {
-        if key == "threshold"
+        if key == "threshold" 
         {
             self.threshold = value.parse().map_err(|_| "Invalid threshold")?;
             return Ok(());
@@ -148,29 +132,27 @@ impl FeatureSelector for CorrelationSelector
         Err("Param not found".into())
     }
 
-    fn get_selected_indices(&self, x: &DenseMatrix<f64>, y: &[f64]) -> Vec<usize>
+    fn get_selected_indices(&self, x: &DenseMatrix<f64>, y: &[f64]) -> Vec<usize> 
     {
         let shape = x.shape();
         let cols = shape.1;
-
-        // Extract all columns through ndarray-backed helper to avoid repeated per-column scans.
-        let columns = mi_estimator::dense_matrix_to_columns_ndarray(x);
+        
+        // Extract all columns
+        let columns: Vec<Vec<f64>> = (0..cols)
+            .map(|i| (0..shape.0).map(|row| *x.get((row, i))).collect())
+            .collect();
 
         // ─── Compute Pearson + Spearman for each feature vs target ───
         // ─── Auto-select based on normality of feature distribution ───
         let mut correlations: Vec<FeatureCorrelation> = Vec::with_capacity(cols);
-        for i in 0..cols
-        {
+        for i in 0..cols {
             let pearson = Self::pearson_correlation(&columns[i], y);
             let spearman = Self::spearman_correlation(&columns[i], y);
             let is_normal = Self::is_approximately_normal(&columns[i]);
-
-            let (chosen_corr, chosen_label) = if is_normal
-            {
+            
+            let (chosen_corr, chosen_label) = if is_normal {
                 (pearson.abs(), "Pearson")
-            }
-            else
-            {
+            } else {
                 (spearman.abs(), "Spearman")
             };
 
@@ -183,27 +165,24 @@ impl FeatureSelector for CorrelationSelector
             });
         }
         *self.feature_correlations.borrow_mut() = correlations.clone();
-
+        
         // ─── Inter-feature correlation matrix (for multicollinearity removal) ───
-        let raw_corr_matrix = mi_estimator::compute_corr_matrix_cached(&columns);
         let mut corr_matrix = vec![vec![0.0f64; cols]; cols];
         let mut target_corr = Vec::with_capacity(cols);
-
-        for i in 0..cols
-        {
+        
+        for i in 0..cols {
             corr_matrix[i][i] = 1.0;
             target_corr.push(correlations[i].chosen_corr);
-            for j in (i+1)..cols
-            {
-                let c = raw_corr_matrix[i][j].abs();
+            for j in (i+1)..cols {
+                let c = Self::pearson_correlation(&columns[i], &columns[j]).abs();
                 corr_matrix[i][j] = c;
                 corr_matrix[j][i] = c;
             }
         }
-
+        
         *self.correlation_matrix.borrow_mut() = Some(corr_matrix.clone());
         *self.target_correlations.borrow_mut() = Some(target_corr);
-
+        
         // ─── Sort by chosen correlation for greedy ordering ───
         let mut feature_order: Vec<(usize, f64)> = correlations.iter()
             .map(|fc| (fc.index, fc.chosen_corr))
@@ -213,34 +192,25 @@ impl FeatureSelector for CorrelationSelector
         // ─── Greedy selection: remove multicollinear features ───
         let mut selected = Vec::new();
         let mut dropped = HashSet::new();
-
-        for (feature_idx, _score) in &feature_order
-        {
-            if dropped.contains(feature_idx)
-            {
-                continue;
-            }
+        
+        for (feature_idx, _score) in &feature_order {
+            if dropped.contains(feature_idx) { continue; }
             selected.push(*feature_idx);
-
-            for j in 0..cols
-            {
-                if j == *feature_idx || dropped.contains(&j) || selected.contains(&j)
-                {
-                    continue;
-                }
-                if corr_matrix[*feature_idx][j] > self.threshold
-                {
+            
+            for j in 0..cols {
+                if j == *feature_idx || dropped.contains(&j) || selected.contains(&j) { continue; }
+                if corr_matrix[*feature_idx][j] > self.threshold {
                     dropped.insert(j);
                 }
             }
         }
-
+        
         selected.sort();
-
+        
         // ─── Build detailed HTML ───
         let mut html = String::from("<div style='margin:10px 0;'>");
         html.push_str("<h4>Correlation Filter Selection</h4>");
-        html.push_str(&format!("<p>Threshold multikolinearity: <b>{:.2}</b> | Vybranych: <b>{}/{}</b></p>",
+        html.push_str(&format!("<p>Threshold multikolinearity: <b>{:.2}</b> | Vybranych: <b>{}/{}</b></p>", 
             self.threshold, selected.len(), cols));
 
         // Explanation
@@ -254,32 +224,28 @@ impl FeatureSelector for CorrelationSelector
         html.push_str("<div style='overflow-x:auto;'>");
         html.push_str("<table style='border-collapse:collapse;font-size:12px;width:100%;'>");
         html.push_str("<thead><tr>");
-        for h in &["Premenná", "Pearson", "Spearman", "Použitý", "Stav"]
-        {
+        for h in &["Premenná", "Pearson", "Spearman", "Použitý", "Stav"] {
             let bg = if *h == "Stav" { "#8b0000" } else { "#cc0000" };
             html.push_str(&format!(
                 "<th style='padding:8px 6px;border:1px solid #dee2e6;background:{};color:white;\
                 text-align:center;'>{}</th>", bg, h));
         }
         html.push_str("</tr></thead><tbody>");
-
+        
         // Sort by chosen_corr for display
         let mut sorted_corrs = correlations.clone();
         sorted_corrs.sort_by(|a, b| b.chosen_corr.partial_cmp(&a.chosen_corr).unwrap());
 
-        for fc in &sorted_corrs
-        {
+        for fc in &sorted_corrs {
             let is_selected = selected.contains(&fc.index);
             let row_bg = if is_selected { "rgba(52,152,219,0.08)" } else { "rgba(189,195,199,0.08)" };
             let status = if is_selected { "<span style='color:#28a745;font-weight:bold;'>✓</span>" } else { "<span style='color:#6c757d;'>✗</span>" };
 
             // Highlight the chosen metric with bold + underline
-            let pearson_style = if fc.chosen_label == "Pearson"
-            {
+            let pearson_style = if fc.chosen_label == "Pearson" {
                 "font-weight:bold;text-decoration:underline;"
             } else { "" };
-            let spearman_style = if fc.chosen_label == "Spearman"
-            {
+            let spearman_style = if fc.chosen_label == "Spearman" {
                 "font-weight:bold;text-decoration:underline;"
             } else { "" };
 
@@ -302,20 +268,19 @@ impl FeatureSelector for CorrelationSelector
             ));
         }
         html.push_str("</tbody></table></div>");
-
+        
         // Legend
         html.push_str("<div style='margin-top:8px;font-size:11px;display:flex;gap:8px;flex-wrap:wrap;'>");
         html.push_str("<span style='background:rgba(52,152,219,0.2);padding:2px 8px;'>|r| nižšia</span>");
         html.push_str("<span style='background:rgba(52,152,219,0.6);padding:2px 8px;color:white;'>|r| vyššia</span>");
         html.push_str("<span style='padding:2px 8px;text-decoration:underline;font-weight:bold;'>Podčiarknutý = použitý metric</span>");
-        html.push_str("<span style='color:#28a745;font-weight:bold;padding:2px 8px;'>✓ Vybraná</span>");
-        html.push_str("<span style='color:#6c757d;font-weight:bold;padding:2px 8px;'>✗ Nevyradená</span>");
+        html.push_str("<span style='color:#28a745;font-weight:bold;padding:2px 8px;'> Vybraná</span>");
+        html.push_str("<span style='color:#6c757d;font-weight:bold;padding:2px 8px;'> Nevyradená</span>");
         html.push_str("<p style='font-size:10px;color:#999;margin-top:4px;'>Intenzita farieb = |r|. Korelacia je ohranicena [-1,1], priame mapovanie je korektne.</p>");
         html.push_str("</div>");
 
         // Inter-feature correlation matrix
-        if cols <= 15
-        {
+        if cols <= 15 {
             html.push_str("<h5 style='color:#495057;margin:20px 0 8px;border-bottom:1px solid #dee2e6;\
                 padding-bottom:5px;'>Korelacna matica medzi features (Pearson)</h5>");
             html.push_str("<p style='font-size:11px;color:#6c757d;margin-bottom:6px;'>\
@@ -323,31 +288,23 @@ impl FeatureSelector for CorrelationSelector
             html.push_str("<div style='overflow-x:auto;'>");
             html.push_str("<table style='border-collapse:collapse;font-size:11px;'>");
             html.push_str("<tr><th style='padding:4px;border:1px solid #ddd;'></th>");
-            for j in 0..cols
-            {
+            for j in 0..cols {
                 let sel = if selected.contains(&j) { " <span style='color:#28a745;font-weight:bold;'>✓</span>" } else { "" };
                 html.push_str(&format!("<th style='padding:4px;border:1px solid #ddd;background:#cc0000;color:white;'>F{}{}</th>", j, sel));
             }
             html.push_str("</tr>");
-
-            for i in 0..cols
-            {
+            
+            for i in 0..cols {
                 let sel = if selected.contains(&i) { " <span style='color:#28a745;font-weight:bold;'>✓</span>" } else { "" };
                 html.push_str(&format!("<tr><th style='padding:4px;border:1px solid #ddd;background:#cc0000;color:white;'>F{}{}</th>", i, sel));
-                for j in 0..cols
-                {
+                for j in 0..cols {
                     let corr = corr_matrix[i][j];
-                    let color = if i == j
-                    {
+                    let color = if i == j {
                         "#e0e0e0".to_string()
-                    }
-                    else if corr > self.threshold
-                    {
+                    } else if corr > self.threshold {
                         // Over threshold = red (multicollinearity detected)
                         format!("rgba(231,76,60,{})", 0.2 + corr * 0.5)
-                    }
-                    else
-                    {
+                    } else {
                         // Linear blue intensity based on |r|
                         format!("rgba(52,152,219,{})", 0.05 + corr * 0.45)
                     };
@@ -358,51 +315,43 @@ impl FeatureSelector for CorrelationSelector
             }
             html.push_str("</table></div>");
         }
-
+        
         // Dropped features info
-        if !dropped.is_empty()
-        {
+        if !dropped.is_empty() {
             html.push_str("<div style='margin-top:10px;font-size:12px;'><b>Odstranene features (multikolinearita):</b> ");
             let mut dropped_list: Vec<usize> = dropped.iter().cloned().collect();
             dropped_list.sort();
-            for d in &dropped_list
-            {
+            for d in &dropped_list {
                 html.push_str(&format!("F{} ", d));
             }
             html.push_str("</div>");
         }
         html.push_str("</div>");
         *self.details_cache.borrow_mut() = html;
-
+        
         selected
     }
 
-    fn select_features(&self, x: &DenseMatrix<f64>, y: &[f64]) -> DenseMatrix<f64>
+    fn select_features(&self, x: &DenseMatrix<f64>, y: &[f64]) -> DenseMatrix<f64> 
     {
         let indices = self.get_selected_indices(x, y);
         self.extract_columns(x, &indices)
     }
-
-    fn get_feature_scores(&self, _x: &DenseMatrix<f64>, _y: &[f64]) -> Option<Vec<(usize, f64)>>
-    {
+    
+    fn get_feature_scores(&self, _x: &DenseMatrix<f64>, _y: &[f64]) -> Option<Vec<(usize, f64)>> {
         let correlations = self.feature_correlations.borrow();
-        if correlations.is_empty()
-        {
-            return None;
-        }
+        if correlations.is_empty() { return None; }
         let scores: Vec<(usize, f64)> = correlations.iter()
             .map(|fc| (fc.index, fc.chosen_corr))
             .collect();
         Some(scores)
     }
-
-    fn get_metric_name(&self) -> &str
-    {
+    
+    fn get_metric_name(&self) -> &str {
         "|Corr| (auto Pearson/Spearman)"
     }
-
-    fn get_selection_details(&self) -> String
-    {
+    
+    fn get_selection_details(&self) -> String {
         self.details_cache.borrow().clone()
     }
 }

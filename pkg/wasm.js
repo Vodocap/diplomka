@@ -1,5 +1,9 @@
 /* @ts-self-types="./wasm.d.ts" */
 
+/**
+ * WASM fasada pre nacitavanie dat.
+ * Obaluje DataLoader trait a vystavuje metody pre JavaScript cez wasm_bindgen.
+ */
 export class WasmDataLoader {
     static __wrap(ptr) {
         ptr = ptr >>> 0;
@@ -92,6 +96,10 @@ export class WasmDataLoader {
 }
 if (Symbol.dispose) WasmDataLoader.prototype[Symbol.dispose] = WasmDataLoader.prototype.free;
 
+/**
+ * WASM fasada pre enumeraciu dostupnych moznosti (modely, procesory, selektory, presets).
+ * Frontend vola getAvailableOptions() pre dynamicke naplnenie UI komponentov.
+ */
 export class WasmFactory {
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;
@@ -186,6 +194,10 @@ export class WasmFactory {
 }
 if (Symbol.dispose) WasmFactory.prototype[Symbol.dispose] = WasmFactory.prototype.free;
 
+/**
+ * Hlavna WASM fasada pre ML pipeline - obaluje cely workflow (load data, build, train, predict, evaluate).
+ * Obsahuje cache pre analyzovane data, matice korelacie/MI/SMC a split indexy.
+ */
 export class WasmMLPipeline {
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;

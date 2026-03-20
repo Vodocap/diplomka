@@ -1,5 +1,8 @@
 use super::processor_param::{ProcessorParam, ColumnType};
 
+/// Spolocne rozhranie pre vsetky data procesory (Strategy pattern).
+/// Kazdy procesor implementuje fit() (naucenie parametrov z dat) a transform() (aplikaciu).
+/// process() je skratka pre fit+transform v jednom kroku.
 pub trait DataProcessor
 {
     fn get_name(&self) -> &str;

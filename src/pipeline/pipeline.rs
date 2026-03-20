@@ -7,12 +7,14 @@ use super::pipeline_info::PipelineInfo;
 use smartcore::linalg::basic::matrix::DenseMatrix;
 use smartcore::linalg::basic::arrays::Array;
 
-/// Facade trieda pre celý ML Pipeline
-/// Zapuzdruje loading, processing, feature selection, training a evaluation
+/// Facade trieda pre cely ML pipeline.
+/// Zapuzdruje processing, feature selection, training a evaluation do jedneho rozhrania.
+/// Vytvara sa cez MLPipelineBuilder. Klienti volaju train() a predict() bez starostlivosti
+/// o vnutorne kroky (preprocessing, selekcia, cachovanie vybranych indexov).
 pub struct MLPipeline
 {
     pub(crate) model: Box<dyn IModel>,
-    pub(crate) processor: Option<Box<dyn DataProcessor>>,
+    pub(crate) processors: Vec<Box<dyn DataProcessor>>,
     pub(crate) selector: Option<Box<dyn FeatureSelector>>,
     pub(crate) model_name: String,
     pub(crate) evaluation_mode: String,
@@ -41,17 +43,15 @@ impl MLPipeline
         self.expected_features = None;
     }
 
-    /// Spracuje dáta cez processor (ak existuje)
+    /// Spracuje dáta cez vsetky procesory v poradi
     pub fn preprocess(&self, data: &DenseMatrix<f64>) -> DenseMatrix<f64>
     {
-        if let Some(ref processor) = self.processor
+        let mut result = data.clone();
+        for processor in &self.processors
         {
-            processor.process(data)
+            result = processor.process(&result);
         }
-        else
-        {
-            data.clone()
-        }
+        result
     }
 
     /// Vykoná feature selection (ak existuje)
@@ -149,10 +149,14 @@ impl MLPipeline
             x.clone()
         };
 
-        // Fit processor on the selected features, then preprocess
-        if let Some(ref mut processor) = self.processor
+        // Fit kazdy procesor na transformovanom vystupe predchadzajuceho
         {
-            processor.fit(&selected_x);
+            let mut current = selected_x.clone();
+            for processor in self.processors.iter_mut()
+            {
+                processor.fit(&current);
+                current = processor.transform(&current);
+            }
         }
         let processed_x = self.preprocess(&selected_x);
 
@@ -249,7 +253,7 @@ impl MLPipeline
         PipelineInfo {
             model_name: self.model.get_name().to_string(),
             model_type: self.model_name.clone(),
-            processor: self.processor.as_ref().map(|p| p.get_name().to_string()),
+            processors: self.processors.iter().map(|p| p.get_name().to_string()).collect(),
             selector: self.selector.as_ref().map(|s| s.get_name().to_string()),
             evaluation_mode: self.evaluation_mode.clone(),
         }

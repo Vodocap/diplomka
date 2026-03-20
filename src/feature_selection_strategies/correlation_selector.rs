@@ -5,6 +5,11 @@ use std::collections::HashSet;
 use std::cell::RefCell;
 use crate::entropy::mi_estimator;
 
+/// Selektor na zaklade Pearsonovej/Spearmanovej korelacie.
+/// Automaticky zvoli Pearson (ak data splnaju normalitu) alebo Spearman (inak).
+/// Okrem korelacie s targetom sleduje aj inter-feature redundanciu a vysoko korelované
+/// features postupne odstrańuje (threshold na inter-feature korelaciu).
+
 /// Info o jednej feature: Pearson, Spearman, normalita, vybrany metric
 #[derive(Clone, Debug)]
 struct FeatureCorrelation {

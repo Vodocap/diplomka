@@ -1,3 +1,4 @@
+/// Modul pre nacitavanie dat z roznych formatov (Strategy + Factory pattern).
 pub mod loaded_data;     // LoadedData struct
 pub mod data_loader;     // DataLoader trait
 pub mod csv_data_loader; // CSV implementation of strategy

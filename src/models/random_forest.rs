@@ -2,6 +2,9 @@ use smartcore::ensemble::random_forest_regressor::{RandomForestRegressor, Random
 use smartcore::linalg::basic::matrix::DenseMatrix;
 use super::IModel;
 
+/// Wrapper okolo smartcore RandomForestRegressor.
+/// Trenuuje n_estimators niezavislych stromov na nahodnych bootstrap podvzorkach dat a features.
+/// Predikcia je priemer vystupov vsetkych stromov, co znizuje varianciu oproti jednemu stromu.
 pub struct RandomForestWrapper
 {
     model: Option<RandomForestRegressor<f64, f64, DenseMatrix<f64>, Vec<f64>>>,
@@ -12,6 +15,7 @@ pub struct RandomForestWrapper
 
 impl RandomForestWrapper
 {
+    /// Vytvori novu instanciu s n_estimators=100, max_depth=10, min_samples_leaf=1.
     pub fn new() -> Self
     {
         Self
@@ -56,6 +60,7 @@ impl IModel for RandomForestWrapper
         }
     }
 
+    /// Natrenuuje ansambl stromov na bootstrap podvzorkach trenovacich dat.
     fn train(&mut self, x: DenseMatrix<f64>, y: Vec<f64>)
     {
         let mut params = RandomForestRegressorParameters::default();
@@ -70,6 +75,7 @@ impl IModel for RandomForestWrapper
         }
     }
 
+    /// Vrati spriemerovanou predikciu zo vsetkych stromov ansamblu.
     fn predict(&self, input: &[f64]) -> Vec<f64>
     {
         let x = DenseMatrix::from_2d_vec(&vec![input.to_vec()]).unwrap();

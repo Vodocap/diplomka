@@ -1,5 +1,5 @@
 use super::{
-    DataProcessor, StandardScaler, Binner, OneHotEncoder, NullValueHandler, ProcessorChain,
+    DataProcessor, StandardScaler, Binner, OneHotEncoder, NullValueHandler,
     MinMaxScaler, RobustScaler, LabelEncoder, OutlierClipper, LogTransformer, PowerTransformer,
     ProcessorParam, SelectiveProcessor, TimeConverter,
     CommaToDotProcessor, ThousandsSeparatorRemover, OrdinalEncoder, FrequencyEncoder, TargetEncoder,
@@ -43,29 +43,6 @@ impl ProcessorFactory
             "target_encoder" => Ok(Box::new(TargetEncoder::new())),
             _ => Err(format!("Neznámy procesor: {}", processor_type)),
         }
-    }
-
-    /// Vytvorí chain procesorov z viacerých typov
-    pub fn create_chain(processor_types: Vec<&str>) -> Result<Box<dyn DataProcessor>, String>
-    {
-        if processor_types.is_empty()
-        {
-            return Err("No processors specified".to_string());
-        }
-
-        if processor_types.len() == 1
-        {
-            return Self::create(processor_types[0]);
-        }
-
-        let mut chain = ProcessorChain::new();
-        for proc_type in processor_types
-        {
-            let processor = Self::create(proc_type)?;
-            chain.add_mut(processor);
-        }
-
-        Ok(Box::new(chain))
     }
 
     /// Vráti zoznam všetkých dostupných procesorov

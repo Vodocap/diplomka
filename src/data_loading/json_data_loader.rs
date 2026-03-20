@@ -4,7 +4,9 @@ use std::collections::HashMap;
 use smartcore::linalg::basic::matrix::DenseMatrix;
 use serde_json::Value;
 
-/// JSON Data Loader - implementácia Strategy pattern pre JSON súbory
+/// Implementacia DataLoader pre JSON subory.
+/// Ocakava format JSON array of objects: [{"feature1": 1.0, "target": 0}, ...].
+/// Ciselne, retazcove a boolean hodnoty su konvertovane na f64.
 pub struct JsonDataLoader;
 
 impl JsonDataLoader

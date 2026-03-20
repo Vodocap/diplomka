@@ -18,6 +18,7 @@ pub struct PolyRegWrapper
 
 impl PolyRegWrapper
 {
+    /// Vytvori novu instanciu s degree=2.
     pub fn new() -> Self
     {
         Self
@@ -72,6 +73,8 @@ impl IModel for PolyRegWrapper
         }
     }
 
+    /// Natrenuuje OLS na polynomialne expandovanej matici. Pri neplatnych koeficientoch
+    /// (napr. silna multikolinearita) ulozi None a predict() pouzije fallback y_mean.
     fn train(&mut self, x: DenseMatrix<f64>, y: Vec<f64>)
     {
         let (n_rows, n_cols) = x.shape();
@@ -142,6 +145,8 @@ impl IModel for PolyRegWrapper
         }
     }
 
+    /// Expanduje vstup, aplikuje OLS koeficienty a vrati predikciu.
+    /// Ak model zlyhal pocas trenovania, vracia fallback y_mean.
     fn predict(&self, input: &[f64]) -> Vec<f64>
     {
         match &self.coefficients

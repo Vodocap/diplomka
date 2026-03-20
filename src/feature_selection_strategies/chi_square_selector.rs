@@ -4,6 +4,9 @@ use std::collections::HashMap;
 use super::FeatureSelector;
 use std::cell::RefCell;
 
+/// Chi-kvadrat selektor pre klasifikacne ulohy.
+/// Pocita chi-kvadrat statistiku medzi kazdym feature a targetom
+/// z kontingencnej tabulky a vyberá top_k features s najvyssim skore.
 pub struct ChiSquareSelector
 {
     top_k: usize,

@@ -2,7 +2,9 @@ use std::collections::HashMap;
 use smartcore::linalg::basic::matrix::DenseMatrix;
 use smartcore::linalg::basic::arrays::Array;
 
-/// Výsledok načítania dát
+/// Vysledok nacitania dat z DataLoader.
+/// Obsahuje features (x_data), target (y_data), hlavicky stlpcov
+/// a surove zaznamy pre spatne mapovanie na povodne riadky.
 #[derive(Debug, Clone)]
 pub struct LoadedData
 {
@@ -14,6 +16,7 @@ pub struct LoadedData
 
 impl LoadedData
 {
+    /// Vytvori novu instanciu s hlavickami, maticou features, vektorom targetu a surovymi zaznamami.
     pub fn new(
         headers: Vec<String>,
         x_data: DenseMatrix<f64>,
@@ -28,11 +31,13 @@ impl LoadedData
         }
     }
 
+    /// Pocet feature stlpcov (bez target stlpca).
     pub fn num_features(&self) -> usize
     {
         self.x_data.shape().1
     }
 
+    /// Pocet riadkov (vzoriek) v datach.
     pub fn num_samples(&self) -> usize
     {
         self.x_data.shape().0

@@ -2,8 +2,9 @@ use super::builder::MLPipelineBuilder;
 use super::pipeline::MLPipeline;
 use super::preset_info::PresetInfo;
 
-/// Director pre Builder pattern - obsahuje hotové "recepty" na vytváranie pipeline
-/// Zapuzdruje komplexnú logiku konštrukcie a ponúka predpripravené konfigurácie
+/// Director pre Builder pattern — obsahuje hotove "recepty" na zostavenie pipeline.
+/// Zapuzdruje komplexnu logiku konfiguracie a ponuka predprípravené presety
+/// pre typicke ulohý (klasifikacia, regresia, KNN, minimal pipeline).
 pub struct MLPipelineDirector;
 
 impl MLPipelineDirector

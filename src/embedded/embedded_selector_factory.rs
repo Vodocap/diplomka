@@ -1,5 +1,8 @@
 use crate::embedded::{EmbeddedFeatureSelector, RandomForestSelector, RidgeSelector};
 
+/// Factory pre embedded feature selection.
+/// Pre klasifikaciu vytvori RandomForestSelector (korelacne proxy),
+/// pre regresu RidgeSelector (L2 regularizacia, absolutne vahy koeficientov).
 pub struct EmbeddedSelectorFactory;
 
 impl EmbeddedSelectorFactory

@@ -1,10 +1,11 @@
+/// Modul pre predspracovanie dat - skalovanie, enkodovanie, binning, cistenie.
 pub mod processor_param;            // ProcessorParam struct + ColumnType enum
 pub mod data_processor;             // DataProcessor trait
 pub mod scaler;                     // StandardScaler
 pub mod binner;                     // Binner
 pub mod one_hot_encoder;            // OneHotEncoder
 pub mod null_handler;               // NullValueHandler
-pub mod processor_chain;            // ProcessorChain (decorator)
+
 pub mod processor_factory;              // ProcessorFactory
 pub mod minmax_scaler;              // MinMaxScaler
 pub mod robust_scaler;              // RobustScaler
@@ -26,7 +27,6 @@ pub use scaler::StandardScaler;
 pub use binner::Binner;
 pub use one_hot_encoder::OneHotEncoder;
 pub use null_handler::NullValueHandler;
-pub use processor_chain::ProcessorChain;
 pub use processor_factory::ProcessorFactory;
 pub use minmax_scaler::MinMaxScaler;
 pub use robust_scaler::RobustScaler;

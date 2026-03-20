@@ -3,7 +3,8 @@ use smartcore::linalg::basic::arrays::{Array, MutArray};
 use std::collections::HashMap;
 use super::{DataProcessor, ColumnType};
 
-/// Enkódovanie kategorických hodnôt podľa frekvencie výskytu
+/// Frequency Encoder - nahradzuje kazdu kategoricku hodnotu jej relativnou frekvenciou vyskytu.
+/// Hodnota = pocet_vyskytu / celkovy_pocet_riadkov. Caste kategorie maju vyssie cislo.
 pub struct FrequencyEncoder
 {
     freq_maps: Option<Vec<HashMap<u64, f64>>>,

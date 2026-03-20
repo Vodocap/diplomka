@@ -3,9 +3,9 @@ use smartcore::linalg::basic::matrix::DenseMatrix;
 use smartcore::linalg::basic::arrays::Array;
 use crate::entropy::mi_estimator;
 
-/// Correlation-based feature importance selector (embedded method).
-/// Uses absolute Pearson correlation with the target as a proxy for feature importance,
-/// since SmartCore does not expose tree-based feature_importances.
+/// Embedded feature importance selektor zalozeny na korelacii s targetom.
+/// SmartCore neexponuje prave feature_importances z rozhodovacich stromov,
+/// preto pouziva absolutnu Pearsonovu korelaciu (klasifikacia) resp. R² (regresia) ako proxy.
 pub struct RandomForestSelector
 {
     is_classification: bool,

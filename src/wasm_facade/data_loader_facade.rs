@@ -2,6 +2,7 @@ use wasm_bindgen::prelude::*;
 use serde::{Serialize, Deserialize};
 use crate::data_loading::{DataLoader, DataLoaderFactory};
 
+/// Serializable info o nacitanych datach - vracia sa do JS po nacitani suboru.
 #[derive(Serialize, Deserialize)]
 pub struct LoadedDataInfo
 {
@@ -11,6 +12,8 @@ pub struct LoadedDataInfo
     pub target_column: String,
 }
 
+/// WASM fasada pre nacitavanie dat.
+/// Obaluje DataLoader trait a vystavuje metody pre JavaScript cez wasm_bindgen.
 #[wasm_bindgen]
 pub struct WasmDataLoader
 {

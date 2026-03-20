@@ -2,8 +2,8 @@ use crate::embedded::EmbeddedFeatureSelector;
 use smartcore::linalg::basic::matrix::DenseMatrix;
 use smartcore::linear::ridge_regression::{RidgeRegression, RidgeRegressionParameters};
 
-/// Ridge Regression (L2 regularization) feature importance
-/// Používa absolútne hodnoty koeficientov z Ridge regresie
+/// Embedded feature importance selektor zalozeny na Ridge regresii (L2 regularizacia).
+/// Ranguje features podla absolutnej hodnoty Ridge koeficientov po fitovani.
 pub struct RidgeSelector
 {
     alpha: f64, // L2 regularization parameter

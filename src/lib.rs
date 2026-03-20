@@ -1,4 +1,6 @@
-// Removed unused import
+//! ML pipeline kniznica kompilujuca sa do WebAssembly.
+//! Obsahuje moduly pre nacitavanie dat, spracovanie, selekciu features, trenovanie modelov
+//! a evaluaciu. WASM fasady exportuju API pre JavaScript frontend.
 
 mod data_loading;
 mod evaluation;

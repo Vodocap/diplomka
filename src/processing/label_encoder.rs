@@ -3,8 +3,8 @@ use smartcore::linalg::basic::arrays::{Array, MutArray};
 use std::collections::HashMap;
 use super::{DataProcessor, ColumnType};
 
-/// Label Encoder - enkóduje kategorické hodnoty na čísla (0, 1, 2, ...)
-/// Užitočné pre ordinálne premenné a šetrí dimenzie oproti One-Hot
+/// Label Encoder - priradi kazdej unikatnej kategorickej hodnote cele cislo (0, 1, 2, ...).
+/// Kompaktnejsie nez One-Hot (zachovava pocet stlpcov), ale predpoklada ordinalny vztah medzi hodnotami.
 pub struct LabelEncoder
 {
     mappings: Option<Vec<HashMap<u64, usize>>>, // Pre každý stĺpec mapa hodnôt na indexy

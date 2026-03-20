@@ -2,6 +2,8 @@ use smartcore::linalg::basic::matrix::DenseMatrix;
 use smartcore::linalg::basic::arrays::{Array, MutArray};
 use super::{DataProcessor, ProcessorParam, ColumnType};
 
+/// Equal-width binner - diskretizuje spojite hodnoty do rovnomerne sirokich intervalov.
+/// Pocet binov je konfigurovatelny. Kazda hodnota sa nahradi cislom binu (0..bins-1).
 pub struct Binner
 {
     bins: usize,

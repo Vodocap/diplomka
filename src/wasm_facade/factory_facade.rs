@@ -6,6 +6,8 @@ use crate::feature_selection_strategies::feature_selector_factory::FeatureSelect
 use crate::data_loading::data_loader_factory::DataLoaderFactory;
 use crate::pipeline::director::MLPipelineDirector;
 
+/// Suhrnna konfiguracia vsetkych dostupnych moznosti (modely, procesory, selektory, formaty, presety).
+/// Serializuje sa do JS pre dynamicke generovanie UI.
 #[derive(Serialize, Deserialize)]
 pub struct AvailableOptions
 {
@@ -55,6 +57,8 @@ pub struct PresetInfo
     pub model_type: String,
 }
 
+/// WASM fasada pre enumeraciu dostupnych moznosti (modely, procesory, selektory, presets).
+/// Frontend vola getAvailableOptions() pre dynamicke naplnenie UI komponentov.
 #[wasm_bindgen]
 pub struct WasmFactory;
 

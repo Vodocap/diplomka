@@ -1,6 +1,7 @@
 use serde::{Serialize, Deserialize};
 
-/// Informácie o predpripravenej konfigurácii pipeline
+/// Metadata o predpripravenej konfigurácii pipeline (preset).
+/// Serializuje sa do JS pre zobrazenie v UI selectboxe.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PresetInfo
 {

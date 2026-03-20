@@ -3,6 +3,9 @@ use smartcore::linalg::basic::matrix::DenseMatrix;
 use smartcore::metrics::distance::euclidian::Euclidian;
 use super::IModel;
 
+/// Wrapper okolo smartcore KNNRegressor pouzivajuci Euklidovsku vzdialenost.
+/// KNN je lazy learner — trenovacie data sa iba ulozia; skutocna praca prebieha az pri predikcii.
+/// Predikcia je priemer cielovych hodnot k najblizich susedov.
 pub struct KnnWrapper
 {
     model: Option<KNNRegressor<f64, f64, DenseMatrix<f64>, Vec<f64>, Euclidian<f64>>>,
@@ -11,6 +14,7 @@ pub struct KnnWrapper
 
 impl KnnWrapper
 {
+    /// Vytvori novu instanciu s k=5.
     pub fn new() -> Self
     {
         Self { model: None, k: 5 }
@@ -21,6 +25,7 @@ impl IModel for KnnWrapper
 {
     fn get_name(&self) -> &str { "K-Nearest Neighbors" }
 
+    /// Ulozi trenovacie data do internej struktury (lazy fitting).
     fn train(&mut self, x: DenseMatrix<f64>, y: Vec<f64>)
     {
         let mut params = KNNRegressorParameters::default();
@@ -32,6 +37,7 @@ impl IModel for KnnWrapper
         }
     }
 
+    /// Najde k najblizsich susedov pomocou Euklidovskej vzdialenosti a vrati priemer ich hodnot.
     fn predict(&self, input: &[f64]) -> Vec<f64>
     {
         let x = DenseMatrix::from_2d_vec(&vec![input.to_vec()]).unwrap();

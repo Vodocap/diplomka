@@ -6,7 +6,9 @@ use super::{
     SmcSelector,
 };
 
-/// Factory pre vytváranie feature selektorov podľa názvu
+/// Factory pre vytváranie feature selektorov podla nazvu.
+/// Centralizuje registraciu vsetkych selektorov a poskytuje metadáta
+/// (popis, podporovane typy uloh, parametrove schema) pre UI.
 pub struct FeatureSelectorFactory;
 
 impl FeatureSelectorFactory

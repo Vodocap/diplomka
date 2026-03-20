@@ -3,7 +3,9 @@ use smartcore::linalg::basic::arrays::{Array, MutArray};
 use std::collections::HashMap;
 use super::{DataProcessor, ProcessorParam, ColumnType};
 
-/// Enkódovanie kategorických hodnôt s uchovaním poradia
+/// Ordinal Encoder - enkoduje kategoricke hodnoty s uchovanim poradia.
+/// Hodnoty su zoradene bud podla poradia vyskytu (appearance) alebo vzostupne (ascending)
+/// a priradene celociselnemu indexu.
 pub struct OrdinalEncoder
 {
     mappings: Option<Vec<HashMap<u64, usize>>>,

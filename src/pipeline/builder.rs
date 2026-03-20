@@ -6,7 +6,9 @@ use super::{compatibility::CompatibilityRegistry, pipeline::MLPipeline};
 
 use std::collections::HashMap;
 
-/// Builder pre konfiguráciu ML Pipeline
+/// Builder pre postupnu konfiguraciu ML pipeline (Builder pattern).
+/// Umoznuje fluent API: MLPipelineBuilder::new().model("knn").processor("scaler").build().
+/// Validuje kompatibilitu modelu, procesora a selektora pred zostavenim pipeline.
 pub struct MLPipelineBuilder
 {
     model_type: Option<String>,
@@ -112,16 +114,12 @@ impl MLPipelineBuilder
             model.set_param(key, value)?;
         }
 
-        // Vytvorenie processora/procesorov (optional)
-        let processor = if !self.processor_types.is_empty()
+        // Vytvorenie procesorov (optional)
+        let mut processors: Vec<Box<dyn crate::processing::DataProcessor>> = Vec::new();
+        for proc_type in &self.processor_types
         {
-            let proc_refs: Vec<&str> = self.processor_types.iter().map(|s| s.as_str()).collect();
-            Some(ProcessorFactory::create_chain(proc_refs)?)
+            processors.push(ProcessorFactory::create(proc_type)?);
         }
-        else
-        {
-            None
-        };
 
         // Vytvorenie selektora (optional)
         let selector = if let Some(sel_type) = &self.selector_type
@@ -163,7 +161,7 @@ impl MLPipelineBuilder
 
         Ok(MLPipeline {
             model,
-            processor,
+            processors,
             selector,
             model_name: model_type.clone(),
             evaluation_mode: eval_mode,

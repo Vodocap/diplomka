@@ -5,6 +5,9 @@ use smartcore::linalg::basic::matrix::DenseMatrix;
 use smartcore::linalg::basic::arrays::Array;
 use super::IModel;
 
+/// Wrapper okolo gbdt::GBDT (Gradient Boosted Decision Trees) pre regresiu.
+/// Sequencne trenuuje slabe stromy tak, ze kazdy novy strom fituje rezidua predchadzajuceho.
+/// Pouziva SquaredError loss funkciu. Features a labely sa konvertuju na f32 kvoli gbdt API.
 pub struct GradientBoostingWrapper
 {
     model: Option<GBDT>,
@@ -15,6 +18,7 @@ pub struct GradientBoostingWrapper
 
 impl GradientBoostingWrapper
 {
+    /// Vytvori novu instanciu s n_estimators=50, max_depth=3, learning_rate=0.1.
     pub fn new() -> Self
     {
         Self
@@ -59,6 +63,8 @@ impl IModel for GradientBoostingWrapper
         }
     }
 
+    /// Zostavi GBDT konfiguraciu a sequencne natrenuuje n_estimators stromov.
+    /// Vstupna matica sa konvertuje do gbdt DataVec (f32) pred trenaingom.
     fn train(&mut self, x: DenseMatrix<f64>, y: Vec<f64>)
     {
         let (n_rows, n_cols) = x.shape();
@@ -86,6 +92,7 @@ impl IModel for GradientBoostingWrapper
         self.model = Some(gbt);
     }
 
+    /// Konvertuje vstup na f32, predikcuje cez GBDT a vysledok konvertuje spat na f64.
     fn predict(&self, input: &[f64]) -> Vec<f64>
     {
         match &self.model

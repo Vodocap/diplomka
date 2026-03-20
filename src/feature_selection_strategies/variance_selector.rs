@@ -3,6 +3,9 @@ use smartcore::linalg::basic::arrays::Array;
 use super::FeatureSelector;
 use std::cell::RefCell;
 
+/// Selektor na zaklade variancie.
+/// Odstranuje features s varianciou pod povolenym prahom (threshold).
+/// Efektivne odfiltrovava konstantne alebo takmer konstantne stlpce.
 pub struct VarianceSelector
 {
     threshold: f64,

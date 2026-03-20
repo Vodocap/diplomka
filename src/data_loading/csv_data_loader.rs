@@ -4,7 +4,9 @@ use csv::ReaderBuilder;
 use std::collections::HashMap;
 use smartcore::linalg::basic::matrix::DenseMatrix;
 
-/// CSV Data Loader - implementácia Strategy pattern pre CSV súbory
+/// Implementacia DataLoader pre CSV subory.
+/// Parsuje CSV s hlavickami, oddeluje target stlpec od features
+/// a konvertuje textove hodnoty na f64 (podporuje desatinnu ciarku aj bodku).
 pub struct CsvDataLoader;
 
 impl CsvDataLoader

@@ -10,6 +10,7 @@ use smartcore::linalg::basic::arrays::Array;
 
 use std::cell::RefCell;
 
+/// Konfiguracia jedneho selektora pre porovnavanie viacerych selektorov naraz.
 #[derive(Serialize, Deserialize)]
 pub struct SelectorCompareConfig
 {
@@ -18,6 +19,8 @@ pub struct SelectorCompareConfig
     pub params: Vec<(String, String)>,
 }
 
+/// JSON konfiguracia pipeline-u prijata z frontendu.
+/// Obsahuje model, procesory, selektor, evaluation mode a parametre.
 #[derive(Serialize, Deserialize)]
 pub struct PipelineConfig
 {
@@ -32,6 +35,7 @@ pub struct PipelineConfig
     pub processor_params: Option<Vec<(String, String)>>,  // Nové: parametre pre procesory
 }
 
+/// Serializable informacie o aktualnom stave pipeline-u (model, procesory, selektor).
 #[derive(Serialize, Deserialize)]
 pub struct PipelineInfoResult
 {
@@ -43,6 +47,7 @@ pub struct PipelineInfoResult
     pub evaluation_mode: String,
 }
 
+/// Vysledok trenovania - uspesnost, sprava a pocet trenovacich vzoriek.
 #[derive(Serialize, Deserialize)]
 pub struct TrainingResult
 {
@@ -51,6 +56,7 @@ pub struct TrainingResult
     pub samples_trained: usize,
 }
 
+/// Varovanie o redundancii medzi dvoma feature-mi (vysoka korelaciaalebo MI).
 #[derive(Serialize, Deserialize)]
 pub struct RedundancyWarning
 {
@@ -63,6 +69,7 @@ pub struct RedundancyWarning
     pub message: String,
 }
 
+/// Suhrn vsetkych redundancnych varovani pre dany dataset.
 #[derive(Serialize, Deserialize)]
 pub struct RedundancyReport
 {
@@ -71,6 +78,7 @@ pub struct RedundancyReport
     pub summary: String,
 }
 
+/// Vysledok trenovania aj evaluacie v jednom - obsahuje classification aj regression metriky.
 #[derive(Serialize, Deserialize)]
 pub struct TrainingWithEvaluationResult
 {
@@ -107,6 +115,8 @@ pub struct TrainingWithEvaluationResult
 
 // EvaluationResult removed - not used
 
+/// Hlavna WASM fasada pre ML pipeline - obaluje cely workflow (load data, build, train, predict, evaluate).
+/// Obsahuje cache pre analyzovane data, matice korelacie/MI/SMC a split indexy.
 #[wasm_bindgen]
 pub struct WasmMLPipeline
 {
@@ -196,15 +206,11 @@ impl WasmMLPipeline
             {
                 config.processors.clone()
             }
-            else if let Some(ref p) = info.processor
-            {
-                vec![p.clone()]
-            }
             else
             {
-                vec![]
+                info.processors.clone()
             },
-            processor: info.processor,
+            processor: info.processors.first().cloned(),
             selector: info.selector,
             evaluation_mode: info.evaluation_mode,
         };
@@ -486,20 +492,13 @@ impl WasmMLPipeline
         let info = pipeline.info();
 
         // Získať processors zo buildera
-        let processor_list = if let Some(ref p) = info.processor
-        {
-            vec![p.clone()]
-        }
-        else
-        {
-            vec![]
-        };
+        let processor_list = info.processors.clone();
 
         let result = PipelineInfoResult {
             model_name: info.model_name,
             model_type: info.model_type,
             processors: processor_list.clone(),
-            processor: info.processor,
+            processor: processor_list.first().cloned(),
             selector: info.selector,
             evaluation_mode: info.evaluation_mode,
         };
@@ -1453,19 +1452,12 @@ impl WasmMLPipeline
         if let Some(ref pipeline) = self.pipeline
         {
             let info = pipeline.info();
-            let processor_list = if let Some(ref p) = info.processor
-            {
-                vec![p.clone()]
-            }
-            else
-            {
-                vec![]
-            };
+            let processor_list = info.processors.clone();
             let result = PipelineInfoResult {
                 model_name: info.model_name,
                 model_type: info.model_type,
-                processors: processor_list,
-                processor: info.processor,
+                processors: processor_list.clone(),
+                processor: processor_list.first().cloned(),
                 selector: info.selector,
                 evaluation_mode: info.evaluation_mode,
             };
@@ -1623,7 +1615,7 @@ impl WasmMLPipeline
                     "feature_names": feature_names,
                     "target_name": "target",
                     "selected_indices": pipeline.selected_indices,
-                    "preprocessing_applied": pipeline.processor.is_some()
+                    "preprocessing_applied": !pipeline.processors.is_empty()
                 });
 
                 Ok(serde_wasm_bindgen::to_value(&result).unwrap())

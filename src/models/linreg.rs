@@ -2,6 +2,8 @@ use smartcore::linear::linear_regression::{LinearRegression, LinearRegressionPar
 use smartcore::linalg::basic::matrix::DenseMatrix;
 use super::IModel;
 
+/// Wrapper okolo smartcore LinearRegression pre OLS regresu spojitych hodnot.
+/// Podporuje dva riesice: QR rozklad (predvoleny, stabilnejsi) a SVD (robustnejsi pri multikolinearite).
 pub struct LinRegWrapper
 {
     pub(crate) model: Option<LinearRegression<f64, f64, DenseMatrix<f64>, Vec<f64>>>,
@@ -10,6 +12,7 @@ pub struct LinRegWrapper
 
 impl LinRegWrapper
 {
+    /// Vytvori novu instanciu s QR solverom.
     pub fn new() -> Self
     {
         Self { model: None, solver: "qr".to_string() }
@@ -45,6 +48,7 @@ impl IModel for LinRegWrapper
         }
     }
 
+    /// Natrenuuje OLS model. Solver (QR alebo SVD) sa zvoli podla nastavenej hodnoty parametra.
     fn train(&mut self, x: DenseMatrix<f64>, y: Vec<f64>)
     {
         let mut params = LinearRegressionParameters::default();
@@ -61,6 +65,7 @@ impl IModel for LinRegWrapper
         }
     }
 
+    /// Predikuje spojitu hodnotu pre jeden vstupny vektor.
     fn predict(&self, input: &[f64]) -> Vec<f64>
     {
         let x = DenseMatrix::from_2d_vec(&vec![input.to_vec()]).unwrap();

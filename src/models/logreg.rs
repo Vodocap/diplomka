@@ -2,6 +2,9 @@ use smartcore::linear::logistic_regression::{LogisticRegression, LogisticRegress
 use smartcore::linalg::basic::matrix::DenseMatrix;
 use super::IModel;
 
+/// Wrapper okolo smartcore LogisticRegression pre binarnu klasifikaciu.
+/// Cielu premennu konvertuje na Vec<u32> zaokruhlenim, co predpoklada binarny vstup (0/1).
+/// Podporuje L2 regularizaciu cez parameter alpha.
 pub struct LogRegWrapper
 {
     model: Option<LogisticRegression<f64, u32, DenseMatrix<f64>, Vec<u32>>>,
@@ -10,6 +13,7 @@ pub struct LogRegWrapper
 
 impl LogRegWrapper
 {
+    /// Vytvori novu instanciu s nulovym alpha (bez regularizacie).
     pub fn new() -> Self
     {
         Self {
@@ -41,6 +45,7 @@ impl IModel for LogRegWrapper
         }
     }
 
+    /// Natrenuuje model. Hodnoty y sa zaokruhlia na u32 — predpoklada sa binarny label (0/1).
     fn train(&mut self, x: DenseMatrix<f64>, y: Vec<f64>)
     {
         let mut params = LogisticRegressionParameters::default();
@@ -54,6 +59,7 @@ impl IModel for LogRegWrapper
         }
     }
 
+    /// Predikuje triedu (0.0 alebo 1.0) pre jeden vstupny vektor.
     fn predict(&self, input: &[f64]) -> Vec<f64>
     {
         let x = DenseMatrix::from_2d_vec(&vec![input.to_vec()]).unwrap();

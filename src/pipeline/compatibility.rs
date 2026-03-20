@@ -2,7 +2,9 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 use once_cell::sync::Lazy;
 
-/// Singleton registry pre kompatibilitu modelov, procesorov a selektorov
+/// Singleton registr kompatibilit medzi modelmi, procesormi a selektormi.
+/// Urcuje ktore kombinacie su povolene (napr. chi_square iba pre klasifikaciu).
+/// Inicializuje sa raz pri prvom pristupe cez Lazy<Mutex<>>.
 pub struct CompatibilityRegistry
 {
     model_types: HashMap<String, String>, // model_name -> classification/regression

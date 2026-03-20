@@ -5,6 +5,9 @@ use crate::entropy::mi_estimator;
 use std::cell::RefCell;
 use std::collections::HashSet;
 
+/// Selektor na zaklade Mutual Information pouzivajuci mRMR (minimum Redundancy Maximum Relevance).
+/// Vyberá features s vysokou MI voči targetu a zaroven nizkou inter-MI medzi sebou.
+/// Pouziva KSG k-NN estimator pre presny odhad MI na spojitych datach.
 pub struct MutualInformationSelector
 {
     top_k: usize,

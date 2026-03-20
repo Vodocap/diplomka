@@ -1,3 +1,4 @@
+/// Modul pre ML pipeline - Builder/Director pattern, kompatibilita, presety.
 pub mod pipeline;
 pub mod pipeline_info;   // PipelineInfo struct
 pub mod builder;

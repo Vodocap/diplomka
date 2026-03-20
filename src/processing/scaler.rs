@@ -2,6 +2,8 @@ use smartcore::linalg::basic::matrix::DenseMatrix;
 use smartcore::linalg::basic::arrays::{Array, MutArray};
 use super::{DataProcessor, ColumnType};
 
+/// Standard Scaler - standardizuje kazdy stlpec na priemer=0, smerodajnu odchylku=1.
+/// Fit ulozi priemer a std pre kazdy stlpec, transform aplikuje z-score transformaciu.
 pub struct StandardScaler
 {
     means: Option<Vec<f64>>,

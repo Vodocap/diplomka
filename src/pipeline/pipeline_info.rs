@@ -1,10 +1,11 @@
-/// Informácie o nakonfigurovanom pipeline
+/// Informacie o nakonfigurovanom pipeline — model, procesor, selektor, eval mode.
+/// Pouziva sa pre logovanie a diagnostiku.
 #[derive(Debug, Clone)]
 pub struct PipelineInfo
 {
     pub model_name: String,
     pub model_type: String,
-    pub processor: Option<String>,
+    pub processors: Vec<String>,
     pub selector: Option<String>,
     pub evaluation_mode: String,
 }
@@ -15,7 +16,11 @@ impl PipelineInfo
     {
         println!("=== ML Pipeline Info ===");
         println!("Model: {} ({})", self.model_name, self.model_type);
-        println!("Processor: {}", self.processor.as_ref().unwrap_or(&"None".to_string()));
+        if self.processors.is_empty() {
+            println!("Processors: None");
+        } else {
+            println!("Processors: {}", self.processors.join(", "));
+        }
         println!("Feature Selector: {}", self.selector.as_ref().unwrap_or(&"None".to_string()));
         println!("Evaluation Mode: {}", self.evaluation_mode);
         println!("=======================");

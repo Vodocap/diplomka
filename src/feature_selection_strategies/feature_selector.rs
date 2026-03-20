@@ -1,5 +1,8 @@
 use smartcore::linalg::basic::matrix::DenseMatrix;
 
+/// Spolocne rozhranie pre vsetky feature selection metody (Strategy pattern).
+/// Kazdy selektor vyhodnocuje features podla inej metriky a vracia podmnozinu.
+/// Zahrna aj helper metody pre extrahovanie stlpcov a cachujovanie vysledkov.
 pub trait FeatureSelector
 {
     fn get_name(&self) -> &str;

@@ -1,3 +1,4 @@
+/// Modul pre selekciu features - rozne strategie (variance, chi-square, MI, SMC).
 pub mod feature_selector;  // FeatureSelector trait
 pub mod variance_selector;
 pub mod chi_square_selector;

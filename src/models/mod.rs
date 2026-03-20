@@ -1,3 +1,4 @@
+/// Modul pre ML modely - kazdy model implementuje IModel trait (Strategy pattern).
 pub mod i_model;  // IModel trait
 pub mod linreg;
 pub mod logreg;

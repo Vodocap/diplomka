@@ -3,7 +3,8 @@ use smartcore::linalg::basic::arrays::{Array, MutArray};
 use std::collections::HashMap;
 use super::{DataProcessor, ProcessorParam, ColumnType};
 
-/// Enkódovanie kategorických hodnôt podľa priemeru cieľovej premennej (smoothed mean encoding)
+/// Target Encoder - nahradzuje kategoricku hodnotu priemerom cielovej premennej pre danu kategoriu.
+/// Pouziva smoothing (Bayesov priemer) na zabranenie overfittingu pri malych skupinach.
 pub struct TargetEncoder
 {
     mean_maps: Option<Vec<HashMap<u64, f64>>>,

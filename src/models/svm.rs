@@ -3,6 +3,9 @@ use smartcore::svm::Kernels;
 use smartcore::linalg::basic::matrix::DenseMatrix;
 use super::IModel;
 
+/// Wrapper okolo smartcore SVR (Support Vector Regression).
+/// Podporuje RBF a linearny kernel. Obsahuje lifetime workaround cez Box::leak,
+/// pretoze smartcore SVR viaze lifetimes vstupnych dat a parametrov — pozri komentare v train().
 pub struct SvmWrapper
 {
     // Safety: SVR<'static> is valid because we use Box::leak for params.
@@ -16,6 +19,7 @@ pub struct SvmWrapper
 
 impl SvmWrapper
 {
+    /// Vytvori novu instanciu s C=1.0, eps=0.1, RBF kernelom a gamma=0.1.
     pub fn new() -> Self
     {
         Self
@@ -73,6 +77,8 @@ impl IModel for SvmWrapper
         }
     }
 
+    /// Natrenuuje SVR. Pouziva Box::leak na ziskanie 'static referencie pre params a pointer casty pre x/y.
+    /// Toto je nutne kvoli obmedzeniu smartcore API, nie kvoli skutocnemu zdielaniu dat.
     fn train(&mut self, x: DenseMatrix<f64>, y: Vec<f64>)
     {
         let mut params = SVRParameters::default();
@@ -106,6 +112,7 @@ impl IModel for SvmWrapper
         }
     }
 
+    /// Predikuje hodnotu pre jeden vstupny vektor. Pouziva pointer cast pre kompatibilitu s 'static.
     fn predict(&self, input: &[f64]) -> Vec<f64>
     {
         let x = DenseMatrix::from_2d_vec(&vec![input.to_vec()]).unwrap();

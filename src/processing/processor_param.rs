@@ -1,6 +1,8 @@
 use serde::{Serialize, Deserialize};
 
-/// Parameter definícia pre procesor (používa sa v UI)
+/// Definicia parametra procesora pre UI.
+/// Obsahuje typ (number/text/select), rozsah, predvolenu hodnotu a moznosti.
+/// Serializuje sa do JS pre dynamicke generovanie konfigurácnych formularov.
 #[derive(Serialize, Deserialize, Clone)]
 pub struct ProcessorParam
 {

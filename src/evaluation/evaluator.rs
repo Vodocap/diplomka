@@ -5,6 +5,8 @@ use smartcore::metrics::{
 };
 use crate::entropy::mi_estimator;
 
+/// Evaluator pre ML modely. Pocita klasifikacne (accuracy, precision, recall, F1, MCC...)
+/// a regresne (MSE, RMSE, MAE, R2, Pearson...) metriky z predikcii vs. skutocnych hodnot.
 pub struct ModelEvaluator;
 
 impl ModelEvaluator

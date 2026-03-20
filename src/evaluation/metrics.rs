@@ -1,5 +1,8 @@
 use std::collections::HashMap;
 
+/// Vysledok evaluacie modelu.
+/// Obsahuje nazov modelu, typ evaluacie (classification/regression)
+/// a mapu metrik (napr. accuracy, f1_score, rmse, r2_score).
 #[derive(Debug, Clone)]
 pub struct EvaluationReport
 {

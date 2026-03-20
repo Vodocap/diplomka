@@ -3,6 +3,8 @@ use smartcore::linalg::basic::arrays::{Array, MutArray};
 use std::collections::HashMap;
 use super::{DataProcessor, ColumnType};
 
+/// One-Hot Encoder - kazdu unikatnu hodnotu v stlpci premeni na samostatny binarny stlpec.
+/// Vystupna matica ma viac stlpcov ako vstupna (pocet stlpcov = sum(unikatnych hodnot)).
 pub struct OneHotEncoder;
 
 impl DataProcessor for OneHotEncoder

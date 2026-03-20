@@ -74,7 +74,8 @@ impl IModel for GradientBoostingWrapper
         cfg.set_training_optimization_level(2);
         cfg.set_debug(false);
 
-        let mut train_dv: DataVec = (0..n_rows).map(|i| {
+        let mut train_dv: DataVec = (0..n_rows).map(|i|
+        {
             let features: Vec<f32> = (0..n_cols).map(|j| *x.get((i, j)) as f32).collect();
             let label = y[i] as f32;
             Data::new_training_data(features, 1.0, label, None)

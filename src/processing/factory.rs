@@ -8,19 +8,23 @@ use super::{
 /// Factory pre vytváranie data procesorov podľa názvu
 pub struct ProcessorFactory;
 
-impl ProcessorFactory {
+impl ProcessorFactory
+{
     /// Vytvorí procesor na základe názvu (zabalený v SelectiveProcessor)
-    pub fn create(processor_type: &str) -> Result<Box<dyn DataProcessor>, String> {
+    pub fn create(processor_type: &str) -> Result<Box<dyn DataProcessor>, String>
+    {
         let base_processor = Self::create_raw(processor_type)?;
-        
+
         // Wrap procesor v SelectiveProcessor pre automatickú detekciu stĺpcov
         Ok(Box::new(SelectiveProcessor::new(base_processor)))
     }
 
     /// Vytvorí surový (raw) procesor BEZ SelectiveProcessor wrappera.
     /// Použitie: keď chceme aplikovať procesor priamo na konkrétny stĺpec (editor)
-    pub fn create_raw(processor_type: &str) -> Result<Box<dyn DataProcessor>, String> {
-        match processor_type {
+    pub fn create_raw(processor_type: &str) -> Result<Box<dyn DataProcessor>, String>
+    {
+        match processor_type
+        {
             "scaler" | "standard_scaler" => Ok(Box::new(StandardScaler::new())),
             "minmax_scaler" => Ok(Box::new(MinMaxScaler::new())),
             "robust_scaler" => Ok(Box::new(RobustScaler::new())),
@@ -42,17 +46,21 @@ impl ProcessorFactory {
     }
 
     /// Vytvorí chain procesorov z viacerých typov
-    pub fn create_chain(processor_types: Vec<&str>) -> Result<Box<dyn DataProcessor>, String> {
-        if processor_types.is_empty() {
+    pub fn create_chain(processor_types: Vec<&str>) -> Result<Box<dyn DataProcessor>, String>
+    {
+        if processor_types.is_empty()
+        {
             return Err("No processors specified".to_string());
         }
 
-        if processor_types.len() == 1 {
+        if processor_types.len() == 1
+        {
             return Self::create(processor_types[0]);
         }
 
         let mut chain = ProcessorChain::new();
-        for proc_type in processor_types {
+        for proc_type in processor_types
+        {
             let processor = Self::create(proc_type)?;
             chain.add_mut(processor);
         }
@@ -61,7 +69,8 @@ impl ProcessorFactory {
     }
 
     /// Vráti zoznam všetkých dostupných procesorov
-    pub fn available() -> Vec<&'static str> {
+    pub fn available() -> Vec<&'static str>
+    {
         vec![
             "scaler",
             "minmax_scaler",
@@ -83,8 +92,10 @@ impl ProcessorFactory {
     }
 
     /// Vráti popis procesora
-    pub fn get_description(processor_type: &str) -> Option<&'static str> {
-        match processor_type {
+    pub fn get_description(processor_type: &str) -> Option<&'static str>
+    {
+        match processor_type
+        {
             "scaler" => Some("Standard Scaler - normalizácia dát (mean=0, std=1)"),
             "minmax_scaler" => Some("MinMax Scaler - normalizácia do rozsahu [0, 1]"),
             "robust_scaler" => Some("Robust Scaler - škálovanie pomocou mediánu a IQR (odolné voči outlierom)"),
@@ -106,8 +117,10 @@ impl ProcessorFactory {
     }
 
     /// Vráti podporované parametre pre procesor
-    pub fn get_processor_params(processor_type: &str) -> Vec<&'static str> {
-        match processor_type {
+    pub fn get_processor_params(processor_type: &str) -> Vec<&'static str>
+    {
+        match processor_type
+        {
             "minmax_scaler" => vec!["min", "max"],
             "binner" => vec!["bins"],
             "null_handler" => vec!["null_repr", "strategy"],
@@ -121,10 +134,14 @@ impl ProcessorFactory {
     }
 
     /// Vráti detailné definície parametrov pre procesor
-    pub fn get_param_definitions(processor_type: &str) -> Vec<ProcessorParam> {
-        if let Ok(processor) = Self::create(processor_type) {
+    pub fn get_param_definitions(processor_type: &str) -> Vec<ProcessorParam>
+    {
+        if let Ok(processor) = Self::create(processor_type)
+        {
             processor.get_param_definitions()
-        } else {
+        }
+        else
+        {
             vec![]
         }
     }

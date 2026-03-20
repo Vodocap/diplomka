@@ -1,15 +1,17 @@
 use super::builder::MLPipelineBuilder;
 use super::pipeline::MLPipeline;
-use serde::{Serialize, Deserialize};
+use super::preset_info::PresetInfo;
 
 /// Director pre Builder pattern - obsahuje hotové "recepty" na vytváranie pipeline
 /// Zapuzdruje komplexnú logiku konštrukcie a ponúka predpripravené konfigurácie
 pub struct MLPipelineDirector;
 
-impl MLPipelineDirector {
+impl MLPipelineDirector
+{
     /// Vytvorí základný klasifikačný pipeline
     /// Model: Logistic Regression, Processor: Standard Scaler, Selector: Variance
-    pub fn build_basic_classification(model: &str) -> Result<MLPipeline, String> {
+    pub fn build_basic_classification(model: &str) -> Result<MLPipeline, String>
+    {
         MLPipelineBuilder::new()
             .model(model)
             .processor("scaler")
@@ -21,7 +23,8 @@ impl MLPipelineDirector {
 
     /// Vytvorí základný regresný pipeline
     /// Model: Linear Regression, Processor: Standard Scaler, Selector: Correlation
-    pub fn build_basic_regression(model: &str) -> Result<MLPipeline, String> {
+    pub fn build_basic_regression(model: &str) -> Result<MLPipeline, String>
+    {
         MLPipelineBuilder::new()
             .model(model)
             .processor("scaler")
@@ -59,7 +62,8 @@ impl MLPipelineDirector {
     }
 
     /// Vytvorí minimálny pipeline bez processingu a feature selection
-    pub fn build_minimal(model: &str, eval_mode: &str) -> Result<MLPipeline, String> {
+    pub fn build_minimal(model: &str, eval_mode: &str) -> Result<MLPipeline, String>
+    {
         MLPipelineBuilder::new()
             .model(model)
             .evaluation_mode(eval_mode)
@@ -67,7 +71,8 @@ impl MLPipelineDirector {
     }
 
     /// Vytvorí KNN klasifikátor s optimálnymi nastaveniami
-    pub fn build_knn_classifier(k: usize) -> Result<MLPipeline, String> {
+    pub fn build_knn_classifier(k: usize) -> Result<MLPipeline, String>
+    {
         MLPipelineBuilder::new()
             .model("knn")
             .model_param("k", &k.to_string())
@@ -79,7 +84,8 @@ impl MLPipelineDirector {
     }
 
     /// Vytvorí KNN regressor s optimálnymi nastaveniami
-    pub fn build_knn_regressor(k: usize) -> Result<MLPipeline, String> {
+    pub fn build_knn_regressor(k: usize) -> Result<MLPipeline, String>
+    {
         MLPipelineBuilder::new()
             .model("knn")
             .model_param("k", &k.to_string())
@@ -90,7 +96,8 @@ impl MLPipelineDirector {
     }
 
     /// Vytvorí Decision Tree s information gain selection
-    pub fn build_decision_tree_classifier() -> Result<MLPipeline, String> {
+    pub fn build_decision_tree_classifier() -> Result<MLPipeline, String>
+    {
         MLPipelineBuilder::new()
             .model("tree")
             .feature_selector("information_gain")
@@ -99,7 +106,8 @@ impl MLPipelineDirector {
     }
 
     /// Vytvorí custom pipeline pomocou builder pattern s validáciou
-    pub fn build_custom() -> MLPipelineBuilder {
+    pub fn build_custom() -> MLPipelineBuilder
+    {
         MLPipelineBuilder::new()
     }
 
@@ -114,11 +122,13 @@ impl MLPipelineDirector {
             .model(model)
             .evaluation_mode(eval_mode);
 
-        if let Some(proc) = processor {
+        if let Some(proc) = processor
+        {
             builder = builder.processor(proc);
         }
 
-        if let Some(sel) = selector {
+        if let Some(sel) = selector
+        {
             builder = builder.feature_selector(sel);
         }
 
@@ -126,7 +136,8 @@ impl MLPipelineDirector {
     }
 
     /// Vráti všetky dostupné predpripravené konfigurácie
-    pub fn available_presets() -> Vec<PresetInfo> {
+    pub fn available_presets() -> Vec<PresetInfo>
+    {
         vec![
             // === ZÁKLADNÉ PRESETY ===
             PresetInfo {
@@ -153,7 +164,7 @@ impl MLPipelineDirector {
                 processor: None,
                 selector: None,
             },
-            
+
             // === POKROČILÉ KLASIFIKAČNÉ PRESETY ===
             PresetInfo {
                 name: "advanced_classification",
@@ -195,7 +206,7 @@ impl MLPipelineDirector {
                 processor: Some("robust_scaler"),
                 selector: Some("mutual_information"),
             },
-            
+
             // === POKROČILÉ REGRESNÉ PRESETY ===
             PresetInfo {
                 name: "advanced_regression",
@@ -229,7 +240,7 @@ impl MLPipelineDirector {
                 processor: Some("robust_scaler"),
                 selector: Some("mutual_information"),
             },
-            
+
             // === PRESETY S TRANSFORMÁCIAMI ===
             PresetInfo {
                 name: "linreg_log_correlation",
@@ -247,7 +258,7 @@ impl MLPipelineDirector {
                 processor: Some("power_transformer"),
                 selector: Some("variance"),
             },
-            
+
             // === PRESETY S OUTLIER HANDLINGOM ===
             PresetInfo {
                 name: "linreg_outlier_correlation",
@@ -265,7 +276,7 @@ impl MLPipelineDirector {
                 processor: Some("outlier_clipper"),
                 selector: Some("variance"),
             },
-            
+
             // === PRESETY BEZ FEATURE SELECTION ===
             PresetInfo {
                 name: "logreg_scaler_only",
@@ -291,7 +302,7 @@ impl MLPipelineDirector {
                 processor: Some("robust_scaler"),
                 selector: None,
             },
-            
+
             // === PRESETY S LABEL ENCODING ===
             PresetInfo {
                 name: "tree_labelenc_chisquare",
@@ -309,7 +320,7 @@ impl MLPipelineDirector {
                 processor: Some("label_encoder"),
                 selector: Some("variance"),
             },
-            
+
             // === DECISION TREE PRESET ===
             PresetInfo {
                 name: "decision_tree",
@@ -321,15 +332,4 @@ impl MLPipelineDirector {
             },
         ]
     }
-}
-
-/// Informácie o predpripravenej konfigurácii
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PresetInfo {
-    pub name: &'static str,
-    pub description: &'static str,
-    pub model_type: &'static str,
-    pub model: Option<&'static str>,
-    pub processor: Option<&'static str>,
-    pub selector: Option<&'static str>,
 }

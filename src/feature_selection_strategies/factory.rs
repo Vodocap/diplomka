@@ -1,6 +1,6 @@
 use super::{
-    FeatureSelector, 
-    VarianceSelector, 
+    FeatureSelector,
+    VarianceSelector,
     CorrelationSelector,
     ChiSquareSelector,
     InformationGainSelector,
@@ -11,10 +11,13 @@ use super::{
 /// Factory pre vytváranie feature selektorov podľa názvu
 pub struct FeatureSelectorFactory;
 
-impl FeatureSelectorFactory {
+impl FeatureSelectorFactory
+{
     /// Vytvorí feature selektor na základe názvu
-    pub fn create(selector_type: &str) -> Result<Box<dyn FeatureSelector>, String> {
-        match selector_type {
+    pub fn create(selector_type: &str) -> Result<Box<dyn FeatureSelector>, String>
+    {
+        match selector_type
+        {
             "variance" => Ok(Box::new(VarianceSelector::new())),
             "correlation" => Ok(Box::new(CorrelationSelector::new())),
             "chi_square" | "chi2" => Ok(Box::new(ChiSquareSelector::new())),
@@ -26,7 +29,8 @@ impl FeatureSelectorFactory {
     }
 
     /// Vráti zoznam všetkých dostupných feature selektorov
-    pub fn available() -> Vec<&'static str> {
+    pub fn available() -> Vec<&'static str>
+    {
         vec![
             "variance",
             "correlation",
@@ -38,8 +42,10 @@ impl FeatureSelectorFactory {
     }
 
     /// Vráti popis feature selektora
-    pub fn get_description(selector_type: &str) -> Option<&'static str> {
-        match selector_type {
+    pub fn get_description(selector_type: &str) -> Option<&'static str>
+    {
+        match selector_type
+        {
             "variance" => Some("Variance Threshold - odstraňuje features s nízkou varianciou (konštantné hodnoty)"),
             "correlation" => Some("Correlation - vyberie features s najvyššou koreláciou k targetu (pre regression)"),
             "chi_square" => Some("Chi-Square Test - testuje nezávislosť medzi features a targetom (len klasifikácia)"),
@@ -49,15 +55,18 @@ impl FeatureSelectorFactory {
             _ => None,
         }
     }
-    
+
     /// Vráti či selector vyžaduje preprocessing (napr. binning)
-    pub fn requires_binning(selector_type: &str) -> bool {
+    pub fn requires_binning(selector_type: &str) -> bool
+    {
         matches!(selector_type, "information_gain")
     }
 
     /// Vráti podporované typy problémov pre selector
-    pub fn get_supported_types(selector_type: &str) -> Vec<&'static str> {
-        match selector_type {
+    pub fn get_supported_types(selector_type: &str) -> Vec<&'static str>
+    {
+        match selector_type
+        {
             "variance" => vec!["regression", "classification"],
             "correlation" => vec!["regression", "classification"],
             "chi_square" => vec!["classification"],
@@ -69,8 +78,10 @@ impl FeatureSelectorFactory {
     }
 
     /// Vráti podporované parametre pre selector
-    pub fn get_supported_params(selector_type: &str) -> Vec<&'static str> {
-        match selector_type {
+    pub fn get_supported_params(selector_type: &str) -> Vec<&'static str>
+    {
+        match selector_type
+        {
             "variance" => vec!["threshold"],
             "correlation" => vec!["threshold"],
             "chi_square" | "information_gain" | "mutual_information" | "smc" => vec!["num_features"],

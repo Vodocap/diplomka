@@ -10,10 +10,13 @@ use super::{
 /// Rovnaký vzor ako FeatureSelectorFactory.
 pub struct TargetAnalyzerFactory;
 
-impl TargetAnalyzerFactory {
+impl TargetAnalyzerFactory
+{
     /// Vytvorí analyzátor na základe názvu
-    pub fn create(analyzer_type: &str) -> Result<Box<dyn TargetAnalyzer>, String> {
-        match analyzer_type {
+    pub fn create(analyzer_type: &str) -> Result<Box<dyn TargetAnalyzer>, String>
+    {
+        match analyzer_type
+        {
             "correlation" => Ok(Box::new(CorrelationAnalyzer::new())),
             "mutual_information" | "mi" => Ok(Box::new(MutualInformationAnalyzer::new())),
             "entropy" | "information_gain" => Ok(Box::new(EntropyAnalyzer::new())),
@@ -23,7 +26,8 @@ impl TargetAnalyzerFactory {
     }
 
     /// Vráti zoznam všetkých dostupných analyzátorov
-    pub fn available() -> Vec<(&'static str, &'static str)> {
+    pub fn available() -> Vec<(&'static str, &'static str)>
+    {
         vec![
             ("correlation", "Pearsonova korelácia - Σr² meria lineárne väzby medzi premennými"),
             ("mutual_information", "Mutual Information (KSG) - ΣMI zachytáva aj nelineárne vzťahy"),
@@ -33,8 +37,10 @@ impl TargetAnalyzerFactory {
     }
 
     /// Vráti popis analyzátora
-    pub fn get_description(analyzer_type: &str) -> Option<&'static str> {
-        match analyzer_type {
+    pub fn get_description(analyzer_type: &str) -> Option<&'static str>
+    {
+        match analyzer_type
+        {
             "correlation" => Some("Pearsonova korelácia - Σr² meria lineárne väzby medzi premennými"),
             "mutual_information" | "mi" => Some("Mutual Information (KSG) - ΣMI zachytáva aj nelineárne vzťahy"),
             "smc" => Some("SMC (Squared Multiple Correlation) - koľko variability vysvetľujú ostatné premenné"),

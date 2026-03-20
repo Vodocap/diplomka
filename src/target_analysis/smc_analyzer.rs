@@ -1,19 +1,22 @@
 use super::{TargetAnalyzer, TargetCandidate};
 use std::cell::RefCell;
-use crate::mi_estimator;
+use crate::entropy::mi_estimator;
 
 /// Analyzátor cieľovej premennej na základe Squared Multiple Correlation (SMC).
 /// SMC_j = 1 - 1/(R⁻¹)_jj, kde R je korelačná matica.
 /// Udáva, koľko variability premennej Xj je vysvetlené lineárnou kombináciou
 /// všetkých ostatných premenných. Presne aproximuje R² z lineárnej regresie
 /// bez nutnosti trénovania modelu.
-pub struct SmcAnalyzer {
+pub struct SmcAnalyzer
+{
     /// Cache pre korelačnú maticu
     corr_cache: RefCell<Option<Vec<Vec<f64>>>>,
 }
 
-impl SmcAnalyzer {
-    pub fn new() -> Self {
+impl SmcAnalyzer
+{
+    pub fn new() -> Self
+    {
         Self {
             corr_cache: RefCell::new(None),
         }
@@ -21,46 +24,56 @@ impl SmcAnalyzer {
 
     /// Regularizuje korelačnú maticu pridaním malej hodnoty na diagonálu
     /// aby bola invertovateľná aj pri multikolinearite.
-    fn regularize_corr_matrix(corr: &mut Vec<Vec<f64>>, lambda: f64) {
+    fn regularize_corr_matrix(corr: &mut Vec<Vec<f64>>, lambda: f64)
+    {
         let n = corr.len();
-        for i in 0..n {
+        for i in 0..n
+        {
             corr[i][i] += lambda;
         }
     }
 
     /// Vypočíta korelačnú maticu s cachovaním
-    fn compute_corr_matrix(&self, columns: &[Vec<f64>]) -> Vec<Vec<f64>> {
+    fn compute_corr_matrix(&self, columns: &[Vec<f64>]) -> Vec<Vec<f64>>
+    {
         let num_cols = columns.len();
         let mut corr_matrix = vec![vec![0.0f64; num_cols]; num_cols];
-        
-        for i in 0..num_cols {
+
+        for i in 0..num_cols
+        {
             corr_matrix[i][i] = 1.0;
-            for j in (i+1)..num_cols {
+            for j in (i+1)..num_cols
+            {
                 let c = mi_estimator::pearson_correlation(&columns[i], &columns[j]);
                 corr_matrix[i][j] = c;
                 corr_matrix[j][i] = c;
             }
         }
-        
+
         corr_matrix
     }
 
 }
 
-impl TargetAnalyzer for SmcAnalyzer {
-    fn get_name(&self) -> &str {
+impl TargetAnalyzer for SmcAnalyzer
+{
+    fn get_name(&self) -> &str
+    {
         "smc"
     }
 
-    fn get_description(&self) -> &str {
+    fn get_description(&self) -> &str
+    {
         "SMC (Squared Multiple Correlation) - koľko variability je vysvetlené ostatnými premennými"
     }
 
-    fn get_metric_name(&self) -> &str {
+    fn get_metric_name(&self) -> &str
+    {
         "SMC"
     }
 
-    fn get_metric_explanation(&self) -> &str {
+    fn get_metric_explanation(&self) -> &str
+    {
         "SMC (Squared Multiple Correlation) = 1 - 1/VIF, kde VIF = diagonálny prvok inverznej korelačnej matice. \
         Udáva, aký podiel variability premennej je vysvetlený lineárnou kombináciou všetkých ostatných premenných. \
         Rozsah: 0 (nezávislá premenná) - 1 (úplne predikovateľná). \
@@ -69,28 +82,32 @@ impl TargetAnalyzer for SmcAnalyzer {
         SMC < 0.20: slabý kandidát - bude potrebný nelineárny model alebo iné dáta."
     }
 
-    fn analyze(&self, columns: &[Vec<f64>], headers: &[String]) -> Vec<TargetCandidate> {
+    fn analyze(&self, columns: &[Vec<f64>], headers: &[String]) -> Vec<TargetCandidate>
+    {
         let num_cols = columns.len();
         let n = if num_cols > 0 { columns[0].len() } else { return vec![]; };
 
         // Vypočítame korelačnú maticu a uložíme do cache
         let corr_matrix = self.compute_corr_matrix(columns);
-        
+
         // Uložíme do cache pre get_details_html()
         *self.corr_cache.borrow_mut() = Some(corr_matrix.clone());
 
         // Try to invert; if singular, regularize
-        let inv = mi_estimator::invert_matrix(&corr_matrix).unwrap_or_else(|| {
+        let inv = mi_estimator::invert_matrix(&corr_matrix).unwrap_or_else(||
+        {
             let mut reg = corr_matrix.clone();
             Self::regularize_corr_matrix(&mut reg, 0.01);
-            mi_estimator::invert_matrix(&reg).unwrap_or_else(|| {
+            mi_estimator::invert_matrix(&reg).unwrap_or_else(||
+            {
                 // Fallback: identity-like
                 vec![vec![1.0; num_cols]; num_cols]
             })
         });
 
         let mut candidates = Vec::new();
-        for col_idx in 0..num_cols {
+        for col_idx in 0..num_cols
+        {
             let (unique_count, stype) = super::classify_column(&columns[col_idx], n);
 
             let mean = columns[col_idx].iter().sum::<f64>() / n as f64;
@@ -102,13 +119,20 @@ impl TargetAnalyzer for SmcAnalyzer {
             let smc_clamped = smc.max(0.0).min(1.0);
 
             // Interpretácia
-            let quality = if smc_clamped > 0.70 {
+            let quality = if smc_clamped > 0.70
+            {
                 "vynikajuci"
-            } else if smc_clamped > 0.40 {
+            }
+            else if smc_clamped > 0.40
+            {
                 "dobry"
-            } else if smc_clamped > 0.20 {
+            }
+            else if smc_clamped > 0.20
+            {
                 "slaby"
-            } else {
+            }
+            else
+            {
                 "nevhodny"
             };
 
@@ -122,7 +146,8 @@ impl TargetAnalyzer for SmcAnalyzer {
                 extra_metrics: vec![
                     ("smc".to_string(), (smc_clamped * 10000.0).round() / 10000.0),
                     ("vif".to_string(), (vif * 100.0).round() / 100.0),
-                    ("quality".to_string(), match quality {
+                    ("quality".to_string(), match quality
+                    {
                         "vynikajuci" => 3.0,
                         "dobry" => 2.0,
                         "slaby" => 1.0,
@@ -135,33 +160,49 @@ impl TargetAnalyzer for SmcAnalyzer {
         candidates
     }
 
-    fn get_details_html(&self, columns: &[Vec<f64>], headers: &[String], candidates: &[TargetCandidate]) -> String {
+    fn get_details_html(&self, columns: &[Vec<f64>], headers: &[String], candidates: &[TargetCandidate]) -> String
+    {
         let num_cols = columns.len();
         let mut html = String::new();
 
         // SMC bar chart
         html.push_str("<h4 style='color:#495057;margin:20px 0 10px;border-bottom:2px solid #dee2e6;padding-bottom:8px;'>SMC hodnoty premenných</h4>");
         html.push_str("<div style='max-width:600px;'>");
-        for cand in candidates {
+        for cand in candidates
+        {
             let smc = cand.score;
             let vif = cand.extra_metrics.iter().find(|(k, _)| k == "vif").map(|(_, v)| *v).unwrap_or(1.0);
             let pct = (smc * 100.0).min(100.0);
-            let color = if smc > 0.70 {
+            let color = if smc > 0.70
+            {
                 "rgba(204,0,0,1.0)"
-            } else if smc > 0.40 {
+            }
+            else if smc > 0.40
+            {
                 "rgba(204,0,0,0.75)"
-            } else if smc > 0.20 {
+            }
+            else if smc > 0.20
+            {
                 "rgba(204,0,0,0.50)"
-            } else {
+            }
+            else
+            {
                 "rgba(204,0,0,0.30)"
             };
-            let label = if smc > 0.70 {
+            let label = if smc > 0.70
+            {
                 "vynikajuci"
-            } else if smc > 0.40 {
+            }
+            else if smc > 0.40
+            {
                 "dobry"
-            } else if smc > 0.20 {
+            }
+            else if smc > 0.20
+            {
                 "slaby"
-            } else {
+            }
+            else
+            {
                 "nevhodny"
             };
             html.push_str(&format!(
@@ -188,33 +229,47 @@ impl TargetAnalyzer for SmcAnalyzer {
         html.push_str("</div>");
 
         // Correlation matrix if not too many columns
-        if num_cols <= 15 {
+        if num_cols <= 15
+        {
             // Použijeme cache ak existuje
-            let corr_matrix = if let Some(cached) = self.corr_cache.borrow().as_ref() {
+            let corr_matrix = if let Some(cached) = self.corr_cache.borrow().as_ref()
+            {
                 cached.clone()
-            } else {
+            }
+            else
+            {
                 self.compute_corr_matrix(columns)
             };
 
             html.push_str("<h4 style='color:#495057;margin:20px 0 10px;border-bottom:2px solid #dee2e6;padding-bottom:8px;'>Korelačná matica</h4>");
             html.push_str("<div style='overflow-x:auto;'><table style='border-collapse:collapse;font-size:11px;'>");
             html.push_str("<tr><th style='padding:6px;border:1px solid #ddd;background:#f0f0f0;'></th>");
-            for h in headers {
+            for h in headers
+            {
                 html.push_str(&format!("<th style='padding:6px;border:1px solid #ddd;background:#f0f0f0;font-size:10px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'>{}</th>", h));
             }
             html.push_str("</tr>");
-            for i in 0..num_cols {
+            for i in 0..num_cols
+            {
                 html.push_str(&format!("<tr><th style='padding:6px;border:1px solid #ddd;background:#f0f0f0;font-size:10px;white-space:nowrap;'>{}</th>", &headers[i]));
-                for j in 0..num_cols {
+                for j in 0..num_cols
+                {
                     let c = corr_matrix[i][j];
                     let ac = c.abs();
-                    let bg_color = if i == j {
+                    let bg_color = if i == j
+                    {
                         "#e0e0e0".to_string()
-                    } else if ac > 0.7 {
+                    }
+                    else if ac > 0.7
+                    {
                         format!("rgba(52,152,219,{})", 0.3 + ac * 0.5)
-                    } else if ac > 0.4 {
+                    }
+                    else if ac > 0.4
+                    {
                         format!("rgba(46,204,113,{})", 0.2 + ac * 0.3)
-                    } else {
+                    }
+                    else
+                    {
                         format!("rgba(200,200,200,{})", 0.1 + ac * 0.2)
                     };
                     html.push_str(&format!("<td style='padding:6px;border:1px solid #ddd;text-align:center;background:{};font-size:10px;'>{:.3}</td>", bg_color, c));

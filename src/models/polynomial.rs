@@ -76,9 +76,12 @@ impl IModel for PolyRegWrapper
     {
         let (n_rows, n_cols) = x.shape();
         self.n_features = n_cols;
-        self.y_mean = if y.is_empty() {
+        self.y_mean = if y.is_empty()
+        {
             0.0
-        } else {
+        }
+        else
+        {
             y.iter().sum::<f64>() / y.len() as f64
         };
 

@@ -7,7 +7,8 @@ use crate::data_loading::factory::DataLoaderFactory;
 use crate::pipeline::director::MLPipelineDirector;
 
 #[derive(Serialize, Deserialize)]
-pub struct AvailableOptions {
+pub struct AvailableOptions
+{
     pub models: Vec<ModelInfo>,
     pub processors: Vec<ProcessorInfo>,
     pub selectors: Vec<SelectorInfo>,
@@ -16,20 +17,23 @@ pub struct AvailableOptions {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct ModelInfo {
+pub struct ModelInfo
+{
     pub name: String,
     pub description: String,
     pub model_type: String,
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct ProcessorInfo {
+pub struct ProcessorInfo
+{
     pub name: String,
     pub description: String,
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct SelectorInfo {
+pub struct SelectorInfo
+{
     pub name: String,
     pub description: String,
     pub supported_types: Vec<String>,
@@ -37,13 +41,15 @@ pub struct SelectorInfo {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct FormatInfo {
+pub struct FormatInfo
+{
     pub name: String,
     pub description: String,
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct PresetInfo {
+pub struct PresetInfo
+{
     pub name: String,
     pub description: String,
     pub model_type: String,
@@ -53,16 +59,19 @@ pub struct PresetInfo {
 pub struct WasmFactory;
 
 #[wasm_bindgen]
-impl WasmFactory {
+impl WasmFactory
+{
     #[wasm_bindgen(constructor)]
-    pub fn new() -> WasmFactory {
+    pub fn new() -> WasmFactory
+    {
         console_error_panic_hook::set_once();
         WasmFactory
     }
 
     /// Získa všetky dostupné možnosti pre frontend
     #[wasm_bindgen(js_name = getAvailableOptions)]
-    pub fn get_available_options(&self) -> JsValue {
+    pub fn get_available_options(&self) -> JsValue
+    {
         let models: Vec<ModelInfo> = ModelFactory::available_models()
             .iter()
             .map(|name| ModelInfo {
@@ -128,7 +137,8 @@ impl WasmFactory {
 
     /// Získa kompatibilné procesory pre model
     #[wasm_bindgen(js_name = getCompatibleProcessors)]
-    pub fn get_compatible_processors(&self, model_name: &str) -> JsValue {
+    pub fn get_compatible_processors(&self, model_name: &str) -> JsValue
+    {
         use crate::pipeline::compatibility::CompatibilityRegistry;
         let registry = CompatibilityRegistry::instance().lock().unwrap();
         let processors = registry.get_compatible_processors(model_name);
@@ -137,7 +147,8 @@ impl WasmFactory {
 
     /// Získa kompatibilné selektory pre model
     #[wasm_bindgen(js_name = getCompatibleSelectors)]
-    pub fn get_compatible_selectors(&self, model_name: &str) -> JsValue {
+    pub fn get_compatible_selectors(&self, model_name: &str) -> JsValue
+    {
         use crate::pipeline::compatibility::CompatibilityRegistry;
         let registry = CompatibilityRegistry::instance().lock().unwrap();
         let selectors = registry.get_compatible_selectors(model_name);
@@ -146,7 +157,8 @@ impl WasmFactory {
 
     /// Získa podporované parametre pre model
     #[wasm_bindgen(js_name = getModelParams)]
-    pub fn get_model_params(&self, model_name: &str) -> JsValue {
+    pub fn get_model_params(&self, model_name: &str) -> JsValue
+    {
         use crate::models::factory::ModelFactory;
         let params = ModelFactory::get_supported_params(model_name);
         serde_wasm_bindgen::to_value(&params).unwrap()
@@ -154,7 +166,8 @@ impl WasmFactory {
 
     /// Získa podporované parametre pre selector
     #[wasm_bindgen(js_name = getSelectorParams)]
-    pub fn get_selector_params(&self, selector_name: &str) -> JsValue {
+    pub fn get_selector_params(&self, selector_name: &str) -> JsValue
+    {
         use crate::feature_selection_strategies::factory::FeatureSelectorFactory;
         let params = FeatureSelectorFactory::get_supported_params(selector_name);
         serde_wasm_bindgen::to_value(&params).unwrap()
@@ -162,23 +175,27 @@ impl WasmFactory {
 
     /// Získa detailné definície parametrov pre procesor
     #[wasm_bindgen(js_name = getProcessorParamDefinitions)]
-    pub fn get_processor_param_definitions(&self, processor_name: &str) -> JsValue {
+    pub fn get_processor_param_definitions(&self, processor_name: &str) -> JsValue
+    {
         let params = ProcessorFactory::get_param_definitions(processor_name);
         serde_wasm_bindgen::to_value(&params).unwrap()
     }
 
     /// Získa detaily o presete (model, processor, selector)
     #[wasm_bindgen(js_name = getPresetDetails)]
-    pub fn get_preset_details(&self, preset_name: &str) -> JsValue {
+    pub fn get_preset_details(&self, preset_name: &str) -> JsValue
+    {
         use crate::pipeline::director::MLPipelineDirector;
         let presets = MLPipelineDirector::available_presets();
-        
-        for preset in presets {
-            if preset.name == preset_name {
+
+        for preset in presets
+        {
+            if preset.name == preset_name
+            {
                 return serde_wasm_bindgen::to_value(&preset).unwrap();
             }
         }
-        
+
         JsValue::NULL
     }
 }

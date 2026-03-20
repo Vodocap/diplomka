@@ -3,35 +3,36 @@ use smartcore::linalg::basic::matrix::DenseMatrix;
 use smartcore::metrics::distance::euclidian::Euclidian;
 use super::IModel;
 
-pub struct KnnWrapper 
+pub struct KnnWrapper
 {
     model: Option<KNNRegressor<f64, f64, DenseMatrix<f64>, Vec<f64>, Euclidian<f64>>>,
     k: usize,
 }
 
-impl KnnWrapper 
+impl KnnWrapper
 {
-    pub fn new() -> Self 
+    pub fn new() -> Self
     {
         Self { model: None, k: 5 }
     }
 }
 
-impl IModel for KnnWrapper 
+impl IModel for KnnWrapper
 {
     fn get_name(&self) -> &str { "K-Nearest Neighbors" }
 
-    fn train(&mut self, x: DenseMatrix<f64>, y: Vec<f64>) 
+    fn train(&mut self, x: DenseMatrix<f64>, y: Vec<f64>)
     {
         let mut params = KNNRegressorParameters::default();
-        params.k = self.k; 
-        match KNNRegressor::fit(&x, &y, params) {
+        params.k = self.k;
+        match KNNRegressor::fit(&x, &y, params)
+        {
             Ok(m) => self.model = Some(m),
             Err(e) => web_sys::console::error_1(&format!("KNN fit failed: {:?}", e).into()),
         }
     }
 
-    fn predict(&self, input: &[f64]) -> Vec<f64> 
+    fn predict(&self, input: &[f64]) -> Vec<f64>
     {
         let x = DenseMatrix::from_2d_vec(&vec![input.to_vec()]).unwrap();
         self.model.as_ref()
@@ -39,15 +40,17 @@ impl IModel for KnnWrapper
             .unwrap_or_default()
     }
 
-    fn get_supported_params(&self) -> Vec<&str> 
+    fn get_supported_params(&self) -> Vec<&str>
     {
         vec!["k"]
     }
 
-    fn set_param(&mut self, key: &str, value: &str) -> Result<(), String> 
+    fn set_param(&mut self, key: &str, value: &str) -> Result<(), String>
     {
-        match key {
-            "k" => {
+        match key
+        {
+            "k" =>
+            {
                 let new_k = value.parse::<usize>().map_err(|_| "K must be a number")?;
                 self.k = new_k;
                 Ok(())

@@ -3,10 +3,13 @@ use super::{IModel, LinRegWrapper, LogRegWrapper, KnnWrapper, TreeWrapper, Rando
 /// Factory pre vytváranie modelov podľa názvu
 pub struct ModelFactory;
 
-impl ModelFactory {
+impl ModelFactory
+{
     /// Vytvorí model na základe názvu
-    pub fn create(model_type: &str) -> Result<Box<dyn IModel>, String> {
-        match model_type {
+    pub fn create(model_type: &str) -> Result<Box<dyn IModel>, String>
+    {
+        match model_type
+        {
             "linreg" | "linear_regression" => Ok(Box::new(LinRegWrapper::new())),
             "logreg" | "logistic_regression" => Ok(Box::new(LogRegWrapper::new())),
             "knn" => Ok(Box::new(KnnWrapper::new())),
@@ -20,7 +23,8 @@ impl ModelFactory {
     }
 
     /// Vráti zoznam všetkých dostupných modelov
-    pub fn available_models() -> Vec<&'static str> {
+    pub fn available_models() -> Vec<&'static str>
+    {
         vec![
             "linreg",
             "logreg",
@@ -34,8 +38,10 @@ impl ModelFactory {
     }
 
     /// Vráti popis modelu
-    pub fn get_model_description(model_type: &str) -> Option<&'static str> {
-        match model_type {
+    pub fn get_model_description(model_type: &str) -> Option<&'static str>
+    {
+        match model_type
+        {
             "linreg" => Some("Lineárna Regresia - predikcia spojitých hodnôt"),
             "logreg" => Some("Logistická Regresia - binárna klasifikácia"),
             "knn" => Some("K-Nearest Neighbors - klasifikácia alebo regresia"),
@@ -49,8 +55,10 @@ impl ModelFactory {
     }
 
     /// Určí typ modelu (classification/regression)
-    pub fn get_model_type(model_type: &str) -> Option<&'static str> {
-        match model_type {
+    pub fn get_model_type(model_type: &str) -> Option<&'static str>
+    {
+        match model_type
+        {
             "linreg" => Some("regression"),
             "logreg" => Some("classification"),
             "knn" => Some("both"),
@@ -64,8 +72,10 @@ impl ModelFactory {
     }
 
     /// Vráti podporované parametre pre model
-    pub fn get_supported_params(model_type: &str) -> Vec<&'static str> {
-        match model_type {
+    pub fn get_supported_params(model_type: &str) -> Vec<&'static str>
+    {
+        match model_type
+        {
             "knn" => vec!["k"],
             "tree" => vec!["max_depth", "min_samples_split"],
             "linreg" => vec!["solver"],

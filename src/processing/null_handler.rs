@@ -3,25 +3,31 @@ use smartcore::linalg::basic::matrix::DenseMatrix;
 use smartcore::linalg::basic::arrays::Array;
 
 /// Procesor pre nahradenie null hodnôt (NaN → replacement strategy)
-pub struct NullValueHandler {
+pub struct NullValueHandler
+{
     replacement_strategy: ReplacementStrategy,
 }
 
 #[derive(Clone)]
-pub enum ReplacementStrategy {
+pub enum ReplacementStrategy
+{
     Mean,           // Nahradiť priemerom stĺpca
     Median,         // Nahradiť mediánom stĺpca
     Constant(f64),  // Nahradiť konštantou
     Zero,           // Nahradiť nulou
 }
 
-impl NullValueHandler {
-    pub fn new(replacement_strategy: ReplacementStrategy) -> Self {
+impl NullValueHandler
+{
+    pub fn new(replacement_strategy: ReplacementStrategy) -> Self
+    {
         Self { replacement_strategy }
     }
 
-    pub fn with_params(_null_repr: &str, strategy: &str, constant_value: Option<f64>) -> Self {
-        let replacement_strategy = match strategy {
+    pub fn with_params(_null_repr: &str, strategy: &str, constant_value: Option<f64>) -> Self
+    {
+        let replacement_strategy = match strategy
+        {
             "mean" => ReplacementStrategy::Mean,
             "median" => ReplacementStrategy::Median,
             "zero" => ReplacementStrategy::Zero,
@@ -32,12 +38,15 @@ impl NullValueHandler {
         Self::new(replacement_strategy)
     }
 
-    fn calculate_column_mean(&self, data: &DenseMatrix<f64>, col: usize) -> f64 {
+    fn calculate_column_mean(&self, data: &DenseMatrix<f64>, col: usize) -> f64
+    {
         let mut sum = 0.0;
         let mut count = 0;
-        for row in 0..data.shape().0 {
+        for row in 0..data.shape().0
+        {
             let val = *data.get((row, col));
-            if !val.is_nan() {
+            if !val.is_nan()
+            {
                 sum += val;
                 count += 1;
             }
@@ -45,28 +54,37 @@ impl NullValueHandler {
         if count > 0 { sum / count as f64 } else { 0.0 }
     }
 
-    fn calculate_column_median(&self, data: &DenseMatrix<f64>, col: usize) -> f64 {
+    fn calculate_column_median(&self, data: &DenseMatrix<f64>, col: usize) -> f64
+    {
         let mut values: Vec<f64> = Vec::new();
-        for row in 0..data.shape().0 {
+        for row in 0..data.shape().0
+        {
             let val = *data.get((row, col));
-            if !val.is_nan() {
+            if !val.is_nan()
+            {
                 values.push(val);
             }
         }
-        if values.is_empty() {
+        if values.is_empty()
+        {
             return 0.0;
         }
         values.sort_by(|a, b| a.partial_cmp(b).unwrap());
         let mid = values.len() / 2;
-        if values.len() % 2 == 0 {
+        if values.len() % 2 == 0
+        {
             (values[mid - 1] + values[mid]) / 2.0
-        } else {
+        }
+        else
+        {
             values[mid]
         }
     }
 
-    fn get_replacement_value(&self, data: &DenseMatrix<f64>, col: usize) -> f64 {
-        match &self.replacement_strategy {
+    fn get_replacement_value(&self, data: &DenseMatrix<f64>, col: usize) -> f64
+    {
+        match &self.replacement_strategy
+        {
             ReplacementStrategy::Mean => self.calculate_column_mean(data, col),
             ReplacementStrategy::Median => self.calculate_column_median(data, col),
             ReplacementStrategy::Constant(val) => *val,
@@ -75,32 +93,42 @@ impl NullValueHandler {
     }
 }
 
-impl DataProcessor for NullValueHandler {
-    fn fit(&mut self, _data: &DenseMatrix<f64>) {
+impl DataProcessor for NullValueHandler
+{
+    fn fit(&mut self, _data: &DenseMatrix<f64>)
+    {
         // NullHandler doesn't need fitting
     }
 
-    fn transform(&self, data: &DenseMatrix<f64>) -> DenseMatrix<f64> {
+    fn transform(&self, data: &DenseMatrix<f64>) -> DenseMatrix<f64>
+    {
         self.process(data)
     }
 
-    fn process(&self, data: &DenseMatrix<f64>) -> DenseMatrix<f64> {
+    fn process(&self, data: &DenseMatrix<f64>) -> DenseMatrix<f64>
+    {
         let shape = data.shape();
         let mut result_data = vec![vec![0.0; shape.1]; shape.0];
 
         // Pre každý stĺpec vypočítaj replacement hodnotu
         let mut replacements = Vec::new();
-        for col in 0..shape.1 {
+        for col in 0..shape.1
+        {
             replacements.push(self.get_replacement_value(data, col));
         }
 
         // Nahraď null hodnoty
-        for row in 0..shape.0 {
-            for col in 0..shape.1 {
+        for row in 0..shape.0
+        {
+            for col in 0..shape.1
+            {
                 let val = *data.get((row, col));
-                result_data[row][col] = if val.is_nan() {
+                result_data[row][col] = if val.is_nan()
+                {
                     replacements[col]
-                } else {
+                }
+                else
+                {
                     val
                 };
             }
@@ -109,22 +137,29 @@ impl DataProcessor for NullValueHandler {
         DenseMatrix::from_2d_vec(&result_data).unwrap()
     }
 
-    fn get_name(&self) -> &str {
+    fn get_name(&self) -> &str
+    {
         "Null Value Handler"
     }
 
-    fn set_param(&mut self, key: &str, value: &str) -> Result<(), String> {
-        match key {
-            "null_repr" => {
+    fn set_param(&mut self, key: &str, value: &str) -> Result<(), String>
+    {
+        match key
+        {
+            "null_repr" =>
+            {
                 // null_repr is a data-loading concern; NullValueHandler only handles NaN at the matrix level
                 Ok(())
             }
-            "strategy" => {
-                self.replacement_strategy = match value {
+            "strategy" =>
+            {
+                self.replacement_strategy = match value
+                {
                     "mean" => ReplacementStrategy::Mean,
                     "median" => ReplacementStrategy::Median,
                     "zero" => ReplacementStrategy::Zero,
-                    val if val.starts_with("constant:") => {
+                    val if val.starts_with("constant:") =>
+                    {
                         let const_val = val.strip_prefix("constant:")
                             .and_then(|v| v.parse().ok())
                             .unwrap_or(0.0);
@@ -138,7 +173,8 @@ impl DataProcessor for NullValueHandler {
         }
     }
 
-    fn get_supported_params(&self) -> Vec<&str> {
+    fn get_supported_params(&self) -> Vec<&str>
+    {
         vec!["null_repr", "strategy"]
     }
 }

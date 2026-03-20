@@ -1,17 +1,6 @@
 /* tslint:disable */
 /* eslint-disable */
 
-export class CsvLoader {
-    free(): void;
-    [Symbol.dispose](): void;
-    get_headers(): any;
-    get_training_data(target_header: string): any;
-    len(): number;
-    load_csv(csv_text: string): void;
-    load_csv_async(csv_text: string): Promise<void>;
-    constructor();
-}
-
 export class WasmDataLoader {
     free(): void;
     [Symbol.dispose](): void;
@@ -44,11 +33,11 @@ export class WasmFactory {
     /**
      * Získa kompatibilné procesory pre model
      */
-    getCompatibleProcessors(_model_name: string): any;
+    getCompatibleProcessors(model_name: string): any;
     /**
      * Získa kompatibilné selektory pre model
      */
-    getCompatibleSelectors(_model_name: string): any;
+    getCompatibleSelectors(model_name: string): any;
     /**
      * Získa podporované parametre pre model
      */
@@ -110,9 +99,9 @@ export class WasmMLPipeline {
      */
     computeMatrixR2(indices_js: any): any;
     /**
-     * Vypočíta Joint MI pre dvojice features s cieľovou premennou.
-     * Joint MI = MI((X1, X2); Y) — koľko informácie dvojica spoločne nesie o Y.
-     * Synergia = Joint MI - (MI(X1;Y) + MI(X2;Y)). Kladná = dvojica má synergiu.
+     * Vypočíta Synergická MI pre dvojice features s cieľovou premennou.
+     * Synergická MI = MI((X1, X2); Y) — koľko informácie dvojica spoločne nesie o Y.
+     * Prínos Synergickej MI = Synergická MI - (MI(X1;Y) + MI(X2;Y)). Kladná = dvojica má synergiu.
      *
      * mode: "with_selected" — páry (nevybraná, vybraná)
      *       "among_unselected" — páry (nevybraná, nevybraná)
@@ -246,22 +235,12 @@ export interface InitOutput {
     readonly wasmfactory_getProcessorParamDefinitions: (a: number, b: number, c: number) => any;
     readonly wasmfactory_getSelectorParams: (a: number, b: number, c: number) => any;
     readonly wasmfactory_new: () => number;
-    readonly __wbg_csvloader_free: (a: number, b: number) => void;
     readonly __wbg_wasmdataloader_free: (a: number, b: number) => void;
-    readonly csvloader_get_headers: (a: number) => any;
-    readonly csvloader_get_training_data: (a: number, b: number, c: number) => [number, number, number];
-    readonly csvloader_len: (a: number) => number;
-    readonly csvloader_load_csv: (a: number, b: number, c: number) => [number, number];
-    readonly csvloader_load_csv_async: (a: number, b: number, c: number) => any;
-    readonly csvloader_new: () => number;
     readonly wasmdataloader_createAuto: (a: number, b: number) => [number, number, number];
     readonly wasmdataloader_getAvailableColumns: (a: number, b: number, c: number) => [number, number, number];
     readonly wasmdataloader_loadData: (a: number, b: number, c: number, d: number, e: number) => [number, number, number];
     readonly wasmdataloader_new: (a: number, b: number) => [number, number, number];
     readonly wasmdataloader_validateFormat: (a: number, b: number, c: number) => [number, number];
-    readonly wasm_bindgen__closure__destroy__he19b5b7ba5d0617d: (a: number, b: number) => void;
-    readonly wasm_bindgen__convert__closures_____invoke__h37ac5f3fddefe22a: (a: number, b: number, c: any, d: any) => void;
-    readonly wasm_bindgen__convert__closures_____invoke__hfd7798dac3d4e96a: (a: number, b: number, c: any) => void;
     readonly __wbindgen_malloc: (a: number, b: number) => number;
     readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_exn_store: (a: number) => void;

@@ -120,28 +120,6 @@ export class WasmFactory {
         return ret;
     }
     /**
-     * Získa kompatibilné procesory pre model
-     * @param {string} model_name
-     * @returns {any}
-     */
-    getCompatibleProcessors(model_name) {
-        const ptr0 = passStringToWasm0(model_name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.wasmfactory_getCompatibleProcessors(this.__wbg_ptr, ptr0, len0);
-        return ret;
-    }
-    /**
-     * Získa kompatibilné selektory pre model
-     * @param {string} model_name
-     * @returns {any}
-     */
-    getCompatibleSelectors(model_name) {
-        const ptr0 = passStringToWasm0(model_name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.wasmfactory_getCompatibleSelectors(this.__wbg_ptr, ptr0, len0);
-        return ret;
-    }
-    /**
      * Získa definície metrík pre daný evaluation mode
      * @param {string} eval_mode
      * @returns {any}
@@ -541,7 +519,7 @@ export class WasmMLPipeline {
         return ret;
     }
     /**
-     * Get detailed selection information (e.g., correlation matrix for correlation selector)
+     * Get detailed selection info stub (selection is done externally via compareSelectors)
      * @returns {any}
      */
     getSelectionDetails() {
@@ -870,9 +848,6 @@ function __wbg_get_imports() {
         __wbg_length_35a7bace40f36eac: function(arg0) {
             const ret = arg0.length;
             return ret;
-        },
-        __wbg_log_6b5ca2e6124b2808: function(arg0) {
-            console.log(arg0);
         },
         __wbg_msCrypto_d562bbe83e0d4b91: function(arg0) {
             const ret = arg0.msCrypto;

@@ -1,22 +1,15 @@
 use crate::models::model_factory::ModelFactory;
-use crate::processing::processor_factory::ProcessorFactory;
-use crate::feature_selection_strategies::feature_selector_factory::FeatureSelectorFactory;
-// Removed unused evaluation imports
-use super::{compatibility::CompatibilityRegistry, pipeline::MLPipeline};
+use super::pipeline::MLPipeline;
 
 use std::collections::HashMap;
 
-/// Builder pre postupnu konfiguraciu ML pipeline (Builder pattern).
-/// Umoznuje fluent API: MLPipelineBuilder::new().model("knn").processor("scaler").build().
-/// Validuje kompatibilitu modelu, procesora a selektora pred zostavenim pipeline.
+/// Builder pre postupnú konfiguráciu ML pipeline (Builder pattern).
+/// Fluent API: `MLPipelineBuilder::new().model("knn").model_param("k","7").evaluation_mode("classification").build()`
 pub struct MLPipelineBuilder
 {
     model_type: Option<String>,
     model_params: HashMap<String, String>,
-    processor_types: Vec<String>, // Zmenené na Vec pre viacero procesorov
-    selector_type: Option<String>,
-    selector_params: HashMap<String, String>,
-    evaluation_mode: Option<String>, // "classification" alebo "regression"
+    evaluation_mode: Option<String>,
 }
 
 impl MLPipelineBuilder
@@ -26,144 +19,68 @@ impl MLPipelineBuilder
         Self {
             model_type: None,
             model_params: HashMap::new(),
-            processor_types: Vec::new(), // Zmenené
-            selector_type: None,
-            selector_params: HashMap::new(),
             evaluation_mode: None,
         }
     }
 
-    /// Nastaví model
+    /// Nastaví model (povinné)
     pub fn model(mut self, model_type: &str) -> Self
     {
         self.model_type = Some(model_type.to_string());
         self
     }
 
-    /// Nastaví parameter modelu
+    /// Nastaví parameter modelu (napr. k, max_depth)
     pub fn model_param(mut self, key: &str, value: &str) -> Self
     {
         self.model_params.insert(key.to_string(), value.to_string());
         self
     }
 
-    /// Nastaví data processor (jeden)
-    pub fn processor(mut self, processor_type: &str) -> Self
-    {
-        self.processor_types = vec![processor_type.to_string()];
-        self
-    }
-
-    /// Nastaví viacero data procesorov (chain)
-    pub fn processors(mut self, processor_types: Vec<String>) -> Self
-    {
-        self.processor_types = processor_types;
-        self
-    }
-
-    /// Pridá data processor do chainu
-    pub fn add_processor(mut self, processor_type: &str) -> Self
-    {
-        self.processor_types.push(processor_type.to_string());
-        self
-    }
-
-    /// Nastaví feature selector
-    pub fn feature_selector(mut self, selector_type: &str) -> Self
-    {
-        self.selector_type = Some(selector_type.to_string());
-        self
-    }
-
-    /// Nastaví parameter feature selektora
-    pub fn selector_param(mut self, key: &str, value: &str) -> Self
-    {
-        self.selector_params.insert(key.to_string(), value.to_string());
-        self
-    }
-
-    /// Explicitne nastaví evaluation mode (classification/regression)
-    /// Ak nie je nastavené, automaticky sa detekuje z typu modelu
+    /// Explicitne nastaví evaluation_mode ("classification" alebo "regression").
+    /// Ak nie je nastavené, automaticky sa odvodí z typu modelu cez ModelFactory.
     pub fn evaluation_mode(mut self, mode: &str) -> Self
     {
         self.evaluation_mode = Some(mode.to_string());
         self
     }
 
-    /// Vytvorí MLPipeline s validáciou kompatibility
+    /// Zostaví MLPipeline. Zlyhá ak model nie je nastavený alebo evaluation_mode
+    /// nie je možné odvodiť (modely s typom "both" ho vyžadujú explicitne).
     pub fn build(self) -> Result<MLPipeline, String>
     {
-        // Validácia že model je nastavený
         let model_type = self.model_type
             .ok_or("Model musí byť nastavený")?;
 
-        // Kontrola kompatibility (použijeme prvý procesor pre spätnú kompatibilitu)
-        let first_processor = self.processor_types.first().map(|s| s.as_str());
-        CompatibilityRegistry::check_compatibility(
-            &model_type,
-            first_processor,
-            self.selector_type.as_deref()
-        )?;
-
-        // Vytvorenie modelu
+        // Vytvorenie a konfigurácia modelu
         let mut model = ModelFactory::create(&model_type)?;
-
-        // Nastavenie parametrov modelu
         for (key, value) in &self.model_params
         {
             model.set_param(key, value)?;
         }
 
-        // Vytvorenie procesorov (optional)
-        let mut processors: Vec<Box<dyn crate::processing::DataProcessor>> = Vec::new();
-        for proc_type in &self.processor_types
+        // Určenie evaluation_mode: explicitné > auto-detekcia z ModelFactory
+        let eval_mode = match self.evaluation_mode
         {
-            processors.push(ProcessorFactory::create(proc_type)?);
-        }
-
-        // Vytvorenie selektora (optional)
-        let selector = if let Some(sel_type) = &self.selector_type
-        {
-            let mut sel = FeatureSelectorFactory::create(sel_type)?;
-
-            // Nastavenie parametrov selektora
-            for (key, value) in &self.selector_params
+            Some(mode) => mode,
+            None =>
             {
-                sel.set_param(key, value)?;
+                let mt = ModelFactory::get_model_type(&model_type)
+                    .ok_or_else(|| format!("Neznámy model: {}", model_type))?;
+                if mt == "both"
+                {
+                    return Err(format!(
+                        "Model '{}' podporuje classification aj regression. Nastavte evaluation_mode() explicitne.",
+                        model_type
+                    ));
+                }
+                mt.to_string()
             }
-
-            Some(sel)
-        }
-        else
-        {
-            None
-        };
-
-        // Určenie evaluation mode
-        let eval_mode = if let Some(mode) = self.evaluation_mode
-        {
-            mode
-        }
-        else
-        {
-            // Automatická detekcia z typu modelu
-            let registry = CompatibilityRegistry::instance().lock().unwrap();
-            let model_type_detected = registry.get_model_type(&model_type)
-                .ok_or("Nepodarilo sa určiť typ modelu")?;
-
-            if model_type_detected == "both"
-            {
-                return Err("Model podporuje obe typy (classification/regression). Prosím explicitne nastavte evaluation_mode()".to_string());
-            }
-
-            model_type_detected
         };
 
         Ok(MLPipeline {
             model,
-            processors,
-            selector,
-            model_name: model_type.clone(),
+            model_name: model_type,
             evaluation_mode: eval_mode,
             selected_indices: None,
             expected_features: None,
@@ -178,3 +95,4 @@ impl Default for MLPipelineBuilder
         Self::new()
     }
 }
+

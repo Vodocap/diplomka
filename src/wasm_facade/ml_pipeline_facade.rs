@@ -158,22 +158,6 @@ impl WasmMLPipeline
         let mut builder = MLPipelineBuilder::new()
             .model(&config.model);
 
-        // Podpora pre viacero procesorov
-        if !config.processors.is_empty()
-        {
-            builder = builder.processors(config.processors.clone());
-        }
-        else if let Some(proc) = config.processor
-        {
-            // Späť kompatibilita - jeden procesor
-            builder = builder.add_processor(&proc);
-        }
-
-        if let Some(sel) = config.selector
-        {
-            builder = builder.feature_selector(&sel);
-        }
-
         if let Some(mode) = config.evaluation_mode
         {
             builder = builder.evaluation_mode(&mode);
@@ -187,14 +171,6 @@ impl WasmMLPipeline
             }
         }
 
-        if let Some(params) = config.selector_params
-        {
-            for (key, value) in params
-            {
-                builder = builder.selector_param(&key, &value);
-            }
-        }
-
         let pipeline = builder.build()
             .map_err(|e| JsValue::from_str(&e))?;
 
@@ -202,16 +178,9 @@ impl WasmMLPipeline
         let result = PipelineInfoResult {
             model_name: info.model_name,
             model_type: info.model_type,
-            processors: if !config.processors.is_empty()
-            {
-                config.processors.clone()
-            }
-            else
-            {
-                info.processors.clone()
-            },
-            processor: info.processors.first().cloned(),
-            selector: info.selector,
+            processors: config.processors.clone(),
+            processor: config.processor.clone(),
+            selector: config.selector.clone(),
             evaluation_mode: info.evaluation_mode,
         };
 
@@ -409,7 +378,6 @@ impl WasmMLPipeline
                 .collect();
 
 
-            // predict() už interné volá prepare_data
             let pred_result = self.pipeline.as_mut().unwrap()
                 .predict(row)
                 .map_err(|e|
@@ -1164,13 +1132,12 @@ impl WasmMLPipeline
         if let Some(ref pipeline) = self.pipeline
         {
             let info = pipeline.info();
-            let processor_list = info.processors.clone();
             let result = PipelineInfoResult {
                 model_name: info.model_name,
                 model_type: info.model_type,
-                processors: processor_list.clone(),
-                processor: processor_list.first().cloned(),
-                selector: info.selector,
+                processors: vec![],
+                processor: None,
+                selector: None,
                 evaluation_mode: info.evaluation_mode,
             };
             Ok(serde_wasm_bindgen::to_value(&result).unwrap())
@@ -1254,30 +1221,22 @@ impl WasmMLPipeline
         {
             if let Some((ref x, ref y)) = self.data_cache
             {
-                // Apply feature selection first
-                let selected_x = if pipeline.selector.is_some() && pipeline.selected_indices.is_some()
+                // Apply feature selection via cached indices (preprocessing is external)
+                let processed = if let Some(ref indices) = pipeline.selected_indices
                 {
-                    let indices = pipeline.selected_indices.as_ref().unwrap();
                     let (rows, _) = x.shape();
                     let cols = indices.len();
                     let mut data = vec![vec![0.0; cols]; rows];
-
                     for (new_col, &old_col) in indices.iter().enumerate()
                     {
-                        for row in 0..rows
-                        {
-                            data[row][new_col] = *x.get((row, old_col));
-                        }
+                        for row in 0..rows { data[row][new_col] = *x.get((row, old_col)); }
                     }
-                    DenseMatrix::from_2d_vec(&data).unwrap()
+                    DenseMatrix::from_2d_vec(&data).unwrap_or_else(|_| x.clone())
                 }
                 else
                 {
                     x.clone()
                 };
-
-                // Apply preprocessing
-                let processed = pipeline.preprocess(&selected_x);
 
                 let (rows, cols) = processed.shape();
                 let rows_to_show = rows.min(max_rows);
@@ -1327,7 +1286,7 @@ impl WasmMLPipeline
                     "feature_names": feature_names,
                     "target_name": "target",
                     "selected_indices": pipeline.selected_indices,
-                    "preprocessing_applied": !pipeline.processors.is_empty()
+                    "preprocessing_applied": false
                 });
 
                 Ok(serde_wasm_bindgen::to_value(&result).unwrap())
@@ -1349,10 +1308,9 @@ impl WasmMLPipeline
     {
         if let Some(ref pipeline) = self.pipeline
         {
-            if let Some(ref selector) = pipeline.selector
+            // Selector is managed externally (compareSelectors); check only cached indices
+            if let Some(ref indices) = pipeline.selected_indices
             {
-                if let Some(ref indices) = pipeline.selected_indices
-                {
                     let total_features = if let Some((ref x, _)) = self.data_cache
                     {
                         x.shape().1
@@ -1362,20 +1320,8 @@ impl WasmMLPipeline
                         self.feature_names.len()
                     };
 
-                    // Get feature scores if available
-                    let mut feature_scores_map = std::collections::HashMap::new();
-                    let metric_name = selector.get_metric_name();
-
-                    if let Some((ref x, ref y)) = self.data_cache
-                    {
-                        if let Some(scores) = selector.get_feature_scores(x, y)
-                        {
-                            for (idx, score) in scores
-                            {
-                                feature_scores_map.insert(idx, score);
-                            }
-                        }
-                    }
+                    let feature_scores_map: std::collections::HashMap<usize, f64> = std::collections::HashMap::new();
+                    let metric_name = "external";
 
                     let kept_features: Vec<_> = indices.iter()
                         .map(|&i|
@@ -1420,7 +1366,7 @@ impl WasmMLPipeline
                         .collect();
 
                     let result = serde_json::json!({
-                        "selector_name": selector.get_name(),
+                        "selector_name": "external",
                         "metric_name": metric_name,
                         "total_features_before": total_features,
                         "total_features_after": indices.len(),
@@ -1433,17 +1379,12 @@ impl WasmMLPipeline
                     });
 
                     Ok(serde_wasm_bindgen::to_value(&result).unwrap())
-                }
-                else
-                {
-                    Err(JsValue::from_str("Feature selection not performed yet (train first)"))
-                }
             }
             else
             {
                 Ok(serde_wasm_bindgen::to_value(&serde_json::json!({
                     "selector_name": "None",
-                    "message": "No feature selector configured"
+                    "message": "No feature selection applied"
                 })).unwrap())
             }
         }
@@ -1453,26 +1394,11 @@ impl WasmMLPipeline
         }
     }
 
-    /// Get detailed selection information (e.g., correlation matrix for correlation selector)
+    /// Get detailed selection info stub (selection is done externally via compareSelectors)
     #[wasm_bindgen(js_name = getSelectionDetails)]
     pub fn get_selection_details(&self) -> Result<JsValue, JsValue>
     {
-        if let Some(ref pipeline) = self.pipeline
-        {
-            if let Some(ref selector) = pipeline.selector
-            {
-                let html = selector.get_selection_details();
-                Ok(JsValue::from_str(&html))
-            }
-            else
-            {
-                Ok(JsValue::from_str(""))
-            }
-        }
-        else
-        {
-            Err(JsValue::from_str("Pipeline not built"))
-        }
+        Ok(JsValue::from_str(""))
     }
 
     /// Porovná viaceré feature selektory na dátach BEZ potreby pipeline.

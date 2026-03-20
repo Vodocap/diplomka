@@ -32,7 +32,7 @@ pub use target_analysis::{
     TargetAnalyzerFactory,
 };
 pub use evaluation::{ModelEvaluator, EvaluationReport};
-pub use pipeline::{MLPipeline, MLPipelineBuilder, MLPipelineDirector, CompatibilityRegistry};
+pub use pipeline::{MLPipeline, MLPipelineBuilder};
 
 // WASM API exports
 pub use wasm_facade::{WasmMLPipeline, WasmDataLoader, WasmFactory};

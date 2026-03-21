@@ -419,14 +419,6 @@ export class WasmMLPipeline {
         return takeFromExternrefTable0(ret[0]);
     }
     /**
-     * Získa zoznam dostupných procesorov
-     * @returns {any}
-     */
-    static getAvailableProcessors() {
-        const ret = wasm.wasmmlpipeline_getAvailableProcessors();
-        return ret;
-    }
-    /**
      * Vráti zoznam dostupných analyzátorov cieľovej premennej
      * @returns {any}
      */
@@ -506,17 +498,6 @@ export class WasmMLPipeline {
             throw takeFromExternrefTable0(ret[1]);
         }
         return takeFromExternrefTable0(ret[0]);
-    }
-    /**
-     * Získa parametre pre daný procesor
-     * @param {string} processor_type
-     * @returns {any}
-     */
-    static getProcessorParams(processor_type) {
-        const ptr0 = passStringToWasm0(processor_type, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.wasmmlpipeline_getProcessorParams(ptr0, len0);
-        return ret;
     }
     /**
      * Get detailed selection info stub (selection is done externally via compareSelectors)

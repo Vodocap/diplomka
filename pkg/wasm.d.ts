@@ -124,10 +124,6 @@ export class WasmMLPipeline {
      */
     evaluate(_train_ratio: number): any;
     /**
-     * Získa zoznam dostupných procesorov
-     */
-    static getAvailableProcessors(): any;
-    /**
      * Vráti zoznam dostupných analyzátorov cieľovej premennej
      */
     getAvailableTargetAnalyzers(): any;
@@ -151,10 +147,6 @@ export class WasmMLPipeline {
      * Info o pipeline
      */
     getInfo(): any;
-    /**
-     * Získa parametre pre daný procesor
-     */
-    static getProcessorParams(processor_type: string): any;
     /**
      * Get detailed selection info stub (selection is done externally via compareSelectors)
      */
@@ -214,14 +206,12 @@ export interface InitOutput {
     readonly wasmmlpipeline_computeSynergyAnalysis: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number, k: number) => [number, number, number];
     readonly wasmmlpipeline_deleteColumn: (a: number, b: number, c: number, d: number, e: number) => [number, number, number];
     readonly wasmmlpipeline_evaluate: (a: number, b: number) => [number, number, number];
-    readonly wasmmlpipeline_getAvailableProcessors: () => any;
     readonly wasmmlpipeline_getAvailableTargetAnalyzers: (a: number) => [number, number, number];
     readonly wasmmlpipeline_getEditableData: (a: number, b: number, c: number, d: number, e: number) => [number, number, number];
     readonly wasmmlpipeline_getEmbeddedFeatureRanking: (a: number, b: number, c: number, d: number) => [number, number, number];
     readonly wasmmlpipeline_getFeatureMatrices: (a: number, b: number, c: number, d: number, e: number) => [number, number, number];
     readonly wasmmlpipeline_getFeatureSelectionInfo: (a: number) => [number, number, number];
     readonly wasmmlpipeline_getInfo: (a: number) => [number, number, number];
-    readonly wasmmlpipeline_getProcessorParams: (a: number, b: number) => any;
     readonly wasmmlpipeline_getSelectionDetails: (a: number) => [number, number, number];
     readonly wasmmlpipeline_inspectData: (a: number, b: number) => [number, number, number];
     readonly wasmmlpipeline_inspectProcessedData: (a: number, b: number) => [number, number, number];

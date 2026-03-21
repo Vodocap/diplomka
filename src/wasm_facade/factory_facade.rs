@@ -6,7 +6,7 @@ use crate::feature_selection_strategies::feature_selector_factory::FeatureSelect
 use crate::data_loading::data_loader_factory::DataLoaderFactory;
 
 /// Suhrnna konfiguracia vsetkych dostupnych moznosti (modely, procesory, selektory, formaty).
-/// Serializuje sa do JS pre dynamicke generovanie UI.
+/// Serializuje sa do JS pre dynamicke naplnenie UI.
 #[derive(Serialize, Deserialize)]
 pub struct AvailableOptions
 {

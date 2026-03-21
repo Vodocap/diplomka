@@ -20,29 +20,23 @@ pub struct SelectorCompareConfig
 }
 
 /// JSON konfiguracia pipeline-u prijata z frontendu.
-/// Obsahuje model, procesory, selektor, evaluation mode a parametre.
+/// Obsahuje model, selektor, evaluation mode a parametre.
 #[derive(Serialize, Deserialize)]
 pub struct PipelineConfig
 {
     pub model: String,
-    #[serde(default)]
-    pub processors: Vec<String>,  // Nové: zoznam procesorov
-    pub processor: Option<String>,  // Späť kompatibilita
     pub selector: Option<String>,
     pub evaluation_mode: Option<String>,
     pub model_params: Option<Vec<(String, String)>>,
     pub selector_params: Option<Vec<(String, String)>>,
-    pub processor_params: Option<Vec<(String, String)>>,  // Nové: parametre pre procesory
 }
 
-/// Serializable informacie o aktualnom stave pipeline-u (model, procesory, selektor).
+/// Serializable informacie o aktualnom stave pipeline-u (model, selektor).
 #[derive(Serialize, Deserialize)]
 pub struct PipelineInfoResult
 {
     pub model_name: String,
     pub model_type: String,
-    pub processors: Vec<String>,
-    pub processor: Option<String>,
     pub selector: Option<String>,
     pub evaluation_mode: String,
 }
@@ -172,14 +166,12 @@ impl WasmMLPipeline
         }
 
         let pipeline = builder.build()
-            .map_err(|e| JsValue::from_str(&e))?;
+            .map_err(|e| JsValue::from_str(e.as_str()))?;
 
         let info = pipeline.info();
         let result = PipelineInfoResult {
             model_name: info.model_name,
             model_type: info.model_type,
-            processors: config.processors.clone(),
-            processor: config.processor.clone(),
             selector: config.selector.clone(),
             evaluation_mode: info.evaluation_mode,
         };
@@ -1135,8 +1127,6 @@ impl WasmMLPipeline
             let result = PipelineInfoResult {
                 model_name: info.model_name,
                 model_type: info.model_type,
-                processors: vec![],
-                processor: None,
                 selector: None,
                 evaluation_mode: info.evaluation_mode,
             };
@@ -1146,24 +1136,6 @@ impl WasmMLPipeline
         {
             Err(JsValue::from_str("Pipeline nie je vytvorený"))
         }
-    }
-
-    /// Získa zoznam dostupných procesorov
-    #[wasm_bindgen(js_name = getAvailableProcessors)]
-    pub fn get_available_processors() -> JsValue
-    {
-        use crate::processing::ProcessorFactory;
-        let processors = ProcessorFactory::available();
-        serde_wasm_bindgen::to_value(&processors).unwrap()
-    }
-
-    /// Získa parametre pre daný procesor
-    #[wasm_bindgen(js_name = getProcessorParams)]
-    pub fn get_processor_params(processor_type: &str) -> JsValue
-    {
-        use crate::processing::ProcessorFactory;
-        let params = ProcessorFactory::get_processor_params(processor_type);
-        serde_wasm_bindgen::to_value(&params).unwrap()
     }
 
     /// Inspect uploaded data - returns first N rows with feature names

@@ -3,8 +3,6 @@
 # Usage:
 #   ./run-tests.sh              - Run all tests (headed - vidíš browser)
 #   ./run-tests.sh --headless   - Run headless (bez okna)
-#   ./run-tests.sh -k heatmap   - Run only heatmap tests
-#   ./run-tests.sh -k "init or pipeline" - Run init + pipeline tests
 
 set -e
 cd "$(dirname "$0")"

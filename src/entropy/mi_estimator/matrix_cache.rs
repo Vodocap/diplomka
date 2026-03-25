@@ -86,7 +86,7 @@ pub(super) fn adaptive_k(n: usize, k: usize) -> usize
 {
     if n > 1000
     {
-        k.min(5)
+        k.min(4)
     }
     else if n > 500
     {

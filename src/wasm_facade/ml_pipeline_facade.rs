@@ -2094,6 +2094,12 @@ impl WasmMLPipeline
             return Err(JsValue::from_str("Potrebné sú aspoň 3 stĺpce (2 features + target)"));
         }
 
+        // Map feature indices (excluding target) to actual column indices
+        let feature_indices: Vec<usize> = (0..headers.len()).filter(|&i| i != target_idx).collect();
+
+        // Map selected_indices from JS (0..num_features-1) to actual column indices
+        let mapped_selected: Vec<usize> = selected_indices.iter().map(|&i| feature_indices[i]).collect();
+
         let target_data = &columns[target_idx];
         let n = target_data.len();
         let k = if n < 10 { 2 } else if n < 50 { 3 } else { 3 };
@@ -2110,9 +2116,10 @@ impl WasmMLPipeline
         }
 
         // Urči nevybrané indexy
-        let selected_set: std::collections::HashSet<usize> = selected_indices.iter().copied().collect();
-        let unselected_indices: Vec<usize> = (0..columns.len())
-            .filter(|&i| i != target_idx && !selected_set.contains(&i))
+        let selected_set: std::collections::HashSet<usize> = mapped_selected.iter().copied().collect();
+        let unselected_indices: Vec<usize> = feature_indices.iter()
+            .filter(|&&i| !selected_set.contains(&i))
+            .copied()
             .collect();
 
         // Vypočítaj Synergická MI pre dvojice podľa módu
@@ -2124,7 +2131,7 @@ impl WasmMLPipeline
             {
                 for &u_idx in &unselected_indices
                 {
-                    for &s_idx in &selected_indices
+                    for &s_idx in &mapped_selected
                     {
                         if s_idx == target_idx
                         {
@@ -2193,7 +2200,8 @@ impl WasmMLPipeline
             "feature_names": headers,
             "mi_individual": mi_individual,
             "target_col": target_col,
-            "target_idx": target_idx
+            "target_idx": target_idx,
+            "feature_indices": feature_indices
         });
 
         serde_wasm_bindgen::to_value(&result)

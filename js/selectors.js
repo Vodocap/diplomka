@@ -1207,7 +1207,8 @@ async function runSynergyAnalysis(mode) {
             comparison.target_column, selectedIndices, mode
         );
         const result = convertWasmResult(rawResult);
-        renderSynergyResults(result, resultsDiv, mode === 'with_selected' ? new Set(selectedIndices) : new Set());
+        const mappedSelectedSet = new Set(selectedIndices.map(i => result.feature_indices[i]));
+        renderSynergyResults(result, resultsDiv, mode === 'with_selected' ? mappedSelectedSet : new Set());
         statusSpan.textContent = '';
     } catch (err) {
         statusSpan.textContent = `Chyba: ${err}`;

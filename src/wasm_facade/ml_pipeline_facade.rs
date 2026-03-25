@@ -1420,6 +1420,14 @@ impl WasmMLPipeline
             feature_names.push(format!("feature{}", feature_names.len() + 1));
         }
 
+        // Filter out target column from feature names to match x_data order
+        let target_index = feature_names.iter().position(|f| f == target_column).unwrap_or(n_features + 1);
+        let feature_names_filtered: Vec<String> = feature_names.iter()
+            .enumerate()
+            .filter(|(i, _)| *i != target_index)
+            .map(|(_, name)| name.clone())
+            .collect();
+
         // Parse and cache columns for matrix computation
         let (columns, _, _, _) = self.parse_csv_data_cached(data, true)?;
 
@@ -1490,15 +1498,14 @@ impl WasmMLPipeline
         }
 
         // Build comparison HTML
-        let target_index = feature_names.iter().position(|f| f == target_column).unwrap_or(n_features + 1);
-        let comparison_html = Self::build_comparison_html(&selector_results, &feature_names, n_features, target_index);
+        let comparison_html = Self::build_comparison_html(&selector_results, &feature_names_filtered, n_features);
 
         let result = serde_json::json!({
             "selectors": selector_results,
             "comparison_html": comparison_html,
             "total_features": n_features,
             "total_rows": n_rows,
-            "feature_names": feature_names,
+            "feature_names": feature_names_filtered,
             "target_column": target_column,
             "target_index": target_index,
         });
@@ -3134,7 +3141,6 @@ impl WasmMLPipeline
         selector_results: &[serde_json::Value],
         feature_names: &[String],
         total_features: usize,
-        target_index: usize,
     ) -> String {
         let mut html = String::new();
         html.push_str("<div style='font-family:Segoe UI,sans-serif;'>");
@@ -3203,12 +3209,6 @@ impl WasmMLPipeline
 
             for (fidx, fname) in feature_names.iter().enumerate()
             {
-                // Skip target column
-                if fidx == target_index
-                {
-                    continue;
-                }
-
                 // Safety check: ensure fidx is within bounds
                 if fidx >= feature_votes.len()
                 {

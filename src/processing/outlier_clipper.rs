@@ -71,7 +71,12 @@ impl DataProcessor for OutlierClipper
 
         for j in 0..cols
         {
-            let col: Vec<f64> = (0..rows).map(|i| *data.get((i, j))).collect();
+            let col: Vec<f64> = (0..rows).map(|i| *data.get((i, j))).filter(|v| !v.is_nan()).collect();
+
+            if col.is_empty()
+            {
+                continue; // Skip columns with no valid values
+            }
 
             match self.method
             {

@@ -81,7 +81,7 @@ impl CsvDataLoader
         let trimmed = val.trim();
         if trimmed.is_empty()
         {
-            return Ok(0.0);
+            return Ok(f64::NAN);
         }
         trimmed.parse::<f64>()
             .or_else(|_| trimmed.replace(',', ".").parse::<f64>())

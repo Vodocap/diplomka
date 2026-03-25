@@ -25,12 +25,28 @@ use ndarray::{Array2, Axis};
 use smartcore::linalg::basic::arrays::Array;
 use smartcore::linalg::basic::matrix::DenseMatrix;
 
+// Manuálny SIMD-like súčet pre zrýchlenie
+fn fast_sum(values: &[f64]) -> f64 {
+    let mut sum = 0.0;
+    let len = values.len();
+    let mut i = 0;
+    while i + 4 <= len {
+        sum += values[i] + values[i+1] + values[i+2] + values[i+3];
+        i += 4;
+    }
+    for j in i..len {
+        sum += values[j];
+    }
+    sum
+}
+
 // ═══════════════════════════════════════════════════════════════════════
 //  Zdieľané štatistické utility
 // ═══════════════════════════════════════════════════════════════════════
 
 /// Pearsonov korelačný koeficient medzi dvoma vektormi.
 /// Vracia hodnotu v rozsahu [-1, 1].
+/// Optimalizované pre rýchlosť s manuálnym SIMD-like spracovaním.
 pub fn pearson_correlation(x: &[f64], y: &[f64]) -> f64
 {
     let n = x.len() as f64;
@@ -46,10 +62,31 @@ pub fn pearson_correlation(x: &[f64], y: &[f64]) -> f64
     let mut den_x = 0.0;
     let mut den_y = 0.0;
 
-    for (xi, yi) in x.iter().zip(y.iter())
-    {
-        let dx = xi - mean_x;
-        let dy = yi - mean_y;
+    // Manuálne SIMD-like spracovanie po 4 prvkoch
+    let len = x.len();
+    let mut i = 0;
+    while i + 4 <= len {
+        let dx0 = x[i] - mean_x;
+        let dx1 = x[i+1] - mean_x;
+        let dx2 = x[i+2] - mean_x;
+        let dx3 = x[i+3] - mean_x;
+
+        let dy0 = y[i] - mean_y;
+        let dy1 = y[i+1] - mean_y;
+        let dy2 = y[i+2] - mean_y;
+        let dy3 = y[i+3] - mean_y;
+
+        num += dx0 * dy0 + dx1 * dy1 + dx2 * dy2 + dx3 * dy3;
+        den_x += dx0 * dx0 + dx1 * dx1 + dx2 * dx2 + dx3 * dx3;
+        den_y += dy0 * dy0 + dy1 * dy1 + dy2 * dy2 + dy3 * dy3;
+
+        i += 4;
+    }
+
+    // Zvyšné prvky
+    for j in i..len {
+        let dx = x[j] - mean_x;
+        let dy = y[j] - mean_y;
         num += dx * dy;
         den_x += dx * dx;
         den_y += dy * dy;
@@ -64,20 +101,6 @@ pub fn pearson_correlation(x: &[f64], y: &[f64]) -> f64
     {
         num / den
     }
-}
-
-/// Zjednodušený odhad Mutual Information na báze Pearsonovej korelácie.
-/// Používa sa kde je dôležitá rýchlosť (volaná opakovane v každej iterácii).
-/// Pre presnejší odhad použite `estimate_mi_ksg`.
-pub fn estimate_mi_proxy(x: &[f64], y: &[f64]) -> f64
-{
-    if x.is_empty() || x.len() != y.len()
-    {
-        return 0.0;
-    }
-    let corr = pearson_correlation(x, y);
-    let mi_proxy = -0.5 * (1.0 - corr * corr).max(0.0).ln();
-    mi_proxy.max(0.0)
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -328,12 +351,12 @@ pub fn estimate_mi_ksg(x: &[f64], y: &[f64], k: usize) -> f64
 
     let psi_k = digamma(k_eff as f64);
     let psi_n = digamma(n as f64);
-    let mut psi_sum = 0.0f64;
+    let mut psi_values = Vec::with_capacity(n);
     for i in 0..n
     {
-        psi_sum += digamma((nx_vec[i] + 1) as f64) + digamma((ny_vec[i] + 1) as f64);
+        psi_values.push(digamma((nx_vec[i] + 1) as f64) + digamma((ny_vec[i] + 1) as f64));
     }
-    let mean_psi = psi_sum / n as f64;
+    let mean_psi = fast_sum(&psi_values) / n as f64;
 
     (psi_k - mean_psi + psi_n).max(0.0)
 }
@@ -433,12 +456,12 @@ pub fn estimate_joint_mi_ksg(x1: &[f64], x2: &[f64], y: &[f64], k: usize) -> f64
 
     let psi_k = digamma(k_eff as f64);
     let psi_n = digamma(n as f64);
-    let mut psi_sum = 0.0f64;
+    let mut psi_values = Vec::with_capacity(n);
     for i in 0..n
     {
-        psi_sum += digamma((nxy_vec[i] + 1) as f64) + digamma((ny_vec[i] + 1) as f64);
+        psi_values.push(digamma((nxy_vec[i] + 1) as f64) + digamma((ny_vec[i] + 1) as f64));
     }
-    let mean_psi = psi_sum / n as f64;
+    let mean_psi = fast_sum(&psi_values) / n as f64;
 
     (psi_k - mean_psi + psi_n).max(0.0)
 }

@@ -598,12 +598,12 @@ async function generatePdfReport(allResults, totalFeatures, featureNames, isClas
         pdf.rect(0, 0, pageWidth, 25, 'F');
         pdf.setTextColor(255, 255, 255);
         pdf.setFontSize(18);
-        pdf.setFont('helvetica', 'bold');
+        pdf.setFont('times', 'bold');
         pdf.text('Aplikácia na podporu rozhodavnia pri tréningu predikčných modelov - Report výsledkov', pageWidth / 2, 16, { align: 'center' });
 
         pdf.setTextColor(80, 80, 80);
         pdf.setFontSize(10);
-        pdf.setFont('helvetica', 'normal');
+        pdf.setFont('times', 'normal');
         const now = new Date();
         pdf.text(`Dátum: ${now.toLocaleDateString('sk-SK')} ${now.toLocaleTimeString('sk-SK')}`, margin, 35);
         pdf.text(`Počet features: ${totalFeatures}`, margin, 41);
@@ -616,7 +616,7 @@ async function generatePdfReport(allResults, totalFeatures, featureNames, isClas
         const pdfMetricDefs = factory.getEvaluationMetrics(pdfEvalMode);
         
         let tableHeaders = ['Metóda', 'Features'];
-        pdfMetricDefs.forEach(m => tableHeaders.push(m.short_name));
+        pdfMetricDefs.forEach(m => tableHeaders.push(m.full_name));
         tableHeaders.push('Čas(ms)');
 
         const formatMetricValue = (val, formatType) => {
@@ -665,7 +665,7 @@ async function generatePdfReport(allResults, totalFeatures, featureNames, isClas
             pdf.rect(x, y, colWidths[i], headerH, 'F');
             pdf.setTextColor(255, 255, 255);
             pdf.setFontSize(7);
-            pdf.setFont('helvetica', 'bold');
+            pdf.setFont('times', 'bold');
             pdf.text(h, x + 2, y + 5.5);
             x += colWidths[i];
         });
@@ -705,8 +705,8 @@ async function generatePdfReport(allResults, totalFeatures, featureNames, isClas
                     pdf.setTextColor(80, 80, 80);
                 }
                 pdf.setFontSize(colIdx === 0 ? 7 : 7);
-                pdf.setFont('helvetica', colIdx === 0 || isBest ? 'bold' : 'normal');
-                pdf.text(cellContent, x + 1.5, y + 5, { maxWidth: w - 3 });
+                pdf.setFont('times', colIdx === 0 || isBest ? 'bold' : 'normal');
+                pdf.text(cellContent, x + 1.5, y + 5, { maxWidth: colWidths[colIdx] - 3 });
                 x += w;
             });
             y += rowH;
@@ -717,7 +717,7 @@ async function generatePdfReport(allResults, totalFeatures, featureNames, isClas
         if (y > pageHeight - 30) { pdf.addPage(); y = margin; }
         pdf.setFontSize(8);
         pdf.setTextColor(80, 80, 80);
-        pdf.setFont('helvetica', 'normal');
+        pdf.setFont('times', 'normal');
         if (isClassification) {
             pdf.text('ACC=Accuracy | F1=F1 Score | PREC=Precision | REC=Recall | SPEC=Specificity | FP=False Positives | FN=False Negatives | MCC=Matthews Corr. Coeff.', margin, y);
         } else {
@@ -728,26 +728,40 @@ async function generatePdfReport(allResults, totalFeatures, featureNames, isClas
         y += 8;
         if (y > pageHeight - 20) { pdf.addPage(); y = margin; }
         pdf.setFontSize(9);
-        pdf.setFont('helvetica', 'bold');
+        pdf.setFont('times', 'bold');
         pdf.setTextColor(204, 0, 0);
         pdf.text('Vybrané features jednotlivými metódami:', margin, y);
         y += 5;
-        pdf.setFont('helvetica', 'normal');
+        pdf.setFont('times', 'normal');
         pdf.setFontSize(7);
         pdf.setTextColor(80, 80, 80);
         allResults.forEach(r => {
             if (r.indices === null) return;
             if (y > pageHeight - 10) { pdf.addPage(); y = margin; }
             const names = r.indices && featureNames.length > 0
-                ? r.indices.map(i => featureNames[i] || `[${i}]`).join(', ')
-                : (r.indices || []).join(', ');
-            const line = `${r.name} (${r.count}): ${names || 'N/A'}`;
-            const lines = pdf.splitTextToSize(line, usableWidth);
-            lines.forEach(l => {
-                if (y > pageHeight - 10) { pdf.addPage(); y = margin; }
-                pdf.text(l, margin, y);
-                y += 4;
-            });
+                ? r.indices.map(i => featureNames[i] || `[${i}]`)
+                : [];
+            const prefix = `${r.name} (${r.count}): `;
+            const chunkSize = 5;
+            for (let i = 0; i < names.length; i += chunkSize) {
+                const chunk = names.slice(i, i + chunkSize).join(', ');
+                const line = i === 0 ? prefix + chunk : '  ' + chunk;
+                const lines = pdf.splitTextToSize(line, usableWidth);
+                lines.forEach(l => {
+                    if (y > pageHeight - 10) { pdf.addPage(); y = margin; }
+                    pdf.text(l, margin, y, { maxWidth: usableWidth });
+                    y += 4;
+                });
+            }
+            if (names.length === 0) {
+                const line = `${r.name} (${r.count}): N/A`;
+                const lines = pdf.splitTextToSize(line, usableWidth);
+                lines.forEach(l => {
+                    if (y > pageHeight - 10) { pdf.addPage(); y = margin; }
+                    pdf.text(l, margin, y, { maxWidth: usableWidth });
+                    y += 4;
+                });
+            }
         });
 
         statusSpan.textContent = 'Zachytávam grafy...';
@@ -761,7 +775,7 @@ async function generatePdfReport(allResults, totalFeatures, featureNames, isClas
             pdf.rect(0, 0, pageWidth, 18, 'F');
             pdf.setTextColor(255, 255, 255);
             pdf.setFontSize(14);
-            pdf.setFont('helvetica', 'bold');
+            pdf.setFont('times', 'bold');
             pdf.text('Scatter plot: SMC vs Mutual Information', pageWidth / 2, 12, { align: 'center' });
 
             try {
@@ -794,7 +808,7 @@ async function generatePdfReport(allResults, totalFeatures, featureNames, isClas
             pdf.rect(0, 0, pageWidth, 18, 'F');
             pdf.setTextColor(255, 255, 255);
             pdf.setFontSize(14);
-            pdf.setFont('helvetica', 'bold');
+            pdf.setFont('times', 'bold');
             pdf.text('Mapa premenných - cieľová premenná', pageWidth / 2, 12, { align: 'center' });
 
             try {
@@ -827,7 +841,7 @@ async function generatePdfReport(allResults, totalFeatures, featureNames, isClas
                 pdf.rect(0, 0, pageWidth, 18, 'F');
                 pdf.setTextColor(255, 255, 255);
                 pdf.setFontSize(14);
-                pdf.setFont('helvetica', 'bold');
+                pdf.setFont('times', 'bold');
                 const matrixTitle = matrixMode === 'correlation'
                     ? 'Matica korelácií (Pearson)'
                     : 'Matica Mutual Information (KSG)';
@@ -886,7 +900,7 @@ async function generatePdfReport(allResults, totalFeatures, featureNames, isClas
                         pdf.rect(0, 0, pageWidth, 18, 'F');
                         pdf.setTextColor(255, 255, 255);
                         pdf.setFontSize(14);
-                        pdf.setFont('helvetica', 'bold');
+                        pdf.setFont('times', 'bold');
                         pdf.text('Porovnanie Model R² vs Maticové R²', pageWidth / 2, 12, { align: 'center' });
 
                         try {

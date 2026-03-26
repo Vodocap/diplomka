@@ -6,7 +6,8 @@ Write-Host "Building WASM module..." -ForegroundColor Green
 $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
 $env:Path += ";$env:USERPROFILE\.cargo\bin"
 
-# Build WASM
+# Build WASM (SIMD128 pre wide crate zrychlenie)
+$env:RUSTFLAGS = "-C target-feature=+simd128"
 wasm-pack build --target web --out-dir pkg
 
 if ($LASTEXITCODE -eq 0) {

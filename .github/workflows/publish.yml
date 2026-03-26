@@ -31,7 +31,7 @@ jobs:
       - name: Build WebAssembly with wasm-pack
         run: |
           ls -la
-          wasm-pack build --release --target web --out-dir pkg
+          RUSTFLAGS="-C target-feature=+simd128" wasm-pack build --release --target web --out-dir pkg
 
       - name: Ensure pkg files are committed into repository (optional)
         if: always()

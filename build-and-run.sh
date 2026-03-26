@@ -4,6 +4,8 @@ echo "Building WASM module..."
 
 export PATH=$PATH:$HOME/.cargo/bin
 
+# SIMD128 pre wide crate zrychlenie
+export RUSTFLAGS="-C target-feature=+simd128"
 wasm-pack build --target web --out-dir pkg
 
 if [ $? -eq 0 ]; then

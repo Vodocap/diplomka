@@ -24,20 +24,43 @@ use std::collections::HashMap;
 use ndarray::{Array2, Axis};
 use smartcore::linalg::basic::arrays::Array;
 use smartcore::linalg::basic::matrix::DenseMatrix;
+use wide::f64x4;
 
-// Manuálny SIMD-like súčet pre zrýchlenie
+// SIMD súčet pomocou wide::f64x4 (4× f64 paralelne, na WASM → 2× SIMD128 inštrukcie)
 fn fast_sum(values: &[f64]) -> f64 {
-    let mut sum = 0.0;
-    let len = values.len();
-    let mut i = 0;
-    while i + 4 <= len {
-        sum += values[i] + values[i+1] + values[i+2] + values[i+3];
-        i += 4;
+    let chunks = values.chunks_exact(4);
+    let remainder = chunks.remainder();
+    let mut acc = f64x4::ZERO;
+    for chunk in chunks {
+        acc += f64x4::new([chunk[0], chunk[1], chunk[2], chunk[3]]);
     }
-    for j in i..len {
-        sum += values[j];
+    let arr: [f64; 4] = acc.into();
+    let mut sum = arr[0] + arr[1] + arr[2] + arr[3];
+    for &v in remainder {
+        sum += v;
     }
     sum
+}
+
+/// Digamma lookup tabuľka pre celočíselné argumenty.
+/// V KSG sa digamma volá vždy s (usize + 1) as f64 → predpočítame tabuľku
+/// a vyhneme sa tisícom drahých transcendentálnych volaní.
+fn build_digamma_table(max_val: usize) -> Vec<f64> {
+    let mut table = Vec::with_capacity(max_val + 1);
+    for i in 0..=max_val {
+        table.push(digamma(i as f64));
+    }
+    table
+}
+
+/// Rýchle hľadanie digamma cez lookup tabuľku, fallback na statrs pre veľké hodnoty.
+#[inline(always)]
+fn digamma_lookup(table: &[f64], x: usize) -> f64 {
+    if x < table.len() {
+        table[x]
+    } else {
+        digamma(x as f64)
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -55,36 +78,37 @@ pub fn pearson_correlation(x: &[f64], y: &[f64]) -> f64
         return 0.0;
     }
 
-    let mean_x = x.iter().sum::<f64>() / n;
-    let mean_y = y.iter().sum::<f64>() / n;
+    let mean_x = fast_sum(x) / n;
+    let mean_y = fast_sum(y) / n;
 
-    let mut num = 0.0;
-    let mut den_x = 0.0;
-    let mut den_y = 0.0;
+    let vmx = f64x4::splat(mean_x);
+    let vmy = f64x4::splat(mean_y);
+    let mut acc_num = f64x4::ZERO;
+    let mut acc_dx2 = f64x4::ZERO;
+    let mut acc_dy2 = f64x4::ZERO;
 
-    // Manuálne SIMD-like spracovanie po 4 prvkoch
     let len = x.len();
-    let mut i = 0;
-    while i + 4 <= len {
-        let dx0 = x[i] - mean_x;
-        let dx1 = x[i+1] - mean_x;
-        let dx2 = x[i+2] - mean_x;
-        let dx3 = x[i+3] - mean_x;
-
-        let dy0 = y[i] - mean_y;
-        let dy1 = y[i+1] - mean_y;
-        let dy2 = y[i+2] - mean_y;
-        let dy3 = y[i+3] - mean_y;
-
-        num += dx0 * dy0 + dx1 * dy1 + dx2 * dy2 + dx3 * dy3;
-        den_x += dx0 * dx0 + dx1 * dx1 + dx2 * dx2 + dx3 * dx3;
-        den_y += dy0 * dy0 + dy1 * dy1 + dy2 * dy2 + dy3 * dy3;
-
-        i += 4;
+    let chunks = len / 4;
+    for c in 0..chunks {
+        let base = c * 4;
+        let vx = f64x4::new([x[base], x[base+1], x[base+2], x[base+3]]);
+        let vy = f64x4::new([y[base], y[base+1], y[base+2], y[base+3]]);
+        let dx = vx - vmx;
+        let dy = vy - vmy;
+        acc_num += dx * dy;
+        acc_dx2 += dx * dx;
+        acc_dy2 += dy * dy;
     }
 
+    let a_num: [f64; 4] = acc_num.into();
+    let a_dx2: [f64; 4] = acc_dx2.into();
+    let a_dy2: [f64; 4] = acc_dy2.into();
+    let mut num = a_num[0] + a_num[1] + a_num[2] + a_num[3];
+    let mut den_x = a_dx2[0] + a_dx2[1] + a_dx2[2] + a_dx2[3];
+    let mut den_y = a_dy2[0] + a_dy2[1] + a_dy2[2] + a_dy2[3];
+
     // Zvyšné prvky
-    for j in i..len {
+    for j in (chunks * 4)..len {
         let dx = x[j] - mean_x;
         let dy = y[j] - mean_y;
         num += dx * dy;
@@ -351,10 +375,15 @@ pub fn estimate_mi_ksg(x: &[f64], y: &[f64], k: usize) -> f64
 
     let psi_k = digamma(k_eff as f64);
     let psi_n = digamma(n as f64);
+
+    // Digamma lookup tabuľka – predpočítame raz, potom O(1) prístupy
+    let max_count = nx_vec.iter().chain(ny_vec.iter()).copied().max().unwrap_or(0) + 2;
+    let psi_table = build_digamma_table(max_count);
+
     let mut psi_values = Vec::with_capacity(n);
     for i in 0..n
     {
-        psi_values.push(digamma((nx_vec[i] + 1) as f64) + digamma((ny_vec[i] + 1) as f64));
+        psi_values.push(digamma_lookup(&psi_table, nx_vec[i] + 1) + digamma_lookup(&psi_table, ny_vec[i] + 1));
     }
     let mean_psi = fast_sum(&psi_values) / n as f64;
 
@@ -456,10 +485,15 @@ pub fn estimate_joint_mi_ksg(x1: &[f64], x2: &[f64], y: &[f64], k: usize) -> f64
 
     let psi_k = digamma(k_eff as f64);
     let psi_n = digamma(n as f64);
+
+    // Digamma lookup tabuľka – predpočítame raz, potom O(1) prístupy
+    let max_count = nxy_vec.iter().chain(ny_vec.iter()).copied().max().unwrap_or(0) + 2;
+    let psi_table = build_digamma_table(max_count);
+
     let mut psi_values = Vec::with_capacity(n);
     for i in 0..n
     {
-        psi_values.push(digamma((nxy_vec[i] + 1) as f64) + digamma((ny_vec[i] + 1) as f64));
+        psi_values.push(digamma_lookup(&psi_table, nxy_vec[i] + 1) + digamma_lookup(&psi_table, ny_vec[i] + 1));
     }
     let mean_psi = fast_sum(&psi_values) / n as f64;
 
@@ -633,8 +667,19 @@ pub fn invert_matrix(mat: &[Vec<f64>]) -> Option<Vec<Vec<f64>>>
         aug.swap(col, max_row);
 
         let pivot = aug[col][col];
-        for j in 0..(2 * n)
-        {
+        let inv_pivot = f64x4::splat(1.0 / pivot);
+        let width = 2 * n;
+        let simd_chunks = width / 4;
+        for c in 0..simd_chunks {
+            let base = c * 4;
+            let v = f64x4::new([aug[col][base], aug[col][base+1], aug[col][base+2], aug[col][base+3]]);
+            let r: [f64; 4] = (v * inv_pivot).into();
+            aug[col][base]   = r[0];
+            aug[col][base+1] = r[1];
+            aug[col][base+2] = r[2];
+            aug[col][base+3] = r[3];
+        }
+        for j in (simd_chunks * 4)..width {
             aug[col][j] /= pivot;
         }
 
@@ -645,8 +690,18 @@ pub fn invert_matrix(mat: &[Vec<f64>]) -> Option<Vec<Vec<f64>>>
                 continue;
             }
             let factor = aug[row][col];
-            for j in 0..(2 * n)
-            {
+            let vfactor = f64x4::splat(factor);
+            for c in 0..simd_chunks {
+                let base = c * 4;
+                let vp = f64x4::new([aug[col][base], aug[col][base+1], aug[col][base+2], aug[col][base+3]]);
+                let vr = f64x4::new([aug[row][base], aug[row][base+1], aug[row][base+2], aug[row][base+3]]);
+                let res: [f64; 4] = (vr - vfactor * vp).into();
+                aug[row][base]   = res[0];
+                aug[row][base+1] = res[1];
+                aug[row][base+2] = res[2];
+                aug[row][base+3] = res[3];
+            }
+            for j in (simd_chunks * 4)..width {
                 aug[row][j] -= factor * aug[col][j];
             }
         }

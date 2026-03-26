@@ -19,6 +19,7 @@ smartcore = "0.4"
 statrs = "0.16.0"
 kdtree = "0.7"
 once_cell = "1.19"
+wide = "0.7"
 
 # Enable WebAssembly support for getrandom (used by rand and other crates)
 getrandom = { version = "0.2", features = ["js"] }

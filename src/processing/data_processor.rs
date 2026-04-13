@@ -12,6 +12,13 @@ pub trait DataProcessor
     fn set_param(&mut self, key: &str, value: &str) -> Result<(), String>;
     fn get_supported_params(&self) -> Vec<&str>;
 
+    /// Vráti názvy výstupných stĺpcov po aplikovaní procesora.
+    /// Default: názvy zostanú nezmenené.
+    fn get_output_feature_names(&self, input_feature_names: &[String]) -> Vec<String>
+    {
+        input_feature_names.to_vec()
+    }
+
     /// Získa detailné informácie o parametroch procesora pre UI
     fn get_param_definitions(&self) -> Vec<ProcessorParam>
     {

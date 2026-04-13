@@ -32,3 +32,41 @@ pub fn classify_column(values: &[f64], n: usize) -> (usize, String)
     let stype = if is_cat { "classification" } else { "regression" };
     (unique_count, stype.to_string())
 }
+
+/// Zdieľaný helper pre analyzátory: vytvorí a zoradí kandidátov.
+/// `score_and_metrics` vracia (hlavné score, extra metriky) pre daný stĺpec.
+pub fn build_ranked_candidates<F>(
+    columns: &[Vec<f64>],
+    headers: &[String],
+    mut score_and_metrics: F,
+) -> Vec<TargetCandidate>
+where
+    F: FnMut(usize) -> (f64, Vec<(String, f64)>),
+{
+    let num_cols = columns.len();
+    let n = if num_cols > 0 { columns[0].len() } else { return vec![]; };
+
+    let mut candidates = Vec::new();
+    for col_idx in 0..num_cols
+    {
+        let (unique_count, stype) = classify_column(&columns[col_idx], n);
+
+        let mean = columns[col_idx].iter().sum::<f64>() / n as f64;
+        let variance = columns[col_idx].iter().map(|v| (v - mean).powi(2)).sum::<f64>() / n as f64;
+
+        let (score, extra_metrics) = score_and_metrics(col_idx);
+
+        candidates.push(TargetCandidate {
+            column_index: col_idx,
+            column_name: headers[col_idx].clone(),
+            score: (score * 10000.0).round() / 10000.0,
+            unique_values: unique_count,
+            variance: (variance * 10000.0).round() / 10000.0,
+            suggested_type: stype,
+            extra_metrics,
+        });
+    }
+
+    candidates.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+    candidates
+}

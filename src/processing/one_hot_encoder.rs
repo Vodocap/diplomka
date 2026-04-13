@@ -1,11 +1,137 @@
 use smartcore::linalg::basic::matrix::DenseMatrix;
 use smartcore::linalg::basic::arrays::{Array, MutArray};
-use std::collections::HashMap;
 use super::{DataProcessor, ColumnType};
 
 /// One-Hot Encoder - kazdu unikatnu hodnotu v stlpci premeni na samostatny binarny stlpec.
 /// Vystupna matica ma viac stlpcov ako vstupna (pocet stlpcov = sum(unikatnych hodnot)).
-pub struct OneHotEncoder;
+pub struct OneHotEncoder
+{
+    /// Kategórie pre každý pôvodný stĺpec v poradí výskytu (uložené ako f64 bits).
+    categories_per_column: Option<Vec<Vec<u64>>>,
+}
+
+impl OneHotEncoder
+{
+    pub fn new() -> Self
+    {
+        Self {
+            categories_per_column: None,
+        }
+    }
+
+    fn infer_categories(data: &DenseMatrix<f64>) -> Vec<Vec<u64>>
+    {
+        let (rows, cols) = data.shape();
+        let mut all_categories = Vec::with_capacity(cols);
+
+        for j in 0..cols
+        {
+            let mut categories: Vec<u64> = Vec::new();
+            for i in 0..rows
+            {
+                let bits = data.get((i, j)).to_bits();
+                if !categories.contains(&bits)
+                {
+                    categories.push(bits);
+                }
+            }
+            all_categories.push(categories);
+        }
+
+        all_categories
+    }
+
+    fn encode_with_categories(data: &DenseMatrix<f64>, categories_per_column: &[Vec<u64>]) -> DenseMatrix<f64>
+    {
+        let (rows, cols) = data.shape();
+        let used_cols = cols.min(categories_per_column.len());
+        let total_new_cols: usize = categories_per_column
+            .iter()
+            .take(used_cols)
+            .map(|c| c.len())
+            .sum();
+
+        if total_new_cols == 0
+        {
+            return data.clone();
+        }
+
+        let mut encoded = DenseMatrix::from_2d_vec(&vec![vec![0.0; total_new_cols]; rows]).unwrap();
+        let mut col_offset = 0;
+
+        for j in 0..used_cols
+        {
+            let categories = &categories_per_column[j];
+
+            for i in 0..rows
+            {
+                let bits = data.get((i, j)).to_bits();
+                if let Some(local_idx) = categories.iter().position(|&cat| cat == bits)
+                {
+                    encoded.set((i, col_offset + local_idx), 1.0);
+                }
+            }
+
+            col_offset += categories.len();
+        }
+
+        encoded
+    }
+
+    fn category_bits_to_label(bits: u64) -> String
+    {
+        let value = f64::from_bits(bits);
+
+        if value.is_nan()
+        {
+            return "nan".to_string();
+        }
+
+        if value.is_infinite()
+        {
+            return if value.is_sign_positive() { "inf" } else { "-inf" }.to_string();
+        }
+
+        if value.fract().abs() < 1e-12
+        {
+            return format!("{:.0}", value);
+        }
+
+        let mut s = format!("{:.12}", value);
+        while s.contains('.') && s.ends_with('0')
+        {
+            s.pop();
+        }
+        if s.ends_with('.')
+        {
+            s.pop();
+        }
+        s
+    }
+
+    fn sanitize_label(label: &str) -> String
+    {
+        let mut out = String::with_capacity(label.len());
+        let mut prev_underscore = false;
+
+        for ch in label.chars()
+        {
+            let keep = ch.is_ascii_alphanumeric() || ch == '-' || ch == '.';
+            if keep
+            {
+                out.push(ch);
+                prev_underscore = false;
+            }
+            else if !prev_underscore
+            {
+                out.push('_');
+                prev_underscore = true;
+            }
+        }
+
+        out.trim_matches('_').to_string()
+    }
+}
 
 impl DataProcessor for OneHotEncoder
 {
@@ -14,60 +140,28 @@ impl DataProcessor for OneHotEncoder
         "One-Hot Encoder"
     }
 
-    fn fit(&mut self, _data: &DenseMatrix<f64>)
+    fn fit(&mut self, data: &DenseMatrix<f64>)
     {
-        // OneHotEncoder doesn't need fitting in current implementation
+        self.categories_per_column = Some(Self::infer_categories(data));
     }
 
     fn transform(&self, data: &DenseMatrix<f64>) -> DenseMatrix<f64>
     {
-        self.process(data)
+        match &self.categories_per_column
+        {
+            Some(categories) => Self::encode_with_categories(data, categories),
+            None =>
+            {
+                // Fallback: keď nebolo volané fit(), použijeme kategórie z aktuálnych dát.
+                let inferred = Self::infer_categories(data);
+                Self::encode_with_categories(data, &inferred)
+            }
+        }
     }
 
     fn process(&self, data: &DenseMatrix<f64>) -> DenseMatrix<f64>
     {
-        let (rows, cols) = data.shape();
-        let mut column_maps = Vec::new();
-        let mut new_total_cols = 0;
-
-        // 1. Zistíme unikátne hodnoty pre každý stĺpec
-        for j in 0..cols
-        {
-            let mut unique_vals = HashMap::new();
-            let mut count = 0;
-
-            for i in 0..rows
-            {
-                let val_bits = data.get((i, j)).to_bits();
-                if !unique_vals.contains_key(&val_bits)
-                {
-                    unique_vals.insert(val_bits, count);
-                    count += 1;
-                }
-            }
-            new_total_cols += count;
-            column_maps.push(unique_vals);
-        }
-
-        // 2. Vytvoríme novú, širšiu maticu
-        let mut new_matrix = DenseMatrix::from_2d_vec(&vec![vec![0.0; new_total_cols]; rows]).unwrap();
-        let mut current_new_col = 0;
-
-        for j in 0..cols
-        {
-            let map = &column_maps[j];
-            let num_unique = map.len();
-
-            for i in 0..rows
-            {
-                let val_bits = data.get((i, j)).to_bits();
-                let offset = map[&val_bits];
-                new_matrix.set((i, current_new_col + offset), 1.0);
-            }
-            current_new_col += num_unique;
-        }
-
-        new_matrix
+        self.transform(data)
     }
 
     fn set_param(&mut self, _key: &str, _value: &str) -> Result<(), String>
@@ -78,6 +172,40 @@ impl DataProcessor for OneHotEncoder
     fn get_supported_params(&self) -> Vec<&str>
     {
         vec![]
+    }
+
+    fn get_output_feature_names(&self, input_feature_names: &[String]) -> Vec<String>
+    {
+        let categories = match &self.categories_per_column
+        {
+            Some(c) => c,
+            None => return input_feature_names.to_vec(),
+        };
+
+        let used_cols = input_feature_names.len().min(categories.len());
+        let mut output_names = Vec::new();
+
+        for col_idx in 0..used_cols
+        {
+            let base = &input_feature_names[col_idx];
+            let col_categories = &categories[col_idx];
+
+            if col_categories.is_empty()
+            {
+                output_names.push(base.clone());
+                continue;
+            }
+
+            for &bits in col_categories
+            {
+                let raw = Self::category_bits_to_label(bits);
+                let suffix = Self::sanitize_label(&raw);
+                let suffix = if suffix.is_empty() { "value" } else { &suffix };
+                output_names.push(format!("{}_{}", base, suffix));
+            }
+        }
+
+        output_names
     }
 
     fn get_applicable_column_types(&self) -> Option<Vec<ColumnType>>

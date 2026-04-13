@@ -96,6 +96,43 @@ function displayInfo() {
     });
 }
 
+function handleTrainTestSplitInput(e) {
+    const trainPercent = parseInt(e.target.value);
+    const testPercent = 100 - trainPercent;
+    document.getElementById('splitValue').textContent = `${trainPercent}%`;
+    document.getElementById('trainPercent').textContent = `${trainPercent}%`;
+    document.getElementById('testPercent').textContent = `${testPercent}%`;
+}
+
+function handleFileInputChange(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const fileInfo = document.getElementById('fileInfo');
+        fileInfo.textContent = `Vybraný súbor: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+
+        // Auto-detect format from file extension
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (ext === 'csv') {
+            document.getElementById('dataFormatSelect').value = 'csv';
+        } else if (ext === 'json') {
+            document.getElementById('dataFormatSelect').value = 'json';
+        }
+    }
+}
+
+function bindCommonUiListeners() {
+    const radioText = document.getElementById('dataInputText');
+    const radioFile = document.getElementById('dataInputFile');
+    if (radioText) radioText.onchange = toggleDataInputMethod;
+    if (radioFile) radioFile.onchange = toggleDataInputMethod;
+
+    const fileInput = document.getElementById('fileInput');
+    if (fileInput) fileInput.onchange = handleFileInputChange;
+
+    const splitSlider = document.getElementById('trainTestSplit');
+    if (splitSlider) splitSlider.oninput = handleTrainTestSplitInput;
+}
+
 function setupEventListeners() {
     document.getElementById('buildPipelineBtn').onclick = buildPipeline;
     document.getElementById('parseDataBtn').onclick = parseData;
@@ -109,36 +146,6 @@ function setupEventListeners() {
     document.getElementById('selectAllSelectorsBtn').onclick = toggleAllSelectors;
     document.getElementById('selectAllAnalyzersBtn').onclick = toggleAllAnalyzers;
     document.getElementById('trainAllSelectorsBtn').onclick = trainAllSelectors;
-    
-    // Data input method radio buttons
-    document.getElementById('dataInputText').onchange = toggleDataInputMethod;
-    document.getElementById('dataInputFile').onchange = toggleDataInputMethod;
-    
-    // Train/Test split slider
-    document.getElementById('trainTestSplit').oninput = function(e) {
-        const trainPercent = parseInt(e.target.value);
-        const testPercent = 100 - trainPercent;
-        document.getElementById('splitValue').textContent = `${trainPercent}%`;
-        document.getElementById('trainPercent').textContent = `${trainPercent}%`;
-        document.getElementById('testPercent').textContent = `${testPercent}%`;
-    };
-    
-    // File input change listener
-    document.getElementById('fileInput').onchange = function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            const fileInfo = document.getElementById('fileInfo');
-            fileInfo.textContent = `Vybraný súbor: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
-            
-            // Auto-detect format from file extension
-            const ext = file.name.split('.').pop().toLowerCase();
-            if (ext === 'csv') {
-                document.getElementById('dataFormatSelect').value = 'csv';
-            } else if (ext === 'json') {
-                document.getElementById('dataFormatSelect').value = 'json';
-            }
-        }
-    };
 
     document.getElementById('modelSelect').onchange = function() {
         updateModelParams(this.value);
@@ -237,13 +244,10 @@ async function buildPipeline() {
 
         const config = {
             model: model,
-            processors: [],
-            processor: null,
             selector: null,
             evaluation_mode: evalMode || null,
             model_params: modelParams.length > 0 ? modelParams : null,
-            selector_params: null,
-            processor_params: null
+            selector_params: null
         };
 
         const result = await pipeline.buildFromConfig(config);
@@ -278,39 +282,6 @@ function setupBasicListeners() {
         }
     });
 
-    // Data input method radio buttons - these must work even if WASM fails
-    const radioText = document.getElementById('dataInputText');
-    const radioFile = document.getElementById('dataInputFile');
-    if (radioText) radioText.onchange = toggleDataInputMethod;
-    if (radioFile) radioFile.onchange = toggleDataInputMethod;
-
-    // File input change listener
-    const fileInput = document.getElementById('fileInput');
-    if (fileInput) {
-        fileInput.onchange = function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const fileInfo = document.getElementById('fileInfo');
-                fileInfo.textContent = `Vybraný súbor: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
-                const ext = file.name.split('.').pop().toLowerCase();
-                if (ext === 'csv') {
-                    document.getElementById('dataFormatSelect').value = 'csv';
-                } else if (ext === 'json') {
-                    document.getElementById('dataFormatSelect').value = 'json';
-                }
-            }
-        };
-    }
-
-    // Train/Test split slider
-    const splitSlider = document.getElementById('trainTestSplit');
-    if (splitSlider) {
-        splitSlider.oninput = function(e) {
-            const trainPercent = parseInt(e.target.value);
-            const testPercent = 100 - trainPercent;
-            document.getElementById('splitValue').textContent = `${trainPercent}%`;
-            document.getElementById('trainPercent').textContent = `${trainPercent}%`;
-            document.getElementById('testPercent').textContent = `${testPercent}%`;
-        };
-    }
+    // Shared listeners are bound once here so they work aj bez WASM initu.
+    bindCommonUiListeners();
 }

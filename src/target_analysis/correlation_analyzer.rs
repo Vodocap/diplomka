@@ -1,4 +1,4 @@
-use super::{TargetAnalyzer, TargetCandidate};
+use super::{TargetAnalyzer, TargetCandidate, build_ranked_candidates};
 use crate::entropy::mi_estimator;
 
 /// Analyzátor cieľovej premennej na základe Pearsonovej korelácie.
@@ -54,21 +54,12 @@ impl TargetAnalyzer for CorrelationAnalyzer
 
     fn analyze(&self, columns: &[Vec<f64>], headers: &[String]) -> Vec<TargetCandidate>
     {
-        let num_cols = columns.len();
-        let n = if num_cols > 0 { columns[0].len() } else { return vec![]; };
-
         // Use cached correlation matrix
         let corr_matrix = self.compute_corr_matrix(columns);
 
-        let mut candidates = Vec::new();
-        for col_idx in 0..num_cols
+        build_ranked_candidates(columns, headers, |col_idx|
         {
-            let (unique_count, stype) = super::classify_column(&columns[col_idx], n);
-
-            let mean = columns[col_idx].iter().sum::<f64>() / n as f64;
-            let variance = columns[col_idx].iter().map(|v| (v - mean).powi(2)).sum::<f64>() / n as f64;
-
-            // Score_j = Σ r²_jk  (suma štvorcov korelácií)
+            let num_cols = corr_matrix.len();
             let mut sum_r2 = 0.0f64;
             let mut max_c = 0.0f64;
             for j in 0..num_cols
@@ -85,21 +76,14 @@ impl TargetAnalyzer for CorrelationAnalyzer
                 }
             }
 
-            candidates.push(TargetCandidate {
-                column_index: col_idx,
-                column_name: headers[col_idx].clone(),
-                score: (sum_r2 * 10000.0).round() / 10000.0,
-                unique_values: unique_count,
-                variance: (variance * 10000.0).round() / 10000.0,
-                suggested_type: stype,
-                extra_metrics: vec![
+            (
+                sum_r2,
+                vec![
                     ("sum_r2".to_string(), (sum_r2 * 10000.0).round() / 10000.0),
                     ("max_correlation".to_string(), (max_c * 10000.0).round() / 10000.0),
                 ],
-            });
-        }
-        candidates.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
-        candidates
+            )
+        })
     }
 
     fn get_details_html(&self, columns: &[Vec<f64>], headers: &[String], _candidates: &[TargetCandidate]) -> String

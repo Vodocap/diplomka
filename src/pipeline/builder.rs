@@ -1,5 +1,4 @@
 use crate::models::model_factory::ModelFactory;
-use crate::feature_selection_strategies::feature_selector_factory::FeatureSelectorFactory;
 use crate::pipeline::MLPipeline;
 use std::collections::HashMap;
 
@@ -8,8 +7,6 @@ pub struct MLPipelineBuilder
 {
     model_type: Option<String>,
     model_params: HashMap<String, String>,
-    selector_type: Option<String>,
-    selector_params: HashMap<String, String>,
     evaluation_mode: Option<String>, // "classification" alebo "regression"
 }
 
@@ -20,8 +17,6 @@ impl MLPipelineBuilder
         Self {
             model_type: None,
             model_params: HashMap::new(),
-            selector_type: None,
-            selector_params: HashMap::new(),
             evaluation_mode: None,
         }
     }
@@ -37,20 +32,6 @@ impl MLPipelineBuilder
     pub fn model_param(mut self, key: &str, value: &str) -> Self
     {
         self.model_params.insert(key.to_string(), value.to_string());
-        self
-    }
-
-    /// Nastaví feature selector
-    pub fn feature_selector(mut self, selector_type: &str) -> Self
-    {
-        self.selector_type = Some(selector_type.to_string());
-        self
-    }
-
-    /// Nastaví parameter feature selektora
-    pub fn selector_param(mut self, key: &str, value: &str) -> Self
-    {
-        self.selector_params.insert(key.to_string(), value.to_string());
         self
     }
 
@@ -77,24 +58,6 @@ impl MLPipelineBuilder
         {
             model.set_param(key, value)?;
         }
-
-        // Vytvorenie selektora (optional)
-        let _selector = if let Some(sel_type) = &self.selector_type
-        {
-            let mut sel = FeatureSelectorFactory::create(sel_type)?;
-
-            // Nastavenie parametrov selektora
-            for (key, value) in &self.selector_params
-            {
-                sel.set_param(key, value)?;
-            }
-
-            Some(sel)
-        }
-        else
-        {
-            None
-        };
 
         // Určenie evaluation mode
         let eval_mode = if let Some(mode) = self.evaluation_mode

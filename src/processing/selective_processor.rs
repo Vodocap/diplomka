@@ -93,16 +93,83 @@ impl SelectiveProcessor
             return processed.clone();
         }
 
-        let mut result = original.clone();
-        for (new_j, &old_j) in self.applicable_columns.iter().enumerate()
+        // Štandardné správanie: rovnaký počet vstupných/výstupných stĺpcov.
+        // Napr. scaler, imputácia, clipping.
+        if processed.shape().1 == self.applicable_columns.len()
         {
-            for i in 0..rows
+            let mut result = original.clone();
+            for (new_j, &old_j) in self.applicable_columns.iter().enumerate()
             {
-                result.set((i, old_j), *processed.get((i, new_j)));
+                for i in 0..rows
+                {
+                    result.set((i, old_j), *processed.get((i, new_j)));
+                }
+            }
+
+            return result;
+        }
+
+        // Expanzné procesory (napr. One-Hot) môžu zvýšiť počet stĺpcov.
+        // V tom prípade ponecháme neaplikované stĺpce a za ne pridáme všetky spracované stĺpce.
+        let passthrough_columns: Vec<usize> = (0..orig_cols)
+            .filter(|j| !self.applicable_columns.contains(j))
+            .collect();
+        let new_cols = passthrough_columns.len() + processed.shape().1;
+        let mut result_data = vec![vec![0.0; new_cols]; rows];
+
+        for i in 0..rows
+        {
+            let mut out_j = 0;
+
+            for &orig_j in &passthrough_columns
+            {
+                result_data[i][out_j] = *original.get((i, orig_j));
+                out_j += 1;
+            }
+
+            for proc_j in 0..processed.shape().1
+            {
+                result_data[i][out_j] = *processed.get((i, proc_j));
+                out_j += 1;
             }
         }
 
-        result
+        DenseMatrix::from_2d_vec(&result_data).unwrap_or_else(|_| original.clone())
+    }
+
+    fn merge_feature_names(&self, input_feature_names: &[String], processed_feature_names: &[String]) -> Vec<String>
+    {
+        let orig_cols = input_feature_names.len();
+
+        if self.applicable_columns.len() == orig_cols
+        {
+            return processed_feature_names.to_vec();
+        }
+
+        if processed_feature_names.len() == self.applicable_columns.len()
+        {
+            let mut result = input_feature_names.to_vec();
+            for (new_j, &old_j) in self.applicable_columns.iter().enumerate()
+            {
+                if old_j < result.len() && new_j < processed_feature_names.len()
+                {
+                    result[old_j] = processed_feature_names[new_j].clone();
+                }
+            }
+            return result;
+        }
+
+        // Pre expanzné procesory: passthrough stĺpce + všetky vygenerované stĺpce.
+        let mut merged = Vec::new();
+        for (idx, name) in input_feature_names.iter().enumerate()
+        {
+            if !self.applicable_columns.contains(&idx)
+            {
+                merged.push(name.clone());
+            }
+        }
+        merged.extend_from_slice(processed_feature_names);
+        merged
     }
 }
 
@@ -158,6 +225,22 @@ impl DataProcessor for SelectiveProcessor
     fn get_supported_params(&self) -> Vec<&str>
     {
         self.processor.get_supported_params()
+    }
+
+    fn get_output_feature_names(&self, input_feature_names: &[String]) -> Vec<String>
+    {
+        if self.applicable_columns.is_empty()
+        {
+            return input_feature_names.to_vec();
+        }
+
+        let applicable_names: Vec<String> = self.applicable_columns
+            .iter()
+            .filter_map(|&idx| input_feature_names.get(idx).cloned())
+            .collect();
+
+        let processed_names = self.processor.get_output_feature_names(&applicable_names);
+        self.merge_feature_names(input_feature_names, &processed_names)
     }
 
     fn get_param_definitions(&self) -> Vec<super::ProcessorParam>

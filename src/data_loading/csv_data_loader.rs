@@ -1,6 +1,6 @@
 use super::data_loader::DataLoader;
 use super::loaded_data::LoadedData;
-use csv::ReaderBuilder;
+use csv::{ReaderBuilder, WriterBuilder};
 use std::collections::HashMap;
 use smartcore::linalg::basic::matrix::DenseMatrix;
 
@@ -16,8 +16,9 @@ impl CsvDataLoader
         Self
     }
 
-    /// Helper pre parsovanie CSV
-    fn parse_csv(&self, csv_text: &str) -> Result<(Vec<String>, Vec<HashMap<String, String>>), String>
+    /// Verejny helper pre parsovanie CSV na tabulku (hlavička + riadky).
+    /// Zachovava prázdne bunky a validuje konzistentný počet stĺpcov.
+    pub fn parse_csv_table(&self, csv_text: &str) -> Result<(Vec<String>, Vec<Vec<String>>), String>
     {
         let mut rdr = ReaderBuilder::new()
             .has_headers(true)
@@ -25,7 +26,6 @@ impl CsvDataLoader
             .trim(csv::Trim::All)
             .from_reader(csv_text.as_bytes());
 
-        // Načítať headers
         let headers: Vec<String> = rdr
             .headers()
             .map_err(|e| format!("Chyba pri čítaní CSV hlavičiek: {}", e))?
@@ -38,34 +38,66 @@ impl CsvDataLoader
             return Err("CSV nemá žiadne stĺpce".to_string());
         }
 
-        // Načítať záznamy
-        let records: Result<Vec<_>, _> = rdr
-            .records()
-            .enumerate()
-            .map(|(idx, r)|
+        let mut rows = Vec::new();
+        for (idx, record_result) in rdr.records().enumerate()
+        {
+            let record = record_result
+                .map_err(|e| format!("Chyba pri čítaní riadku {}: {}", idx + 1, e))?;
+
+            if record.len() != headers.len()
             {
-                r.map(|record|
-                {
-                    if record.len() != headers.len()
-                    {
-                        return Err(format!(
-                            "Riadok {} má {} stĺpcov, očakávaných {}",
-                            idx + 1,
-                            record.len(),
-                            headers.len()
-                        ));
-                    }
-                    Ok(record
-                        .iter()
-                        .enumerate()
-                        .map(|(i, val)| (headers[i].clone(), val.trim().to_string()))
-                        .collect::<HashMap<_, _>>())
-                })
-                .map_err(|e| format!("Chyba pri čítaní riadku {}: {}", idx + 1, e))?
+                return Err(format!(
+                    "Riadok {} má {} stĺpcov, očakávaných {}",
+                    idx + 1,
+                    record.len(),
+                    headers.len()
+                ));
+            }
+
+            rows.push(record.iter().map(|v| v.trim().to_string()).collect());
+        }
+
+        Ok((headers, rows))
+    }
+
+    /// Verejny helper pre bezpečnú serializáciu tabuľky do CSV.
+    pub fn serialize_csv_table(headers: &[String], rows: &[Vec<String>]) -> Result<String, String>
+    {
+        let mut writer = WriterBuilder::new().from_writer(Vec::<u8>::new());
+
+        writer
+            .write_record(headers)
+            .map_err(|e| format!("Chyba pri zápise CSV hlavičky: {}", e))?;
+
+        for row in rows
+        {
+            let padded: Vec<String> = (0..headers.len())
+                .map(|i| row.get(i).cloned().unwrap_or_default())
+                .collect();
+            writer
+                .write_record(&padded)
+                .map_err(|e| format!("Chyba pri zápise CSV riadku: {}", e))?;
+        }
+
+        let bytes = writer
+            .into_inner()
+            .map_err(|e| format!("Chyba pri finalizácii CSV: {}", e))?;
+
+        String::from_utf8(bytes).map_err(|e| format!("Chyba pri UTF-8 konverzii CSV: {}", e))
+    }
+
+    /// Helper pre parsovanie CSV
+    fn parse_csv(&self, csv_text: &str) -> Result<(Vec<String>, Vec<HashMap<String, String>>), String>
+    {
+        let (headers, rows) = self.parse_csv_table(csv_text)?;
+
+        let records: Vec<HashMap<String, String>> = rows
+            .into_iter()
+            .map(|row|
+            {
+                headers.iter().cloned().zip(row).collect::<HashMap<_, _>>()
             })
             .collect();
-
-        let records = records.map_err(|e: String| e)?;
 
         if records.is_empty()
         {

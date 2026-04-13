@@ -16,6 +16,26 @@ impl JsonDataLoader
         Self
     }
 
+    /// Konvertuje string hodnoty na f64 s lepším error handlingom.
+    /// Podporuje prázdne/null hodnoty ako 0.0 a desatinnú čiarku.
+    fn parse_numeric_value(&self, val: &str, key: &str, row: usize) -> Result<f64, String>
+    {
+        let trimmed = val.trim();
+        if trimmed.is_empty()
+        {
+            return Ok(0.0);
+        }
+
+        trimmed.parse::<f64>()
+            .or_else(|_| trimmed.replace(',', ".").parse::<f64>())
+            .map_err(|_| format!(
+                "Hodnota '{}' pre kľúč '{}' (riadok {}) nie je číslo",
+                val,
+                key,
+                row + 1
+            ))
+    }
+
     /// Parsuje JSON array of objects formát
     /// Príklad: [{"feature1": 1.0, "feature2": 2.0, "target": 0}, ...]
     fn parse_json_array(&self, json_text: &str) -> Result<(Vec<String>, Vec<HashMap<String, String>>), String>
@@ -39,12 +59,27 @@ impl JsonDataLoader
             .map(|k| k.to_string())
             .collect();
 
+        if headers.is_empty()
+        {
+            return Err("JSON objekty nemajú žiadne kľúče".to_string());
+        }
+
         // Konvertovať objekty na HashMap
         let mut records = Vec::new();
         for (idx, item) in array.iter().enumerate()
         {
             let obj = item.as_object()
                 .ok_or_else(|| format!("Element {} nie je objekt", idx))?;
+
+            if obj.len() != headers.len()
+            {
+                return Err(format!(
+                    "Element {} má {} kľúčov, očakávaných {}",
+                    idx + 1,
+                    obj.len(),
+                    headers.len()
+                ));
+            }
 
             let mut record = HashMap::new();
             for header in &headers
@@ -57,6 +92,7 @@ impl JsonDataLoader
                     Value::Number(n) => n.to_string(),
                     Value::String(s) => s.clone(),
                     Value::Bool(b) => if *b { "1" } else { "0" }.to_string(),
+                    Value::Null => String::new(),
                     _ => return Err(format!("Nepodporovaný typ hodnoty pre kľúč '{}'", header)),
                 };
 
@@ -104,11 +140,7 @@ impl DataLoader for JsonDataLoader
                 let val_str = record.get(header)
                     .ok_or_else(|| format!("Chýbajúca hodnota pre kľúč '{}'", header))?;
 
-                let val = val_str.parse::<f64>()
-                    .map_err(|_| format!(
-                        "Hodnota '{}' pre kľúč '{}' (riadok {}) nie je číslo",
-                        val_str, header, row_idx + 1
-                    ))?;
+                let val = self.parse_numeric_value(val_str, header, row_idx)?;
 
                 if header == target_column
                 {
@@ -131,7 +163,17 @@ impl DataLoader for JsonDataLoader
             return Err("Nepodarilo sa extrahovať trénovacie dáta".to_string());
         }
 
-        let x_data = DenseMatrix::from_2d_vec(&x_rows).unwrap();
+        if x_rows.len() != y_data.len()
+        {
+            return Err(format!(
+                "Nesúlad v počte vzoriek: X má {}, y má {}",
+                x_rows.len(),
+                y_data.len()
+            ));
+        }
+
+        let x_data = DenseMatrix::from_2d_vec(&x_rows)
+            .map_err(|e| format!("Chyba pri vytváraní matice z JSON dát: {:?}", e))?;
 
         let feature_headers: Vec<String> = headers
             .into_iter()

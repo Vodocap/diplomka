@@ -1,7 +1,7 @@
 use wasm_bindgen::prelude::*;
 use serde::{Serialize, Deserialize};
 use crate::pipeline::{MLPipeline, MLPipelineBuilder};
-use crate::data_loading::DataLoaderFactory;
+use crate::data_loading::{CsvDataLoader, DataLoaderFactory};
 use crate::feature_selection_strategies::feature_selector_factory::FeatureSelectorFactory;
 use crate::target_analysis::TargetAnalyzerFactory;
 use crate::entropy::mi_estimator;
@@ -201,11 +201,14 @@ impl WasmMLPipeline
         // Extract feature names from the first line if CSV
         self.feature_names = if format == "csv"
         {
-            let first_line = data.lines().next().unwrap_or("");
-            let headers: Vec<&str> = first_line.split(',').collect();
+            let csv_loader = CsvDataLoader::new();
+            let (headers, _) = csv_loader
+                .parse_csv_table(data)
+                .map_err(|e| JsValue::from_str(&e))?;
+
             headers.iter()
-                .filter(|h| h.trim() != target_column)
-                .map(|h| h.trim().to_string())
+                .filter(|h| h.as_str() != target_column)
+                .cloned()
                 .collect()
         }
         else
@@ -301,6 +304,211 @@ impl WasmMLPipeline
         Ok((train_indices, test_indices))
     }
 
+    /// Vytvorí train/test matice a vektory z cached indexov.
+    fn build_split_matrices(
+        &self,
+        train_indices: &[usize],
+        test_indices: &[usize],
+    ) -> Result<(DenseMatrix<f64>, Vec<f64>, DenseMatrix<f64>, Vec<f64>, usize), JsValue>
+    {
+        if self.data_cache.is_none()
+        {
+            return Err(JsValue::from_str("Dáta nie sú načítané"));
+        }
+
+        let (x_data, y_data) = self.data_cache.as_ref().unwrap();
+        let num_features = x_data.shape().1;
+
+        let x_train_data: Vec<Vec<f64>> = train_indices.iter()
+            .map(|&i| (0..num_features).map(|j| *x_data.get((i, j))).collect())
+            .collect();
+        let y_train: Vec<f64> = train_indices.iter().map(|&i| y_data[i]).collect();
+
+        let x_test_data: Vec<Vec<f64>> = test_indices.iter()
+            .map(|&i| (0..num_features).map(|j| *x_data.get((i, j))).collect())
+            .collect();
+        let y_test: Vec<f64> = test_indices.iter().map(|&i| y_data[i]).collect();
+
+        let x_train = DenseMatrix::from_2d_vec(&x_train_data)
+            .map_err(|e| JsValue::from_str(&format!("Chyba pri vytváraní train matice: {:?}", e)))?;
+
+        let x_test = DenseMatrix::from_2d_vec(&x_test_data)
+            .map_err(|e| JsValue::from_str(&format!("Chyba pri vytváraní test matice: {:?}", e)))?;
+
+        Ok((x_train, y_train, x_test, y_test, num_features))
+    }
+
+    /// Predikcia nad všetkými riadkami test matice.
+    fn predict_rows(&mut self, x_test: &DenseMatrix<f64>) -> Result<Vec<f64>, JsValue>
+    {
+        let mut predictions = Vec::new();
+        for row_idx in 0..x_test.shape().0
+        {
+            let row: Vec<f64> = (0..x_test.shape().1)
+                .map(|col_idx| *x_test.get((row_idx, col_idx)))
+                .collect();
+
+            let pred_result = self.pipeline.as_mut().unwrap()
+                .predict(row)
+                .map_err(|e|
+                {
+                    JsValue::from_str(&format!("Prediction error on row {}: {}", row_idx, e))
+                })?;
+
+            let pred: f64 = pred_result.first().copied().unwrap_or(0.0);
+            predictions.push(pred);
+        }
+
+        Ok(predictions)
+    }
+
+    fn fill_classification_metrics(
+        result: &mut TrainingWithEvaluationResult,
+        predictions: &[f64],
+        y_test: &[f64],
+    ) {
+        let mut correct = 0;
+        let mut tp = 0.0;
+        let mut tn = 0.0;
+        let mut fp = 0.0;
+        let mut fn_ = 0.0;
+
+        for (i, &pred) in predictions.iter().enumerate()
+        {
+            let actual: f64 = y_test[i];
+            let p_val = if pred > 0.5 { 1.0 } else { 0.0 };
+            let a_val = actual.round();
+
+            if (p_val - a_val).abs() < 0.1
+            {
+                correct += 1;
+            }
+
+            if p_val == 1.0 && a_val == 1.0
+            {
+                tp += 1.0;
+            }
+            else if p_val == 0.0 && a_val == 0.0 { tn += 1.0; }
+            else if p_val == 1.0 && a_val == 0.0 { fp += 1.0; }
+            else if p_val == 0.0 && a_val == 1.0 { fn_ += 1.0; }
+        }
+
+        result.true_positives = tp;
+        result.true_negatives = tn;
+        result.false_positives = fp;
+        result.false_negatives = fn_;
+
+        result.accuracy = correct as f64 / predictions.len() as f64;
+        result.precision = if tp + fp > 0.0 { tp / (tp + fp) } else { 0.0 };
+        result.recall = if tp + fn_ > 0.0 { tp / (tp + fn_) } else { 0.0 };
+        result.f1_score = if result.precision + result.recall > 0.0
+        {
+            2.0 * result.precision * result.recall / (result.precision + result.recall)
+        }
+        else
+        {
+            0.0
+        };
+
+        result.specificity = if tn + fp > 0.0 { tn / (tn + fp) } else { 0.0 };
+        result.false_positive_rate = if fp + tn > 0.0 { fp / (fp + tn) } else { 0.0 };
+        result.false_negative_rate = if fn_ + tp > 0.0 { fn_ / (fn_ + tp) } else { 0.0 };
+
+        let mcc_denom = ((tp + fp) * (tp + fn_) * (tn + fp) * (tn + fn_)).sqrt();
+        result.mcc = if mcc_denom > 0.0
+        {
+            (tp * tn - fp * fn_) / mcc_denom
+        }
+        else
+        {
+            0.0
+        };
+    }
+
+    fn fill_regression_metrics(
+        result: &mut TrainingWithEvaluationResult,
+        predictions: &[f64],
+        y_test: &[f64],
+    ) {
+        let n = predictions.len() as f64;
+        let mut sum_squared_error = 0.0;
+        let mut sum_abs_error = 0.0;
+        let mut sum_abs_pct_error = 0.0;
+        let mut abs_errors = Vec::new();
+        let mut correlation_sum = 0.0;
+        let mut y_sum = 0.0;
+        let mut pred_sum = 0.0;
+        let mut y_sq_sum = 0.0;
+        let mut pred_sq_sum = 0.0;
+
+        for (i, &pred) in predictions.iter().enumerate()
+        {
+            let actual: f64 = y_test[i];
+            let error: f64 = pred - actual;
+            sum_squared_error += error * error;
+            sum_abs_error += error.abs();
+            abs_errors.push(error.abs());
+
+            if actual.abs() > 1e-10
+            {
+                sum_abs_pct_error += (error.abs() / actual.abs()) * 100.0;
+            }
+
+            y_sum += actual;
+            pred_sum += pred;
+            y_sq_sum += actual * actual;
+            pred_sq_sum += pred * pred;
+            correlation_sum += actual * pred;
+        }
+
+        result.mse = sum_squared_error / n;
+        result.rmse = result.mse.sqrt();
+        result.mae = sum_abs_error / n;
+        result.mape = sum_abs_pct_error / n;
+        let y_test_vec = y_test.to_vec();
+        let predictions_vec = predictions.to_vec();
+        result.r2_score = smartcore::metrics::r2(&y_test_vec, &predictions_vec);
+
+        if !abs_errors.is_empty()
+        {
+            abs_errors.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+            let mid = abs_errors.len() / 2;
+            result.median_absolute_error = if abs_errors.len() % 2 == 0
+            {
+                (abs_errors[mid - 1] + abs_errors[mid]) / 2.0
+            }
+            else
+            {
+                abs_errors[mid]
+            };
+        }
+
+        let mean_y = y_sum / n;
+        let mean_pred = pred_sum / n;
+        let num = correlation_sum - n * mean_y * mean_pred;
+        let den = ((y_sq_sum - n * mean_y * mean_y) * (pred_sq_sum - n * mean_pred * mean_pred)).sqrt();
+        result.pearson_correlation = if den > 0.0 { num / den } else { 0.0 };
+    }
+
+    fn parse_analysis_numeric_row(row: &[String]) -> Result<Vec<f64>, ()>
+    {
+        row.iter().map(|v|
+        {
+            let trimmed = v.trim();
+            if trimmed.is_empty()
+            {
+                Ok(0.0)
+            }
+            else
+            {
+                trimmed
+                    .parse::<f64>()
+                    .or_else(|_| trimmed.replace(',', ".").parse::<f64>())
+                    .map_err(|_| ())
+            }
+        }).collect::<Result<Vec<f64>, _>>()
+    }
+
     /// Trénuje model s train/test splitom a vracia evaluačné metriky
     #[wasm_bindgen(js_name = trainWithSplit)]
     pub fn train_with_split(&mut self, train_ratio: f64) -> Result<JsValue, JsValue>
@@ -319,31 +527,13 @@ impl WasmMLPipeline
         // Zabezpeč cached split indexy (deterministický split pre všetky porovnania)
         let (train_indices, test_indices) = self.ensure_split_indices(train_ratio)?;
 
-        let (x_data, y_data) = self.data_cache.as_ref().unwrap();
-        let num_features = x_data.shape().1;
+        let (x_data, _) = self.data_cache.as_ref().unwrap();
 
         // Reset training state to ensure clean baseline (no leftover indices)
         self.pipeline.as_mut().unwrap().reset_training_state();
 
-        // Split data pomocou cached indexov
-        // Vytvor train data
-        let x_train_data: Vec<Vec<f64>> = train_indices.iter()
-            .map(|&i| (0..num_features).map(|j| *x_data.get((i, j))).collect())
-            .collect();
-        let y_train: Vec<f64> = train_indices.iter().map(|&i| y_data[i]).collect();
-
-        // Vytvor test data
-        let x_test_data: Vec<Vec<f64>> = test_indices.iter()
-            .map(|&i| (0..num_features).map(|j| *x_data.get((i, j))).collect())
-            .collect();
-        let y_test: Vec<f64> = test_indices.iter().map(|&i| y_data[i]).collect();
-
-        // Convert to DenseMatrix
-        let x_train = DenseMatrix::from_2d_vec(&x_train_data)
-            .map_err(|e| JsValue::from_str(&format!("Chyba pri vytváraní train matice: {:?}", e)))?;
-
-        let x_test = DenseMatrix::from_2d_vec(&x_test_data)
-            .map_err(|e| JsValue::from_str(&format!("Chyba pri vytváraní test matice: {:?}", e)))?;
+        let (x_train, y_train, x_test, y_test, _) =
+            self.build_split_matrices(&train_indices, &test_indices)?;
 
         // Train model - train() sa postará o preprocessing a feature selection
         self.pipeline.as_mut().unwrap()
@@ -361,27 +551,7 @@ impl WasmMLPipeline
         };
 
         // Predict on test set (preprocessing sa aplikuje automaticky v predict())
-
-        let mut predictions = Vec::new();
-        for row_idx in 0..x_test.shape().0
-        {
-            let row: Vec<f64> = (0..x_test.shape().1)
-                .map(|col_idx| *x_test.get((row_idx, col_idx)))
-                .collect();
-
-
-            let pred_result = self.pipeline.as_mut().unwrap()
-                .predict(row)
-                .map_err(|e|
-                {
-                    JsValue::from_str(&format!("Prediction error on row {}: {}", row_idx, e))
-                })?;
-
-
-            // Predikcia vracia Vec, zoberieme prvý prvok
-            let pred: f64 = pred_result.first().copied().unwrap_or(0.0);
-            predictions.push(pred);
-        }
+        let predictions = self.predict_rows(&x_test)?;
 
         // Calculate metrics based on evaluation mode
         let eval_mode = self.pipeline.as_ref().unwrap().info().evaluation_mode;
@@ -422,168 +592,11 @@ impl WasmMLPipeline
 
         if eval_mode == "classification"
         {
-            // Classification metrics - confusion matrix
-            let mut correct = 0;
-            let mut tp = 0.0;  // True Positives
-            let mut tn = 0.0;  // True Negatives
-            let mut fp = 0.0;  // False Positives
-            let mut fn_ = 0.0; // False Negatives
-
-            for (i, &pred) in predictions.iter().enumerate()
-            {
-                let actual: f64 = y_test[i];
-                let p_val = if pred > 0.5 { 1.0 } else { 0.0 };
-                let a_val = actual.round();
-
-                if (p_val - a_val).abs() < 0.1
-                {
-                    correct += 1;
-                }
-
-                if p_val == 1.0 && a_val == 1.0
-                {
-                    tp += 1.0;
-                }
-                else if p_val == 0.0 && a_val == 0.0 { tn += 1.0; }
-                else if p_val == 1.0 && a_val == 0.0 { fp += 1.0; }
-                else if p_val == 0.0 && a_val == 1.0 { fn_ += 1.0; }
-            }
-
-            result.true_positives = tp;
-            result.true_negatives = tn;
-            result.false_positives = fp;
-            result.false_negatives = fn_;
-
-            result.accuracy = correct as f64 / predictions.len() as f64;
-            result.precision = if tp + fp > 0.0
-            {
-                tp / (tp + fp)
-            }
-            else
-            {
-                0.0
-            };
-            result.recall = if tp + fn_ > 0.0
-            {
-                tp / (tp + fn_)
-            }
-            else
-            {
-                0.0
-            };
-            result.f1_score = if result.precision + result.recall > 0.0
-            {
-                2.0 * result.precision * result.recall / (result.precision + result.recall)
-            }
-            else
-            {
-                0.0
-            };
-
-            // Specificity (TNR - True Negative Rate)
-            result.specificity = if tn + fp > 0.0
-            {
-                tn / (tn + fp)
-            }
-            else
-            {
-                0.0
-            };
-
-            // False Positive Rate (FPR)
-            result.false_positive_rate = if fp + tn > 0.0
-            {
-                fp / (fp + tn)
-            }
-            else
-            {
-                0.0
-            };
-
-            // False Negative Rate (FNR)
-            result.false_negative_rate = if fn_ + tp > 0.0
-            {
-                fn_ / (fn_ + tp)
-            }
-            else
-            {
-                0.0
-            };
-
-            // Matthews Correlation Coefficient (MCC)
-            let mcc_denom = ((tp + fp) * (tp + fn_) * (tn + fp) * (tn + fn_)).sqrt();
-            result.mcc = if mcc_denom > 0.0
-            {
-                (tp * tn - fp * fn_) / mcc_denom
-            }
-            else
-            {
-                0.0
-            };
+            Self::fill_classification_metrics(&mut result, &predictions, &y_test);
         }
         else
         {
-            // Regression metrics
-            let n = predictions.len() as f64;
-            let mut sum_squared_error = 0.0;
-            let mut sum_abs_error = 0.0;
-            let mut sum_abs_pct_error = 0.0;
-            let mut abs_errors = Vec::new();
-            let mut correlation_sum = 0.0;
-            let mut y_sum = 0.0;
-            let mut pred_sum = 0.0;
-            let mut y_sq_sum = 0.0;
-            let mut pred_sq_sum = 0.0;
-
-            for (i, &pred) in predictions.iter().enumerate()
-            {
-                let actual: f64 = y_test[i];
-                let error: f64 = pred - actual;
-                sum_squared_error += error * error;
-                sum_abs_error += error.abs();
-                abs_errors.push(error.abs());
-
-                // MAPE
-                if actual.abs() > 1e-10
-                {
-                    sum_abs_pct_error += (error.abs() / actual.abs()) * 100.0;
-                }
-
-                // Pearson correlation
-                y_sum += actual;
-                pred_sum += pred;
-                y_sq_sum += actual * actual;
-                pred_sq_sum += pred * pred;
-                correlation_sum += actual * pred;
-            }
-
-            result.mse = sum_squared_error / n;
-            result.rmse = result.mse.sqrt();
-            result.mae = sum_abs_error / n;
-            result.mape = sum_abs_pct_error / n;
-            result.r2_score = smartcore::metrics::r2(&y_test, &predictions);
-
-            // Median Absolute Error
-            if !abs_errors.is_empty()
-            {
-                abs_errors.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
-                let mid = abs_errors.len() / 2;
-                result.median_absolute_error = if abs_errors.len() % 2 == 0
-                {
-                    (abs_errors[mid - 1] + abs_errors[mid]) / 2.0
-                }
-                else
-                {
-                    abs_errors[mid]
-                };
-            }
-
-            // Pearson Correlation Coefficient
-            let mean_y = y_sum / n;
-            let mean_pred = pred_sum / n;
-            let num = correlation_sum - n * mean_y * mean_pred;
-            let den = ((y_sq_sum - n * mean_y * mean_y) * (pred_sq_sum - n * mean_pred * mean_pred)).sqrt();
-            result.pearson_correlation = if den > 0.0 { num / den } else { 0.0 };
+            Self::fill_regression_metrics(&mut result, &predictions, &y_test);
         }
 
         Ok(serde_wasm_bindgen::to_value(&result).unwrap())
@@ -614,7 +627,7 @@ impl WasmMLPipeline
         // Zabezpeč cached split indexy (rovnaký split ako pri ostatných porovnaniach)
         let (train_indices, test_indices) = self.ensure_split_indices(train_ratio)?;
 
-        let (x_data, y_data) = self.data_cache.as_ref().unwrap();
+        let (x_data, _) = self.data_cache.as_ref().unwrap();
         let num_features = x_data.shape().1;
 
         // Validate indices
@@ -633,24 +646,8 @@ impl WasmMLPipeline
         pipeline.reset_training_state();
         pipeline.set_selected_indices(indices.clone());
 
-        // Split data pomocou cached indexov
-        let x_train_data: Vec<Vec<f64>> = train_indices.iter()
-            .map(|&i| (0..num_features).map(|j| *x_data.get((i, j))).collect())
-            .collect();
-        let y_train: Vec<f64> = train_indices.iter().map(|&i| y_data[i]).collect();
-
-        let x_test_data: Vec<Vec<f64>> = test_indices.iter()
-            .map(|&i| (0..num_features).map(|j| *x_data.get((i, j))).collect())
-            .collect();
-        let y_test: Vec<f64> = test_indices.iter().map(|&i| y_data[i]).collect();
-
-        // Convert to DenseMatrix
-        // Convert to DenseMatrix
-        let x_train = DenseMatrix::from_2d_vec(&x_train_data)
-            .map_err(|e| JsValue::from_str(&format!("Chyba pri vytváraní train matice: {:?}", e)))?;
-
-        let x_test = DenseMatrix::from_2d_vec(&x_test_data)
-            .map_err(|e| JsValue::from_str(&format!("Chyba pri vytváraní test matice: {:?}", e)))?;
+        let (x_train, y_train, x_test, y_test, _) =
+            self.build_split_matrices(&train_indices, &test_indices)?;
 
         // Train with the set indices - train() will use select_features_cached
         self.pipeline.as_mut().unwrap()
@@ -658,23 +655,7 @@ impl WasmMLPipeline
             .map_err(|e| JsValue::from_str(&e))?;
 
         // Predict on test set
-        let mut predictions = Vec::new();
-        for row_idx in 0..x_test.shape().0
-        {
-            let row: Vec<f64> = (0..x_test.shape().1)
-                .map(|col_idx| *x_test.get((row_idx, col_idx)))
-                .collect();
-
-            let pred_result = self.pipeline.as_mut().unwrap()
-                .predict(row)
-                .map_err(|e|
-                {
-                    JsValue::from_str(&format!("Prediction error on row {}: {}", row_idx, e))
-                })?;
-
-            let pred: f64 = pred_result.first().copied().unwrap_or(0.0);
-            predictions.push(pred);
-        }
+        let predictions = self.predict_rows(&x_test)?;
 
         // Calculate metrics
         let eval_mode = self.pipeline.as_ref().unwrap().info().evaluation_mode;
@@ -711,166 +692,11 @@ impl WasmMLPipeline
 
         if eval_mode == "classification"
         {
-            let mut correct = 0;
-            let mut tp = 0.0;  // True Positives
-            let mut tn = 0.0;  // True Negatives
-            let mut fp = 0.0;  // False Positives
-            let mut fn_ = 0.0; // False Negatives
-
-            for (i, &pred) in predictions.iter().enumerate()
-            {
-                let actual: f64 = y_test[i];
-                let p_val = if pred > 0.5 { 1.0 } else { 0.0 };
-                let a_val = actual.round();
-
-                if (p_val - a_val).abs() < 0.1
-                {
-                    correct += 1;
-                }
-
-                if p_val == 1.0 && a_val == 1.0
-                {
-                    tp += 1.0;
-                }
-                else if p_val == 0.0 && a_val == 0.0 { tn += 1.0; }
-                else if p_val == 1.0 && a_val == 0.0 { fp += 1.0; }
-                else if p_val == 0.0 && a_val == 1.0 { fn_ += 1.0; }
-            }
-
-            result.true_positives = tp;
-            result.true_negatives = tn;
-            result.false_positives = fp;
-            result.false_negatives = fn_;
-
-            result.accuracy = correct as f64 / predictions.len() as f64;
-            result.precision = if tp + fp > 0.0
-            {
-                tp / (tp + fp)
-            }
-            else
-            {
-                0.0
-            };
-            result.recall = if tp + fn_ > 0.0
-            {
-                tp / (tp + fn_)
-            }
-            else
-            {
-                0.0
-            };
-            result.f1_score = if result.precision + result.recall > 0.0
-            {
-                2.0 * result.precision * result.recall / (result.precision + result.recall)
-            }
-            else
-            {
-                0.0
-            };
-
-            // Specificity (TNR - True Negative Rate)
-            result.specificity = if tn + fp > 0.0
-            {
-                tn / (tn + fp)
-            }
-            else
-            {
-                0.0
-            };
-
-            // False Positive Rate (FPR)
-            result.false_positive_rate = if fp + tn > 0.0
-            {
-                fp / (fp + tn)
-            }
-            else
-            {
-                0.0
-            };
-
-            // False Negative Rate (FNR)
-            result.false_negative_rate = if fn_ + tp > 0.0
-            {
-                fn_ / (fn_ + tp)
-            }
-            else
-            {
-                0.0
-            };
-
-            // Matthews Correlation Coefficient (MCC)
-            let mcc_denom = ((tp + fp) * (tp + fn_) * (tn + fp) * (tn + fn_)).sqrt();
-            result.mcc = if mcc_denom > 0.0
-            {
-                (tp * tn - fp * fn_) / mcc_denom
-            }
-            else
-            {
-                0.0
-            };
+            Self::fill_classification_metrics(&mut result, &predictions, &y_test);
         }
         else
         {
-            let n = predictions.len() as f64;
-            let mut sum_squared_error = 0.0;
-            let mut sum_abs_error = 0.0;
-            let mut sum_abs_pct_error = 0.0;
-            let mut abs_errors = Vec::new();
-            let mut correlation_sum = 0.0;
-            let mut y_sum = 0.0;
-            let mut pred_sum = 0.0;
-            let mut y_sq_sum = 0.0;
-            let mut pred_sq_sum = 0.0;
-
-            for (i, &pred) in predictions.iter().enumerate()
-            {
-                let actual: f64 = y_test[i];
-                let error: f64 = pred - actual;
-                sum_squared_error += error * error;
-                sum_abs_error += error.abs();
-                abs_errors.push(error.abs());
-
-                // MAPE
-                if actual.abs() > 1e-10
-                {
-                    sum_abs_pct_error += (error.abs() / actual.abs()) * 100.0;
-                }
-
-                // Pearson correlation
-                y_sum += actual;
-                pred_sum += pred;
-                y_sq_sum += actual * actual;
-                pred_sq_sum += pred * pred;
-                correlation_sum += actual * pred;
-            }
-
-            result.mse = sum_squared_error / n;
-            result.rmse = result.mse.sqrt();
-            result.mae = sum_abs_error / n;
-            result.mape = sum_abs_pct_error / n;
-            result.r2_score = smartcore::metrics::r2(&y_test, &predictions);
-
-            // Median Absolute Error
-            if !abs_errors.is_empty()
-            {
-                abs_errors.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
-                let mid = abs_errors.len() / 2;
-                result.median_absolute_error = if abs_errors.len() % 2 == 0
-                {
-                    (abs_errors[mid - 1] + abs_errors[mid]) / 2.0
-                }
-                else
-                {
-                    abs_errors[mid]
-                };
-            }
-
-            // Pearson Correlation Coefficient
-            let mean_y = y_sum / n;
-            let mean_pred = pred_sum / n;
-            let num = correlation_sum - n * mean_y * mean_pred;
-            let den = ((y_sq_sum - n * mean_y * mean_y) * (pred_sq_sum - n * mean_pred * mean_pred)).sqrt();
-            result.pearson_correlation = if den > 0.0 { num / den } else { 0.0 };
+            Self::fill_regression_metrics(&mut result, &predictions, &y_test);
         }
 
         Ok(serde_wasm_bindgen::to_value(&result).unwrap())
@@ -1097,24 +923,6 @@ impl WasmMLPipeline
         });
 
         Ok(serde_wasm_bindgen::to_value(&result).unwrap())
-    }
-
-    /// Evaluácia (split dáta)
-    #[wasm_bindgen(js_name = evaluate)]
-    pub fn evaluate(&self, _train_ratio: f64) -> Result<JsValue, JsValue>
-    {
-        if self.pipeline.is_none()
-        {
-            return Err(JsValue::from_str("Pipeline nie je vytvorený"));
-        }
-
-        if self.data_cache.is_none()
-        {
-            return Err(JsValue::from_str("Dáta nie sú načítané"));
-        }
-
-        // TODO: Implementácia evaluácie vyžaduje refaktoring pipeline (Clone trait)
-        Err(JsValue::from_str("Evaluate metóda nie je zatiaľ implementovaná"))
     }
 
     /// Info o pipeline
@@ -1366,13 +1174,6 @@ impl WasmMLPipeline
         }
     }
 
-    /// Get detailed selection info stub (selection is done externally via compareSelectors)
-    #[wasm_bindgen(js_name = getSelectionDetails)]
-    pub fn get_selection_details(&self) -> Result<JsValue, JsValue>
-    {
-        Ok(JsValue::from_str(""))
-    }
-
     /// Porovná viaceré feature selektory na dátach BEZ potreby pipeline.
     /// Umožňuje používateľovi preskúmať feature selection ešte pred vytvorením pipeline.
     #[wasm_bindgen(js_name = compareSelectors)]
@@ -1404,10 +1205,11 @@ impl WasmMLPipeline
         // Extract feature names (KEEP original order and ALL features)
         let mut feature_names: Vec<String> = if format == "csv"
         {
-            let first_line = data.lines().next().unwrap_or("");
-            first_line.split(',')
-                .map(|h| h.trim().to_string())
-                .collect()
+            let csv_loader = CsvDataLoader::new();
+            let (headers, _) = csv_loader
+                .parse_csv_table(data)
+                .map_err(|e| JsValue::from_str(&e))?;
+            headers
         }
         else
         {
@@ -1523,13 +1325,16 @@ impl WasmMLPipeline
             return Err(JsValue::from_str("Analýza je zatiaľ podporovaná len pre CSV formát"));
         }
 
-        let lines: Vec<&str> = data.lines().filter(|l| !l.trim().is_empty()).collect();
-        if lines.len() < 3
+        let csv_loader = CsvDataLoader::new();
+        let (headers, rows) = csv_loader
+            .parse_csv_table(data)
+            .map_err(|e| JsValue::from_str(&e))?;
+
+        if rows.len() < 2
         {
             return Err(JsValue::from_str("Nedostatok dát (minimum 2 riadky + hlavička)"));
         }
 
-        let headers: Vec<String> = lines[0].split(',').map(|s| s.trim().to_string()).collect();
         let num_cols = headers.len();
         if num_cols < 2
         {
@@ -1539,11 +1344,9 @@ impl WasmMLPipeline
         // Parse all data rows
         let mut all_data: Vec<Vec<f64>> = Vec::new();
         let mut skipped = 0usize;
-        for line in &lines[1..]
+        for row in &rows
         {
-            let vals: Vec<&str> = line.split(',').map(|s| s.trim()).collect();
-            if vals.len() != num_cols { skipped += 1; continue; }
-            match vals.iter().map(|v| v.parse::<f64>()).collect::<Result<Vec<f64>, _>>()
+            match Self::parse_analysis_numeric_row(row)
             {
                 Ok(row) => all_data.push(row),
                 Err(_) => { skipped += 1; }
@@ -1757,13 +1560,16 @@ impl WasmMLPipeline
     /// Výsledok sa cachuje. Automaticky sa resetuje keď sa zmenia rozmery dát.
     fn parse_csv_data_cached(&self, data: &str, should_cache: bool) -> Result<(Vec<Vec<f64>>, Vec<String>, usize, usize), JsValue>
     {
-        let lines: Vec<&str> = data.lines().filter(|l| !l.trim().is_empty()).collect();
-        if lines.len() < 3
+        let csv_loader = CsvDataLoader::new();
+        let (headers, rows) = csv_loader
+            .parse_csv_table(data)
+            .map_err(|e| JsValue::from_str(&e))?;
+
+        if rows.len() < 2
         {
             return Err(JsValue::from_str("Nedostatok dát (minimum 2 riadky + hlavička)"));
         }
 
-        let headers: Vec<String> = lines[0].split(',').map(|s| s.trim().to_string()).collect();
         let num_cols = headers.len();
         if num_cols < 2
         {
@@ -1773,15 +1579,9 @@ impl WasmMLPipeline
         // Parse data rows
         let mut all_data: Vec<Vec<f64>> = Vec::new();
         let mut skipped = 0usize;
-        for line in &lines[1..]
+        for row in &rows
         {
-            let vals: Vec<&str> = line.split(',').map(|s| s.trim()).collect();
-            if vals.len() != num_cols { skipped += 1; continue; }
-            match vals.iter().map(|v|
-            {
-                let trimmed = v.trim();
-                if trimmed.is_empty() { Ok(0.0) } else { trimmed.parse::<f64>().or_else(|_| trimmed.replace(',', ".").parse::<f64>()) }
-            }).collect::<Result<Vec<f64>, _>>()
+            match Self::parse_analysis_numeric_row(row)
             {
                 Ok(row) => all_data.push(row),
                 Err(_) => { skipped += 1; }
@@ -2453,19 +2253,14 @@ impl WasmMLPipeline
             return Err(JsValue::from_str("Editor dát je podporovaný len pre CSV formát"));
         }
 
-        let lines: Vec<&str> = data.lines().filter(|l| !l.trim().is_empty()).collect();
-        if lines.is_empty()
+        let csv_loader = CsvDataLoader::new();
+        let (headers, rows) = csv_loader
+            .parse_csv_table(data)
+            .map_err(|e| JsValue::from_str(&e))?;
+
+        if headers.is_empty()
         {
             return Err(JsValue::from_str("Prázdne dáta"));
-        }
-
-        let headers: Vec<String> = lines[0].split(',').map(|s| s.trim().to_string()).collect();
-        let mut rows: Vec<Vec<String>> = Vec::new();
-
-        for line in &lines[1..]
-        {
-            let vals: Vec<String> = line.split(',').map(|s| s.trim().to_string()).collect();
-            rows.push(vals);
         }
 
         let result = serde_json::json!({
@@ -2489,26 +2284,27 @@ impl WasmMLPipeline
     ) -> Result<JsValue, JsValue> {
         use crate::processing::ProcessorFactory;
 
-        let lines: Vec<&str> = data.lines().filter(|l| !l.trim().is_empty()).collect();
-        if lines.len() < 2
+        let csv_loader = CsvDataLoader::new();
+        let (headers, rows) = csv_loader
+            .parse_csv_table(data)
+            .map_err(|e| JsValue::from_str(&e))?;
+
+        if rows.is_empty()
         {
             return Err(JsValue::from_str("Nedostatok dát"));
         }
 
-        let headers: Vec<String> = lines[0].split(',').map(|s| s.trim().to_string()).collect();
         let col_idx = headers.iter().position(|h| h == column_name)
             .ok_or_else(|| JsValue::from_str(&format!("Stĺpec '{}' nebol nájdený", column_name)))?;
 
         // Parse rows
-        let mut all_values: Vec<Vec<String>> = Vec::new();
-        for line in &lines[1..]
+        let mut all_values: Vec<Vec<String>> = rows;
+        for vals in &mut all_values
         {
-            let mut vals: Vec<String> = line.split(',').map(|s| s.trim().to_string()).collect();
             while vals.len() < headers.len()
             {
                 vals.push(String::new());
             }
-            all_values.push(vals);
         }
 
         let n = all_values.len();
@@ -2632,7 +2428,15 @@ impl WasmMLPipeline
         }
 
         // === Enkódovacie procesory (string-level) ===
-        let encoding_processors = ["onehot_encoder", "label_encoder", "ordinal_encoder", "frequency_encoder", "target_encoder"];
+        let encoding_processors = [
+            "onehot",
+            "one_hot_encoder",
+            "onehot_encoder",
+            "label_encoder",
+            "ordinal_encoder",
+            "frequency_encoder",
+            "target_encoder"
+        ];
         if encoding_processors.contains(&processor_type)
         {
             // Zozbieraj textové hodnoty stĺpca
@@ -2642,7 +2446,7 @@ impl WasmMLPipeline
 
             match processor_type
             {
-                "onehot_encoder" =>
+                "onehot" | "one_hot_encoder" | "onehot_encoder" =>
                 {
                     // Zisti unikátne hodnoty (v poradí výskytu)
                     let mut unique_vals: Vec<String> = Vec::new();
@@ -2906,13 +2710,7 @@ impl WasmMLPipeline
     #[wasm_bindgen(js_name = deleteColumn)]
     pub fn delete_column(&self, data: &str, column_name: &str) -> Result<JsValue, JsValue>
     {
-        let lines: Vec<&str> = data.lines().filter(|l| !l.trim().is_empty()).collect();
-        if lines.is_empty()
-        {
-            return Err(JsValue::from_str("Prázdne dáta"));
-        }
-
-        let headers: Vec<String> = lines[0].split(',').map(|s| s.trim().to_string()).collect();
+        let (headers, rows) = self.parse_csv_table(data)?;
         let col_idx = headers.iter().position(|h| h == column_name)
             .ok_or_else(|| JsValue::from_str(&format!("Stĺpec '{}' nebol nájdený", column_name)))?;
 
@@ -2922,31 +2720,26 @@ impl WasmMLPipeline
         }
 
         // Rebuild CSV without the column
-        let new_headers: Vec<&str> = headers.iter()
+        let new_headers: Vec<String> = headers.iter()
             .enumerate()
             .filter(|(i, _)| *i != col_idx)
-            .map(|(_, h)| h.as_str())
+            .map(|(_, h)| h.clone())
             .collect();
 
-        let mut csv = new_headers.join(",");
-        csv.push('\n');
-
-        for line in &lines[1..]
+        let mut new_rows: Vec<Vec<String>> = Vec::new();
+        for mut vals in rows
         {
-            let mut vals: Vec<String> = line.split(',').map(|s| s.trim().to_string()).collect();
-            // Pad to match header count
-            while vals.len() < headers.len()
-            {
-                vals.push(String::new());
-            }
-            let new_vals: Vec<&str> = vals.iter()
+            while vals.len() < headers.len() { vals.push(String::new()); }
+            let new_vals: Vec<String> = vals.iter()
                 .enumerate()
                 .filter(|(i, _)| *i != col_idx)
-                .map(|(_, v)| v.as_str())
+                .map(|(_, v)| v.clone())
                 .collect();
-            csv.push_str(&new_vals.join(","));
-            csv.push('\n');
+            new_rows.push(new_vals);
         }
+
+        let csv = CsvDataLoader::serialize_csv_table(&new_headers, &new_rows)
+            .map_err(|e| JsValue::from_str(&e))?;
 
         let result = serde_json::json!({
             "csv": csv,
@@ -2966,29 +2759,19 @@ impl WasmMLPipeline
         column_name: &str,
         new_value: &str,
     ) -> Result<JsValue, JsValue> {
-        let lines: Vec<&str> = data.lines().filter(|l| !l.trim().is_empty()).collect();
-        if lines.is_empty()
-        {
-            return Err(JsValue::from_str("Prázdne dáta"));
-        }
-
-        let headers: Vec<String> = lines[0].split(',').map(|s| s.trim().to_string()).collect();
+        let (headers, rows) = self.parse_csv_table(data)?;
         let col_idx = headers.iter().position(|h| h == column_name)
             .ok_or_else(|| JsValue::from_str(&format!("Stĺpec '{}' nebol nájdený", column_name)))?;
 
-        if row_idx + 1 >= lines.len()
+        if row_idx >= rows.len()
         {
             return Err(JsValue::from_str("Riadok mimo rozsah"));
         }
 
         // Rebuild CSV with modified cell
-        let mut csv = headers.join(",");
-        csv.push('\n');
-
-        for (i, line) in lines[1..].iter().enumerate()
+        let mut out_rows = Vec::with_capacity(rows.len());
+        for (i, mut vals) in rows.into_iter().enumerate()
         {
-            let mut vals: Vec<String> = line.split(',').map(|s| s.trim().to_string()).collect();
-            // Pad to match header count
             while vals.len() < headers.len()
             {
                 vals.push(String::new());
@@ -2999,9 +2782,11 @@ impl WasmMLPipeline
             }
             // Only keep as many values as there are headers
             vals.truncate(headers.len());
-            csv.push_str(&vals.join(","));
-            csv.push('\n');
+            out_rows.push(vals);
         }
+
+        let csv = CsvDataLoader::serialize_csv_table(&headers, &out_rows)
+            .map_err(|e| JsValue::from_str(&e))?;
 
         let result = serde_json::json!({
             "csv": csv,
@@ -3022,24 +2807,15 @@ impl WasmMLPipeline
         search_value: &str,
         replace_value: &str,
     ) -> Result<JsValue, JsValue> {
-        let lines: Vec<&str> = data.lines().filter(|l| !l.trim().is_empty()).collect();
-        if lines.is_empty()
-        {
-            return Err(JsValue::from_str("Prázdne dáta"));
-        }
-
-        let headers: Vec<String> = lines[0].split(',').map(|s| s.trim().to_string()).collect();
+        let (headers, rows) = self.parse_csv_table(data)?;
         let col_idx = headers.iter().position(|h| h == column_name)
             .ok_or_else(|| JsValue::from_str(&format!("Stĺpec '{}' nebol nájdený", column_name)))?;
 
         let mut replaced_count = 0;
-        let mut csv = headers.join(",");
-        csv.push('\n');
+        let mut out_rows = Vec::with_capacity(rows.len());
 
-        for line in &lines[1..]
+        for mut vals in rows
         {
-            let mut vals: Vec<String> = line.split(',').map(|s| s.trim().to_string()).collect();
-            // Pad to match header count
             while vals.len() < headers.len()
             {
                 vals.push(String::new());
@@ -3051,9 +2827,11 @@ impl WasmMLPipeline
             }
             // Only keep as many values as there are headers
             vals.truncate(headers.len());
-            csv.push_str(&vals.join(","));
-            csv.push('\n');
+            out_rows.push(vals);
         }
+
+        let csv = CsvDataLoader::serialize_csv_table(&headers, &out_rows)
+            .map_err(|e| JsValue::from_str(&e))?;
 
         let result = serde_json::json!({
             "csv": csv,
@@ -3125,14 +2903,8 @@ impl WasmMLPipeline
         processor_type: &str,
         rows_affected: usize,
     ) -> Result<JsValue, JsValue> {
-        let mut csv = headers.join(",");
-        csv.push('\n');
-        for row in all_values
-        {
-            let truncated: Vec<&str> = row.iter().take(headers.len()).map(|s| s.as_str()).collect();
-            csv.push_str(&truncated.join(","));
-            csv.push('\n');
-        }
+        let csv = CsvDataLoader::serialize_csv_table(headers, all_values)
+            .map_err(|e| JsValue::from_str(&e))?;
 
         let result = serde_json::json!({
             "csv": csv,
@@ -3142,6 +2914,21 @@ impl WasmMLPipeline
         });
 
         Ok(serde_wasm_bindgen::to_value(&result).unwrap())
+    }
+
+    fn parse_csv_table(&self, data: &str) -> Result<(Vec<String>, Vec<Vec<String>>), JsValue>
+    {
+        let loader = CsvDataLoader::new();
+        let (headers, rows) = loader
+            .parse_csv_table(data)
+            .map_err(|e| JsValue::from_str(&e))?;
+
+        if headers.is_empty()
+        {
+            return Err(JsValue::from_str("Prázdne dáta"));
+        }
+
+        Ok((headers, rows))
     }
 
     /// Vytvori porovnávaciu HTML tabulku pre viaceré selektory

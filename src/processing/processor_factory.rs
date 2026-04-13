@@ -29,7 +29,7 @@ impl ProcessorFactory
             "minmax_scaler" => Ok(Box::new(MinMaxScaler::new())),
             "robust_scaler" => Ok(Box::new(RobustScaler::new())),
             "binner" => Ok(Box::new(Binner::new(10))),
-            "onehot" | "one_hot_encoder" => Ok(Box::new(OneHotEncoder)),
+            "onehot" | "one_hot_encoder" => Ok(Box::new(OneHotEncoder::new())),
             "label_encoder" => Ok(Box::new(LabelEncoder::new())),
             "null_handler" => Ok(Box::new(NullValueHandler::with_params("NA,null,NaN", "mean", None))),
             "outlier_clipper" => Ok(Box::new(OutlierClipper::with_iqr(1.5))),

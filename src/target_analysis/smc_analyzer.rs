@@ -1,4 +1,4 @@
-use super::{TargetAnalyzer, TargetCandidate};
+use super::{TargetAnalyzer, TargetCandidate, build_ranked_candidates};
 use std::cell::RefCell;
 use crate::entropy::mi_estimator;
 
@@ -85,7 +85,10 @@ impl TargetAnalyzer for SmcAnalyzer
     fn analyze(&self, columns: &[Vec<f64>], headers: &[String]) -> Vec<TargetCandidate>
     {
         let num_cols = columns.len();
-        let n = if num_cols > 0 { columns[0].len() } else { return vec![]; };
+        if num_cols == 0
+        {
+            return vec![];
+        }
 
         // Vypočítame korelačnú maticu a uložíme do cache
         let corr_matrix = self.compute_corr_matrix(columns);
@@ -105,18 +108,12 @@ impl TargetAnalyzer for SmcAnalyzer
             })
         });
 
-        let mut candidates = Vec::new();
-        for col_idx in 0..num_cols
+        build_ranked_candidates(columns, headers, |col_idx|
         {
-            let (unique_count, stype) = super::classify_column(&columns[col_idx], n);
-
-            let mean = columns[col_idx].iter().sum::<f64>() / n as f64;
-            let variance = columns[col_idx].iter().map(|v| (v - mean).powi(2)).sum::<f64>() / n as f64;
-
             // SMC_j = 1 - 1/(R^{-1})_{jj}
             let vif = inv[col_idx][col_idx];
             let smc = if vif > 1e-12 { 1.0 - (1.0 / vif) } else { 0.0 };
-            let smc_clamped = smc.max(0.0).min(1.0);
+            let smc_clamped = smc.clamp(0.0, 1.0);
 
             // Interpretácia
             let quality = if smc_clamped > 0.70
@@ -136,14 +133,9 @@ impl TargetAnalyzer for SmcAnalyzer
                 "nevhodny"
             };
 
-            candidates.push(TargetCandidate {
-                column_index: col_idx,
-                column_name: headers[col_idx].clone(),
-                score: (smc_clamped * 10000.0).round() / 10000.0,
-                unique_values: unique_count,
-                variance: (variance * 10000.0).round() / 10000.0,
-                suggested_type: stype,
-                extra_metrics: vec![
+            (
+                smc_clamped,
+                vec![
                     ("smc".to_string(), (smc_clamped * 10000.0).round() / 10000.0),
                     ("vif".to_string(), (vif * 100.0).round() / 100.0),
                     ("quality".to_string(), match quality
@@ -154,10 +146,8 @@ impl TargetAnalyzer for SmcAnalyzer
                         _ => 0.0,
                     }),
                 ],
-            });
-        }
-        candidates.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
-        candidates
+            )
+        })
     }
 
     fn get_details_html(&self, columns: &[Vec<f64>], headers: &[String], candidates: &[TargetCandidate]) -> String

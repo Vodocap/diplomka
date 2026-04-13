@@ -120,10 +120,6 @@ export class WasmMLPipeline {
      */
     deleteColumn(data: string, column_name: string): any;
     /**
-     * Evaluácia (split dáta)
-     */
-    evaluate(_train_ratio: number): any;
-    /**
      * Vráti zoznam dostupných analyzátorov cieľovej premennej
      */
     getAvailableTargetAnalyzers(): any;
@@ -147,10 +143,6 @@ export class WasmMLPipeline {
      * Info o pipeline
      */
     getInfo(): any;
-    /**
-     * Get detailed selection info stub (selection is done externally via compareSelectors)
-     */
-    getSelectionDetails(): any;
     /**
      * Inspect uploaded data - returns first N rows with feature names
      */
@@ -205,14 +197,12 @@ export interface InitOutput {
     readonly wasmmlpipeline_computeMatrixR2: (a: number, b: any) => [number, number, number];
     readonly wasmmlpipeline_computeSynergyAnalysis: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number, k: number) => [number, number, number];
     readonly wasmmlpipeline_deleteColumn: (a: number, b: number, c: number, d: number, e: number) => [number, number, number];
-    readonly wasmmlpipeline_evaluate: (a: number, b: number) => [number, number, number];
     readonly wasmmlpipeline_getAvailableTargetAnalyzers: (a: number) => [number, number, number];
     readonly wasmmlpipeline_getEditableData: (a: number, b: number, c: number, d: number, e: number) => [number, number, number];
     readonly wasmmlpipeline_getEmbeddedFeatureRanking: (a: number, b: number, c: number, d: number) => [number, number, number];
     readonly wasmmlpipeline_getFeatureMatrices: (a: number, b: number, c: number, d: number, e: number) => [number, number, number];
     readonly wasmmlpipeline_getFeatureSelectionInfo: (a: number) => [number, number, number];
     readonly wasmmlpipeline_getInfo: (a: number) => [number, number, number];
-    readonly wasmmlpipeline_getSelectionDetails: (a: number) => [number, number, number];
     readonly wasmmlpipeline_inspectData: (a: number, b: number) => [number, number, number];
     readonly wasmmlpipeline_inspectProcessedData: (a: number, b: number) => [number, number, number];
     readonly wasmmlpipeline_loadData: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number, number];
@@ -223,13 +213,7 @@ export interface InitOutput {
     readonly wasmmlpipeline_train: (a: number) => [number, number, number];
     readonly wasmmlpipeline_trainWithFeatureIndices: (a: number, b: number, c: any) => [number, number, number];
     readonly wasmmlpipeline_trainWithSplit: (a: number, b: number) => [number, number, number];
-    readonly __wbg_wasmdataloader_free: (a: number, b: number) => void;
     readonly __wbg_wasmfactory_free: (a: number, b: number) => void;
-    readonly wasmdataloader_createAuto: (a: number, b: number) => [number, number, number];
-    readonly wasmdataloader_getAvailableColumns: (a: number, b: number, c: number) => [number, number, number];
-    readonly wasmdataloader_loadData: (a: number, b: number, c: number, d: number, e: number) => [number, number, number];
-    readonly wasmdataloader_new: (a: number, b: number) => [number, number, number];
-    readonly wasmdataloader_validateFormat: (a: number, b: number, c: number) => [number, number];
     readonly wasmfactory_getAvailableOptions: (a: number) => any;
     readonly wasmfactory_getEvaluationMetrics: (a: number, b: number, c: number) => any;
     readonly wasmfactory_getModelParamDefinitions: (a: number, b: number, c: number) => any;
@@ -238,6 +222,12 @@ export interface InitOutput {
     readonly wasmfactory_getSelectorParamDefinitions: (a: number, b: number, c: number) => any;
     readonly wasmfactory_getSelectorParams: (a: number, b: number, c: number) => any;
     readonly wasmfactory_new: () => number;
+    readonly __wbg_wasmdataloader_free: (a: number, b: number) => void;
+    readonly wasmdataloader_createAuto: (a: number, b: number) => [number, number, number];
+    readonly wasmdataloader_getAvailableColumns: (a: number, b: number, c: number) => [number, number, number];
+    readonly wasmdataloader_loadData: (a: number, b: number, c: number, d: number, e: number) => [number, number, number];
+    readonly wasmdataloader_new: (a: number, b: number) => [number, number, number];
+    readonly wasmdataloader_validateFormat: (a: number, b: number, c: number) => [number, number];
     readonly __wbindgen_malloc: (a: number, b: number) => number;
     readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_exn_store: (a: number) => void;

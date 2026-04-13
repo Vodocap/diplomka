@@ -407,18 +407,6 @@ export class WasmMLPipeline {
         return takeFromExternrefTable0(ret[0]);
     }
     /**
-     * Evaluácia (split dáta)
-     * @param {number} _train_ratio
-     * @returns {any}
-     */
-    evaluate(_train_ratio) {
-        const ret = wasm.wasmmlpipeline_evaluate(this.__wbg_ptr, _train_ratio);
-        if (ret[2]) {
-            throw takeFromExternrefTable0(ret[1]);
-        }
-        return takeFromExternrefTable0(ret[0]);
-    }
-    /**
      * Vráti zoznam dostupných analyzátorov cieľovej premennej
      * @returns {any}
      */
@@ -494,17 +482,6 @@ export class WasmMLPipeline {
      */
     getInfo() {
         const ret = wasm.wasmmlpipeline_getInfo(this.__wbg_ptr);
-        if (ret[2]) {
-            throw takeFromExternrefTable0(ret[1]);
-        }
-        return takeFromExternrefTable0(ret[0]);
-    }
-    /**
-     * Get detailed selection info stub (selection is done externally via compareSelectors)
-     * @returns {any}
-     */
-    getSelectionDetails() {
-        const ret = wasm.wasmmlpipeline_getSelectionDetails(this.__wbg_ptr);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
         }

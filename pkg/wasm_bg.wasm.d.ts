@@ -28,7 +28,13 @@ export const wasmmlpipeline_setCellValue: (a: number, b: number, c: number, d: n
 export const wasmmlpipeline_train: (a: number) => [number, number, number];
 export const wasmmlpipeline_trainWithFeatureIndices: (a: number, b: number, c: any) => [number, number, number];
 export const wasmmlpipeline_trainWithSplit: (a: number, b: number) => [number, number, number];
+export const __wbg_wasmdataloader_free: (a: number, b: number) => void;
 export const __wbg_wasmfactory_free: (a: number, b: number) => void;
+export const wasmdataloader_createAuto: (a: number, b: number) => [number, number, number];
+export const wasmdataloader_getAvailableColumns: (a: number, b: number, c: number) => [number, number, number];
+export const wasmdataloader_loadData: (a: number, b: number, c: number, d: number, e: number) => [number, number, number];
+export const wasmdataloader_new: (a: number, b: number) => [number, number, number];
+export const wasmdataloader_validateFormat: (a: number, b: number, c: number) => [number, number];
 export const wasmfactory_getAvailableOptions: (a: number) => any;
 export const wasmfactory_getEvaluationMetrics: (a: number, b: number, c: number) => any;
 export const wasmfactory_getModelParamDefinitions: (a: number, b: number, c: number) => any;
@@ -37,12 +43,6 @@ export const wasmfactory_getProcessorParamDefinitions: (a: number, b: number, c:
 export const wasmfactory_getSelectorParamDefinitions: (a: number, b: number, c: number) => any;
 export const wasmfactory_getSelectorParams: (a: number, b: number, c: number) => any;
 export const wasmfactory_new: () => number;
-export const __wbg_wasmdataloader_free: (a: number, b: number) => void;
-export const wasmdataloader_createAuto: (a: number, b: number) => [number, number, number];
-export const wasmdataloader_getAvailableColumns: (a: number, b: number, c: number) => [number, number, number];
-export const wasmdataloader_loadData: (a: number, b: number, c: number, d: number, e: number) => [number, number, number];
-export const wasmdataloader_new: (a: number, b: number) => [number, number, number];
-export const wasmdataloader_validateFormat: (a: number, b: number, c: number) => [number, number];
 export const __wbindgen_malloc: (a: number, b: number) => number;
 export const __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
 export const __wbindgen_exn_store: (a: number) => void;

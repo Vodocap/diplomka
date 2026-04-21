@@ -34,7 +34,6 @@ async function initApp() {
 
         populateOptions();
         setupEventListeners();
-        showStatus('info', 'Aplikácia pripravená!', 'parseStatus');
     } catch (error) {
         console.error('Init error:', error);
         const message = (error && error.message) ? error.message : String(error);

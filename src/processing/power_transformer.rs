@@ -2,7 +2,7 @@ use smartcore::linalg::basic::matrix::DenseMatrix;
 use smartcore::linalg::basic::arrays::{Array, MutArray};
 use super::{DataProcessor, ColumnType};
 
-/// Power Transformer - Box-Cox alebo Yeo-Johnson transformácia
+/// Power Transformer - Yeo-Johnson transformácia
 /// Transformuje dáta na normálne rozdelenie
 pub struct PowerTransformer
 {
@@ -11,11 +11,9 @@ pub struct PowerTransformer
 }
 
 #[derive(Clone)]
-#[allow(dead_code)]
 pub enum TransformMethod
 {
     YeoJohnson,  // Funguje aj pre negatívne hodnoty
-    BoxCox,      // Len pre pozitívne hodnoty
 }
 
 impl PowerTransformer
@@ -31,12 +29,6 @@ impl PowerTransformer
     pub fn yeo_johnson() -> Self
     {
         Self::new(TransformMethod::YeoJohnson)
-    }
-
-    #[allow(dead_code)]
-    pub fn box_cox() -> Self
-    {
-        Self::new(TransformMethod::BoxCox)
     }
 
     /// Estimates the optimal lambda via a simple grid search over candidate values.
@@ -60,7 +52,6 @@ impl PowerTransformer
                 match self.method
                 {
                     TransformMethod::YeoJohnson => self.yeo_johnson_transform(x, lam),
-                    TransformMethod::BoxCox => self.box_cox_transform(x, lam),
                 }
             }).collect();
 
@@ -117,24 +108,6 @@ impl PowerTransformer
         }
     }
 
-    fn box_cox_transform(&self, x: f64, lambda: f64) -> f64
-    {
-        let eps = 1e-8;
-
-        if x <= 0.0
-        {
-            return 0.0; // Box-Cox vyžaduje pozitívne hodnoty
-        }
-
-        if lambda.abs() < eps
-        {
-            x.ln()
-        }
-        else
-        {
-            (x.powf(lambda) - 1.0) / lambda
-        }
-    }
 }
 
 impl DataProcessor for PowerTransformer
@@ -144,7 +117,6 @@ impl DataProcessor for PowerTransformer
         match self.method
         {
             TransformMethod::YeoJohnson => "Yeo-Johnson Transformer",
-            TransformMethod::BoxCox => "Box-Cox Transformer",
         }
     }
 
@@ -179,7 +151,6 @@ impl DataProcessor for PowerTransformer
                     let transformed = match self.method
                     {
                         TransformMethod::YeoJohnson => self.yeo_johnson_transform(val, lambda),
-                        TransformMethod::BoxCox => self.box_cox_transform(val, lambda),
                     };
                     result.set((i, j), transformed);
                 }

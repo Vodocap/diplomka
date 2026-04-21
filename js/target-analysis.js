@@ -42,9 +42,6 @@ async function compareTargetAnalyzers() {
         const rawResult = await pipeline.compareTargetAnalyzers(data, format, selectedMethods);
         const result = convertWasmResult(rawResult);
 
-        // Store for later use
-        window._lastTargetComparison = result;
-
         // Show target variable map
         buildTargetVariableMap(result);
         document.getElementById('targetComparisonResultsArea').style.display = 'block';
@@ -235,11 +232,6 @@ function selectTargetFromMap(colName) {
     showStatus('info', `Vybratá premenná: ${colName}`, 'compareTargetAnalyzersStatus');
 }
 
-// Legacy compatibility
-function selectTargetFromAnalysis(colName, suggestedType) {
-    selectTargetFromMap(colName);
-}
-
 function populateTargetAnalyzerMethods() {
     try {
         const rawAnalyzers = pipeline.getAvailableTargetAnalyzers();
@@ -269,7 +261,6 @@ function populateTargetAnalyzerMethods() {
             grid.appendChild(card);
         });
 
-        window._targetAnalyzers = analyzers;
     } catch (e) {
         console.warn('Could not load target analyzers:', e);
     }

@@ -1,8 +1,8 @@
 use smartcore::linalg::basic::matrix::DenseMatrix;
 use smartcore::linalg::basic::arrays::{Array, MutArray};
-use super::{DataProcessor, ColumnType};
+use super::{DataProcessor, ColumnType, ProcessorParam};
 
-/// Outlier Clipper - orezáva outliere na základe IQR alebo percentile metódy
+/// Outlier Clipper - orezáva outliere na základe IQR metódy
 pub struct OutlierClipper
 {
     method: ClippingMethod,
@@ -11,12 +11,9 @@ pub struct OutlierClipper
 }
 
 #[derive(Clone)]
-#[allow(dead_code)]
 pub enum ClippingMethod
 {
     IQR(f64),          // IQR metóda s multiplierom (typicky 1.5)
-    Percentile(f64, f64), // Percentile metóda (napr. 1, 99)
-    ZScore(f64),       // Z-score metóda s prahom (typicky 3.0)
 }
 
 impl OutlierClipper
@@ -33,18 +30,6 @@ impl OutlierClipper
     pub fn with_iqr(multiplier: f64) -> Self
     {
         Self::new(ClippingMethod::IQR(multiplier))
-    }
-
-    #[allow(dead_code)]
-    pub fn with_percentile(lower: f64, upper: f64) -> Self
-    {
-        Self::new(ClippingMethod::Percentile(lower, upper))
-    }
-
-    #[allow(dead_code)]
-    pub fn with_zscore(threshold: f64) -> Self
-    {
-        Self::new(ClippingMethod::ZScore(threshold))
     }
 
     fn calculate_percentile(values: &[f64], percentile: f64) -> f64
@@ -88,19 +73,6 @@ impl DataProcessor for OutlierClipper
                     lower_bounds[j] = q1 - multiplier * iqr;
                     upper_bounds[j] = q3 + multiplier * iqr;
                 }
-                ClippingMethod::Percentile(lower, upper) =>
-                {
-                    lower_bounds[j] = Self::calculate_percentile(&col, lower);
-                    upper_bounds[j] = Self::calculate_percentile(&col, upper);
-                }
-                ClippingMethod::ZScore(threshold) =>
-                {
-                    let mean: f64 = col.iter().sum::<f64>() / col.len() as f64;
-                    let variance = col.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / col.len() as f64;
-                    let std = variance.sqrt();
-                    lower_bounds[j] = mean - threshold * std;
-                    upper_bounds[j] = mean + threshold * std;
-                }
             }
         }
 
@@ -134,14 +106,64 @@ impl DataProcessor for OutlierClipper
         self.transform(data)
     }
 
-    fn set_param(&mut self, _key: &str, _value: &str) -> Result<(), String>
+    fn set_param(&mut self, key: &str, value: &str) -> Result<(), String>
     {
-        Err("OutlierClipper parameters cannot be changed after initialization".to_string())
+        match key
+        {
+            "method" =>
+            {
+                // Backward-compatible key: currently only IQR is implemented.
+                if value.eq_ignore_ascii_case("iqr")
+                {
+                    Ok(())
+                }
+                else
+                {
+                    Err("OutlierClipper currently supports only method=iqr".to_string())
+                }
+            }
+            "threshold" =>
+            {
+                let multiplier = value.parse::<f64>()
+                    .map_err(|_| format!("Invalid threshold '{}': expected number", value))?;
+                if !multiplier.is_finite() || multiplier <= 0.0
+                {
+                    return Err("Threshold must be a positive finite number".to_string());
+                }
+                self.method = ClippingMethod::IQR(multiplier);
+                Ok(())
+            }
+            _ => Err(format!("Unknown parameter: {}", key)),
+        }
     }
 
     fn get_supported_params(&self) -> Vec<&str>
     {
-        vec![]
+        vec!["method", "threshold"]
+    }
+
+    fn get_param_definitions(&self) -> Vec<ProcessorParam>
+    {
+        vec![
+            ProcessorParam {
+                name: "method".to_string(),
+                param_type: "select".to_string(),
+                default_value: "iqr".to_string(),
+                description: "Metóda orezania outlierov (aktuálne dostupná: IQR)".to_string(),
+                min: None,
+                max: None,
+                options: Some(vec!["iqr".to_string()]),
+            },
+            ProcessorParam {
+                name: "threshold".to_string(),
+                param_type: "number".to_string(),
+                default_value: "1.5".to_string(),
+                description: "IQR multiplikátor (bežne 1.5, prísnejšie 1.0, voľnejšie 2.0+)".to_string(),
+                min: Some(0.1),
+                max: Some(10.0),
+                options: None,
+            },
+        ]
     }
 
     fn get_applicable_column_types(&self) -> Option<Vec<ColumnType>>

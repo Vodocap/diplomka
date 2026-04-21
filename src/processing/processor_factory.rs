@@ -83,30 +83,13 @@ impl ProcessorFactory
             "frequency_encoder" => Some("Frequency Encoder - enkódovanie podľa frekvencie výskytu"),
             "target_encoder" => Some("Target Encoder - enkódovanie podľa priemeru cieľovej premennej"),
             "null_handler" => Some("Null Handler - nahradenie chýbajúcich hodnôt (mean/median/mode)"),
-            "outlier_clipper" => Some("Outlier Clipper - orezávanie outlierov (IQR/percentile/z-score)"),
+            "outlier_clipper" => Some("Outlier Clipper - orezávanie outlierov (IQR)"),
             "log_transformer" => Some("Log Transformer - logaritmická transformácia"),
-            "power_transformer" => Some("Power Transformer - Box-Cox/Yeo-Johnson transformácia"),
+            "power_transformer" => Some("Power Transformer - Yeo-Johnson transformácia"),
             "time_converter" => Some("Time Converter - konverzia časových hodnôt (sekundy/minúty/hodiny)"),
             "comma_to_dot" => Some("Čiarka → Bodka - nahradí desatinné čiarky bodkami pre float interpretáciu"),
             "thousands_separator_remover" => Some("Odstrániť oddeľovač tisícov - odstráni čiarky z čísiel (napr. 1,000 → 1000)"),
             _ => None,
-        }
-    }
-
-    /// Vráti podporované parametre pre procesor
-    pub fn get_processor_params(processor_type: &str) -> Vec<&'static str>
-    {
-        match processor_type
-        {
-            "minmax_scaler" => vec!["min", "max"],
-            "binner" => vec!["bins"],
-            "null_handler" => vec!["null_repr", "strategy"],
-            "log_transformer" => vec!["offset"],
-            "ordinal_encoder" => vec!["sort_mode"],
-            "target_encoder" => vec!["smoothing"],
-            "outlier_clipper" => vec!["method", "threshold"],
-            "time_converter" => vec!["input_format", "output_unit"],
-            _ => vec![],
         }
     }
 

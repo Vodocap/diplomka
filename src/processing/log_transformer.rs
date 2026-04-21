@@ -11,12 +11,9 @@ pub struct LogTransformer
 }
 
 #[derive(Clone)]
-#[allow(dead_code)]
 pub enum LogBase
 {
     Natural,    // ln(x)
-    Base10,     // log10(x)
-    Base2,      // log2(x)
 }
 
 impl LogTransformer
@@ -26,24 +23,6 @@ impl LogTransformer
         Self {
             offset: 1.0,
             base: LogBase::Natural,
-        }
-    }
-
-    #[allow(dead_code)]
-    pub fn with_offset(offset: f64) -> Self
-    {
-        Self {
-            offset,
-            base: LogBase::Natural,
-        }
-    }
-
-    #[allow(dead_code)]
-    pub fn with_base(base: LogBase, offset: f64) -> Self
-    {
-        Self {
-            offset,
-            base,
         }
     }
 
@@ -58,8 +37,6 @@ impl LogTransformer
         match self.base
         {
             LogBase::Natural => adjusted.ln(),
-            LogBase::Base10 => adjusted.log10(),
-            LogBase::Base2 => adjusted.log2(),
         }
     }
 }

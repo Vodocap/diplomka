@@ -22,17 +22,6 @@ impl MinMaxScaler
             max_range: 1.0,
         }
     }
-
-    #[allow(dead_code)]
-    pub fn with_range(min_range: f64, max_range: f64) -> Self
-    {
-        Self {
-            min_vals: None,
-            max_vals: None,
-            min_range,
-            max_range,
-        }
-    }
 }
 
 impl DataProcessor for MinMaxScaler

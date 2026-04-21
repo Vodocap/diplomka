@@ -1767,7 +1767,7 @@ impl WasmMLPipeline
             // Main metric value from extra_metrics (first one)
             let metric_val = cand.extra_metrics.first().map(|(_, v)| format!("{:.4}", v)).unwrap_or_default();
 
-            html.push_str(&format!("<tr style='{}cursor:pointer;' onclick=\"window.selectTargetFromAnalysis && window.selectTargetFromAnalysis('{}', '{}')\">", bg, cand.column_name, cand.suggested_type));
+            html.push_str(&format!("<tr style='{}cursor:pointer;' onclick=\"window.selectTargetFromMap && window.selectTargetFromMap('{}')\">", bg, cand.column_name));
             html.push_str(&format!("<td style='padding:8px;border:1px solid #dee2e6;text-align:center;font-weight:bold;'>{}</td>", rank + 1));
             html.push_str(&format!("<td style='padding:8px;border:1px solid #dee2e6;font-weight:bold;'>{}</td>", cand.column_name));
             html.push_str(&format!("<td style='padding:8px;border:1px solid #dee2e6;text-align:center;'>{}</td>", cand.unique_values));
@@ -2031,27 +2031,50 @@ impl WasmMLPipeline
         // Parseuj a cachuj dáta
         let (columns, headers, _, _) = self.parse_csv_data_cached(data, true)?;
 
-        if selected_indices.iter().any(|&i| i >= columns.len())
+        // selected_indices prichádzajú z UI mapy features (bez target stĺpca),
+        // preto ich treba remapovať na skutočné indexy stĺpcov.
+        let all_feature_indices: Vec<usize> = (0..headers.len())
+            .filter(|&i| i as i32 != target_col_index)
+            .collect();
+
+        if selected_indices.iter().any(|&i| i >= all_feature_indices.len())
         {
             return Err(JsValue::from_str("Neplatný feature index"));
         }
+
+        let mapped_selected: Vec<usize> = selected_indices
+            .iter()
+            .map(|&i| all_feature_indices[i])
+            .collect();
 
         // Vypočítaj a cachuj matice (ak už nie sú cachované)
         let (corr_matrix, mi_matrix, _smc_matrix) = self.compute_and_cache_matrices(&columns);
 
         let mut warnings = Vec::new();
 
-        let focus_idx = if focus_feature >= 0 { Some(focus_feature as usize) } else { None };
+        let focus_idx = if focus_feature >= 0
+        {
+            let focus = focus_feature as usize;
+            if focus >= all_feature_indices.len()
+            {
+                return Err(JsValue::from_str("Neplatný focus feature index"));
+            }
+            Some(all_feature_indices[focus])
+        }
+        else
+        {
+            None
+        };
 
         // Skontroluj korelácie a MI LEN medzi vybranými featurmi
         // Vylúč cieľový stĺpec
         // Ak je focus_feature zadaný, kontroluj len páry s touto feature
-        for i in 0..selected_indices.len()
+        for i in 0..mapped_selected.len()
         {
-            for j in (i+1)..selected_indices.len()
+            for j in (i+1)..mapped_selected.len()
             {
-                let idx1 = selected_indices[i];
-                let idx2 = selected_indices[j];
+                let idx1 = mapped_selected[i];
+                let idx2 = mapped_selected[j];
 
                 // Preskočiť ak nie sú platné alebo sú cieľový stĺpec
                 if idx1 as i32 == target_col_index || idx2 as i32 == target_col_index
